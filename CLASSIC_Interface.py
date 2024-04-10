@@ -577,7 +577,8 @@ if __name__ == "__main__":
     print(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Interface.start_message"))
     classic_ver = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.version")
     app = QtWidgets.QApplication(sys.argv)
-    app.setStyle("windowsvista")
+    if platform.system() == "Windows":
+        app.setStyle("windowsvista")
 
     # Add widgets of other "tabs" through function calls, not here.
     screen_switch = QtWidgets.QStackedWidget()
