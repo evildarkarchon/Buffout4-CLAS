@@ -1,6 +1,10 @@
 =====================================================================================================
 # CLASSIC CHANGELOG #
 
+7.25.5 Unofficial
+*CHANGES*
+- Fix plugin tests running when there was no plugin list loaded.
+
 7.25.4 Unofficial
 *CHANGES*
 - Make reading text files more resilient
