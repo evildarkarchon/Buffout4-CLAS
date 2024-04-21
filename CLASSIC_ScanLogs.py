@@ -236,7 +236,7 @@ def crashlogs_scan():
             try:
                 index_end = next(index for index, item in enumerate(crash_data) if segment_end.lower() in item.lower() and xse_acronym.lower() not in item.lower()) - 1
             except StopIteration:
-                index_end: int = len(crash_data) - 1
+                index_end: int = len(crash_data)
 
             if index_start <= index_end:
                 segment_output = [s_line.strip() for s_line in crash_data[index_start:index_end] if all(item.lower() not in s_line.lower() for item in remove_list)]
