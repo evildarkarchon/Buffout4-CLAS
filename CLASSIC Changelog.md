@@ -1,6 +1,10 @@
 =====================================================================================================
 # CLASSIC CHANGELOG #
 
+7.25.6 Unofficial
+*CHANGES*
+- Fix plugin tests not running when loadorder.txt was used instead of a log's plugin section.
+
 7.25.5 Unofficial
 *CHANGES*
 - Fix plugin tests running when there was no plugin list loaded.

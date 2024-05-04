@@ -315,6 +315,7 @@ def crashlogs_scan():
             for elem in loadorder_data[1:]:
                 if all(elem not in item for item in crashlog_plugins):
                     crashlog_plugins[elem] = "LO"
+            trigger_plugins_loaded = True
 
         else:  # OTHERWISE, USE PLUGINS FROM CRASH LOG
             for elem in segment_plugins:
