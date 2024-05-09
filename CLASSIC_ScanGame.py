@@ -371,11 +371,8 @@ def scan_mod_inis():  # Mod INI files check.
                     if mod_ini_config(ini_path, "Limiter", "EnableVSync") is True:
                         vsync_list.append(f"{ini_path} | SETTING: EnableVSync \n")
                 case "reshade.ini":
-                    try:
-                        if mod_ini_config(ini_path, "APP", "ForceVsync") is True:
-                            vsync_list.append(f"{ini_path} | SETTING: ForceVsync \n")
-                    except KeyError:
-                        pass
+                    if mod_ini_config(ini_path, "APP", "ForceVsync") is True:
+                        vsync_list.append(f"{ini_path} | SETTING: ForceVsync \n")
 
     if vsync_list:
         message_list.append("* NOTICE : VSYNC IS CURRENTLY ENABLED IN THE FOLLOWING FILES * \n")
