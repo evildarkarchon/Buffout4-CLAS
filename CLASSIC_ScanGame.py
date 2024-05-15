@@ -5,6 +5,7 @@ import logging
 import tomlkit
 import subprocess
 import configparser
+import functools
 import CLASSIC_Main as CMain
 from bs4 import BeautifulSoup
 from pathlib import Path
@@ -15,22 +16,32 @@ CMain.configure_logging()
 # ================================================
 # DEFINE MAIN FILE / YAML FUNCTIONS
 # ================================================
+def handle_ini_exceptions(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except FileNotFoundError as e:
+            logging.error(f"ERROR: File not found - {e}")
+        except KeyError as e:
+            logging.error(f"ERROR: Invalid section or key - {e}")
+        except IOError as e:
+            logging.error(f"ERROR: Unable to read or write the file - {e}")
+        except Exception as e:
+            logging.error(f"ERROR: An unexpected error occurred - {e}")
+        return None
+    return wrapper
+
+@handle_ini_exceptions
 def mod_ini_config(ini_path, section, key, new_value=None):
-    try:
-        mod_config = configparser.ConfigParser()
-        mod_config.optionxform = str
-        mod_config.read(ini_path)
-    except FileNotFoundError:
-        logging.error(f"ERROR: File '{ini_path}' not found.")
-        mod_config = {}
-        pass
+    mod_config = configparser.ConfigParser()
+    mod_config.optionxform = str
+    mod_config.read(ini_path)
 
     if section not in mod_config.keys():
-        logging.error(f"ERROR : Section '{section}' does not exist in '{ini_path}'")
-        pass
-    if section in mod_config.keys() and key not in mod_config[section]:
-        logging.error(f"ERROR : Key '{key}' does not exist in section '{section}'")
-        pass
+        raise KeyError(f"Section '{section}' does not exist in '{ini_path}'")
+    if key not in mod_config[section]:
+        raise KeyError(f"Key '{key}' does not exist in section '{section}'")
 
     # If new_value is specified, update value in INI.
     if new_value is not None:
@@ -360,11 +371,8 @@ def scan_mod_inis():  # Mod INI files check.
                     if mod_ini_config(ini_path, "Limiter", "EnableVSync") is True:
                         vsync_list.append(f"{ini_path} | SETTING: EnableVSync \n")
                 case "reshade.ini":
-                    try:
-                        if mod_ini_config(ini_path, "APP", "ForceVsync") is True:
-                            vsync_list.append(f"{ini_path} | SETTING: ForceVsync \n")
-                    except KeyError:
-                        pass
+                    if mod_ini_config(ini_path, "APP", "ForceVsync") is True:
+                        vsync_list.append(f"{ini_path} | SETTING: ForceVsync \n")
 
     if vsync_list:
         message_list.append("* NOTICE : VSYNC IS CURRENTLY ENABLED IN THE FOLLOWING FILES * \n")

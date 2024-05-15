@@ -153,52 +153,53 @@ def classic_logging():
                 classic_update_check()
 
 def create_formid_db():
-    if not os.path.exists(f"CLASSIC Data/databases/{game} FormIDs.db") and os.path.exists(f"CLASSIC Data/databases/{game} FID Main.txt"):
-        with sqlite3.connect(f"CLASSIC Data/databases/{game} FormIDs.db") as conn, open(f"CLASSIC Data/databases/{game} FID Main.txt", encoding="utf-8", errors="ignore") as f:
-            conn.execute(f'''CREATE TABLE IF NOT EXISTS {game} 
-                (id INTEGER PRIMARY KEY AUTOINCREMENT,  
-                plugin TEXT, formid TEXT, entry TEXT)''')
-            conn.execute(f"CREATE INDEX IF NOT EXISTS Fallout4_index ON {game}(formid, plugin COLLATE nocase);")
+    with sqlite3.connect(f"CLASSIC Data/databases/{game} FormIDs.db") as conn, open(f"CLASSIC Data/databases/{game} FID Main.txt", encoding="utf-8", errors="ignore") as f:
+        conn.execute(f'''CREATE TABLE IF NOT EXISTS {game} 
+            (id INTEGER PRIMARY KEY AUTOINCREMENT,  
+            plugin TEXT, formid TEXT, entry TEXT)''')
+        conn.execute(f"CREATE INDEX IF NOT EXISTS Fallout4_index ON {game}(formid, plugin COLLATE nocase);")
+        if conn.in_transaction:
+            conn.commit()
+        lines = f.readlines()
+        if len(lines) > 0:
+            print("⏳ Generating FormID cache...", end="")
+            for line in lines:
+                line = line.strip()
+                if "|" in line and len(line.split(" | ")) >= 3:
+                    plugin, formid, entry, *extra = line.split(" | ")  # the *extra is for any extraneous data that might be in the line (Python thinks there are more than 3 items in the list for some reason)
+                    conn.execute(f'''INSERT INTO {game} (plugin, formid, entry) VALUES (?, ?, ?)''', (plugin, formid, entry))
             if conn.in_transaction:
                 conn.commit()
-            lines = f.readlines()
-            if len(lines) > 0:
-                print("⏳ Generating FormID cache...", end="")
-                for line in lines:
-                    line = line.strip()
-                    if "|" in line and len(line.split(" | ")) >= 3:
-                        plugin, formid, entry, *extra = line.split(" | ")  # the *extra is for any extraneous data that might be in the line (Python thinks there are more than 3 items in the list for some reason)
-                        conn.execute(f'''INSERT INTO {game} (plugin, formid, entry) VALUES (?, ?, ?)''', (plugin, formid, entry))
-                if conn.in_transaction:
-                    conn.commit()
-                print(" Done!")
+            print(" Done!")
 
 def classic_data_extract():
-    if not os.path.exists("CLASSIC Data/databases/CLASSIC Main.yaml"):
+    def open_zip():
         if os.path.exists("CLASSIC Data/CLASSIC Data.zip"):
-            with zipfile.ZipFile("CLASSIC Data/CLASSIC Data.zip", "r") as zip_data:
-                zip_data.extractall("CLASSIC Data")
+            return zipfile.ZipFile("CLASSIC Data/CLASSIC Data.zip", "r")
         elif os.path.exists("CLASSIC Data.zip"):
-            with zipfile.ZipFile("CLASSIC Data.zip", "r") as zip_data:
+            return zipfile.ZipFile("CLASSIC Data.zip", "r")
+        else:
+            raise FileNotFoundError
+    try:
+        if not os.path.exists("CLASSIC Data/databases/CLASSIC Main.yaml"):
+            with open_zip() as zip_data:
                 zip_data.extractall("CLASSIC Data")
-        else:
-            print("❌ ERROR : UNABLE TO FIND CLASSIC Data.zip! This archive is required for CLASSIC to function.")
-            print("Please ensure that you have extracted all CLASSIC files into the same folder after downloading.")
-            os.system("pause")
-
-    if not os.path.exists(f"CLASSIC Data/databases/{game} FID Main.txt"):
-        if os.path.exists("CLASSIC Data/CLASSIC Data.zip"):
-            with zipfile.ZipFile("CLASSIC Data/CLASSIC Data.zip", "r") as zip_data:
+    except FileNotFoundError:
+        print("❌ ERROR : UNABLE TO FIND CLASSIC Data.zip! This archive is required for CLASSIC to function.")
+        print("Please ensure that you have extracted all CLASSIC files into the same folder after downloading.")
+        raise
+        
+    try:
+        if not os.path.exists(f"CLASSIC Data/databases/{game} FID Main.txt"):
+            with open_zip() as zip_data:
                 zip_data.extract(f"databases/{game} FID Main.txt", "CLASSIC Data")
-                
-        elif os.path.exists("CLASSIC Data.zip"):
-            with zipfile.ZipFile("CLASSIC Data.zip", "r") as zip_data:
-                zip_data.extract(f"databases/{game} FID Main.txt", "CLASSIC Data")
-        else:
-            print("❌ ERROR : UNABLE TO FIND CLASSIC Data.zip! CLASSIC will not be able to show FormID values.")
-            print("Please ensure that you have extracted all CLASSIC files into the same folder after downloading.")
+    except FileNotFoundError:
+        print(f"❌ ERROR : UNABLE TO FIND {game} FID Main.txt! CLASSIC will not be able to show FormID values.")
+        print("Please ensure that you have extracted all CLASSIC files into the same folder after downloading.")
+        raise
     
-    create_formid_db()
+    if os.path.exists(f"CLASSIC Data/databases/{game} FID Main.txt") and not os.path.exists(f"CLASSIC Data/databases/{game} FormIDs.db"):
+        create_formid_db()
 
 def classic_settings(setting=None):
     if not os.path.exists("CLASSIC Settings.yaml"):

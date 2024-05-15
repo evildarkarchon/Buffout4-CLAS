@@ -236,7 +236,7 @@ def crashlogs_scan():
             try:
                 index_end = next(index for index, item in enumerate(crash_data) if segment_end.lower() in item.lower() and xse_acronym.lower() not in item.lower()) - 1
             except StopIteration:
-                index_end: int = len(crash_data) - 1
+                index_end: int = len(crash_data)
 
             if index_start <= index_end:
                 segment_output = [s_line.strip() for s_line in crash_data[index_start:index_end] if all(item.lower() not in s_line.lower() for item in remove_list)]
@@ -289,8 +289,12 @@ def crashlogs_scan():
 
         crashlog_GPUAMD = crashlog_GPUNV = False
         crashlog_plugins = {}
-        if len(segment_plugins) > 1:
-            trigger_plugins_loaded = True
+        if CMain.game == "Fallout4":
+            if any("Fallout4.esm" in elem for elem in segment_plugins):
+                trigger_plugins_loaded = True
+        elif CMain.game == "SkyrimSE":
+            if any("Skyrim.esm" in elem for elem in segment_plugins):
+                trigger_plugins_loaded = True
 
         # ================================================
         # 3) CHECK EACH SEGMENT AND CREATE REQUIRED VALUES
@@ -311,6 +315,7 @@ def crashlogs_scan():
             for elem in loadorder_data[1:]:
                 if all(elem not in item for item in crashlog_plugins):
                     crashlog_plugins[elem] = "LO"
+            trigger_plugins_loaded = True
 
         else:  # OTHERWISE, USE PLUGINS FROM CRASH LOG
             for elem in segment_plugins:
@@ -450,7 +455,7 @@ def crashlogs_scan():
                                 "CHECKING FOR MODS THAT CAN CAUSE FREQUENT CRASHES...\n",
                                 "====================================================\n"])
 
-        if trigger_plugins_loaded:
+        if trigger_plugins_loaded == True:
             if detect_mods_single(game_mods_freq):
                 autoscan_report.extend(["# [!] CAUTION : ANY ABOVE DETECTED MODS HAVE A MUCH HIGHER CHANCE TO CRASH YOUR GAME! #\n",
                                         "* YOU CAN DISABLE ANY / ALL OF THEM TEMPORARILY TO CONFIRM THEY CAUSED THIS CRASH. * \n\n"])
@@ -465,7 +470,7 @@ def crashlogs_scan():
                                 "CHECKING FOR MODS THAT CONFLICT WITH OTHER MODS...\n",
                                 "====================================================\n"])
 
-        if trigger_plugins_loaded:
+        if trigger_plugins_loaded == True:
             if detect_mods_double(game_mods_conf):
                 autoscan_report.extend(["# [!] CAUTION : FOUND MODS THAT ARE INCOMPATIBLE OR CONFLICT WITH YOUR OTHER MODS # \n",
                                         "* YOU SHOULD CHOOSE WHICH MOD TO KEEP AND DISABLE OR COMPLETELY REMOVE THE OTHER MOD * \n\n"])
@@ -478,7 +483,7 @@ def crashlogs_scan():
                                 "CHECKING FOR MODS WITH SOLUTIONS & COMMUNITY PATCHES\n",
                                 "====================================================\n"])
 
-        if trigger_plugins_loaded:
+        if trigger_plugins_loaded == True:
             if detect_mods_single(game_mods_solu):
                 autoscan_report.extend(["# [!] CAUTION : FOUND PROBLEMATIC MODS WITH SOLUTIONS AND COMMUNITY PATCHES # \n",
                                         "[Due to limitations, CLASSIC will show warnings for some mods even if fixes or patches are already installed.] \n",
@@ -493,7 +498,7 @@ def crashlogs_scan():
                                     "CHECKING FOR MODS PATCHED THROUGH OPC INSTALLER...\n",
                                     "====================================================\n"])
 
-            if trigger_plugins_loaded:
+            if trigger_plugins_loaded == True:
                 if detect_mods_single(game_mods_opc2):
                     autoscan_report.extend(["\n* FOR PATCH REPOSITORY THAT PREVENTS CRASHES AND FIXES PROBLEMS IN THESE AND OTHER MODS,* \n",
                                             "* VISIT OPTIMIZATION PATCHES COLLECTION: https://www.nexusmods.com/fallout4/mods/54872 * \n\n"])
@@ -506,7 +511,7 @@ def crashlogs_scan():
                                 "CHECKING IF IMPORTANT PATCHES & FIXES ARE INSTALLED\n",
                                 "====================================================\n"])
 
-        if trigger_plugins_loaded:
+        if trigger_plugins_loaded == True:
             detect_mods_important(game_mods_core)
         else:
             autoscan_report.append(warn_noplugins)
