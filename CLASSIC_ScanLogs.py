@@ -534,12 +534,13 @@ def crashlogs_scan():
                     if all(ignore.lower() not in plugin.lower() for ignore in game_ignore_plugins):
                         plugins_matches.append(plugin)
 
-        if plugins_matches:
+        if len(plugins_matches) >= 1:
             plugins_found = dict(Counter(plugins_matches))
-            for key, value in plugins_found.items():
-                autoscan_report.append(f"- {key} | {value}\n")
+            if len(plugins_found) >= 1:
+                for key, value in plugins_found.items():
+                    autoscan_report.append(f"- {key} | {value}\n")
 
-            autoscan_report.extend(["\n[Last number counts how many times each Plugin Suspect shows up in the crash log.]\n",
+                autoscan_report.extend(["\n[Last number counts how many times each Plugin Suspect shows up in the crash log.]\n",
                                     f"These Plugins were caught by {crashgen_name} and some of them might be responsible for this crash.\n",
                                     "You can try disabling these plugins and check if the game still crashes, though this method can be unreliable.\n\n"])
         else:
