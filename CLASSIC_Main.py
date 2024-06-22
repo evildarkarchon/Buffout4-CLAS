@@ -15,6 +15,9 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from urllib3.exceptions import InsecureRequestWarning
 
+if platform.system() == "Windows":
+    import winreg
+
 """ AUTHOR NOTES (POET): ❓ ❌ ✔️
     ❓ REMINDER: 'shadows x from outer scope' means the variable name repeats both in the func and outside all other func.
     ❓ Comments marked as RESERVED in all scripts are intended for future updates or tests, do not edit / move / remove.
@@ -245,19 +248,26 @@ def classic_update_check():
 # =========== CHECK DOCUMENTS FOLDER PATH -> GET GAME DOCUMENTS FOLDER ===========
 def docs_path_find():
     logging.debug("- - - INITIATED DOCS PATH CHECK")
-    game_sid = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.Main_SteamID")
     docs_name = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.Main_Docs_Name")
 
     def get_windows_docs_path():
-        import ctypes.wintypes
-        CSIDL_PERSONAL = 5
-        SHGFP_TYPE_CURRENT = 0
-        win_buffer = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
-        ctypes.windll.shell32.SHGetFolderPathW(None, CSIDL_PERSONAL, None, SHGFP_TYPE_CURRENT, win_buffer)
-        win_docs = os.path.join(win_buffer.value, fr"My Games\{docs_name}")
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders") as key:
+                documents_path = winreg.QueryValueEx(key, "Personal")[0]
+        except WindowsError:
+            # Fallback to a default path if registry key is not found
+            documents_path = os.path.join(os.path.expanduser("~"), "Documents")
+    
+        # Construct the full path
+        win_docs = os.path.join(documents_path, f"My Games\\{docs_name}")
+    
+        # Update the YAML settings (assuming this function exists)
         yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs", f"{win_docs}")
+    
+        return win_docs
 
     def get_linux_docs_path():
+        game_sid = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.Main_SteamID")
         libraryfolders_path = Path.home().joinpath(".local", "share", "Steam", "steamapps", "common", "libraryfolders.vdf")
         if libraryfolders_path.is_file():
             library_path = Path()
