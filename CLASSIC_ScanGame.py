@@ -447,7 +447,7 @@ def scan_mods_unpacked():
                             modscan_list.append(f"[!] CAUTION (XSE-COPY) : {root_main} > CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES \n")
                     # ================================================
                     # DETECT MODS WITH PRECOMBINE / PREVIS FILES
-                    elif (".csg" or ".cdx" or ".uvd" or "_oc.nif") in filename.lower() and "previs repair pack" not in root.lower():
+                    elif (".csg" or ".cdx") in filename.lower():
                         root_main = main_path.split(os.path.sep)[1]
                         modscan_list.append(f"[-] NOTICE (-PREVIS-) : {root_main} > CONTAINS CUSTOM PRECOMBINE / PREVIS FILES \n")
                     # ================================================
