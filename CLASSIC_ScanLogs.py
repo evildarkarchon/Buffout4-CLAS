@@ -11,6 +11,7 @@ import CLASSIC_ScanGame as CGame
 from urllib.parse import urlparse
 from collections import Counter
 from pathlib import Path
+from functools import lru_cache
 
 CMain.configure_logging()
 
@@ -30,7 +31,7 @@ def pastebin_fetch(url):
         outfile.write_text(response.text, encoding="utf-8", errors="ignore")
     else:
         response.raise_for_status()
-
+@lru_cache(maxsize=None)
 def get_entry(formid, plugin) -> str | None:
     if os.path.isfile(f"CLASSIC Data/databases/{CMain.game} FormIDs.db"):
         with sqlite3.connect(f"CLASSIC Data/databases/{CMain.game} FormIDs.db") as conn:
@@ -124,7 +125,7 @@ def crashlogs_scan():
     game_ignore_records = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Records_Exclude")
     suspects_error_list = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Error_Check")
     suspects_stack_list = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Stack_Check")
-    
+
     autoscan_text = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.autoscan_text_{CMain.game}")
     remove_list = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_records")
     ignore_list = CMain.yaml_settings("CLASSIC Ignore.yaml", f"CLASSIC_Ignore_{CMain.game}")
@@ -292,9 +293,13 @@ def crashlogs_scan():
         if CMain.game == "Fallout4":
             if any("Fallout4.esm" in elem for elem in segment_plugins):
                 trigger_plugins_loaded = True
+            else:
+                stats_crashlog_incomplete += 1
         elif CMain.game == "SkyrimSE":
             if any("Skyrim.esm" in elem for elem in segment_plugins):
                 trigger_plugins_loaded = True
+            else:
+                stats_crashlog_incomplete += 1
 
         # ================================================
         # 3) CHECK EACH SEGMENT AND CREATE REQUIRED VALUES
@@ -712,10 +717,10 @@ if __name__ == "__main__":
 
     if isinstance(scan_path, Path) and scan_path.resolve().is_dir() and not str(scan_path) == CMain.classic_settings("SCAN Custom Path"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.SCAN Custom Path", str(Path(scan_path).resolve()))
-    
+
     if isinstance(mods_folder_path, Path) and mods_folder_path.resolve().is_dir() and not str(mods_folder_path) == CMain.classic_settings("MODS Folder Path"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.MODS Folder Path", str(Path(mods_folder_path).resolve()))
-    
+
     if isinstance(args.simplify_logs, bool) and not args.simplify_logs == CMain.classic_settings("Simplify Logs"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.Simplify Logs", args.simplify_logs)
 
