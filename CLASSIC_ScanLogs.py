@@ -293,9 +293,13 @@ def crashlogs_scan():
         if CMain.game == "Fallout4":
             if any("Fallout4.esm" in elem for elem in segment_plugins):
                 trigger_plugins_loaded = True
+            else:
+                stats_crashlog_incomplete += 1
         elif CMain.game == "SkyrimSE":
             if any("Skyrim.esm" in elem for elem in segment_plugins):
                 trigger_plugins_loaded = True
+            else:
+                stats_crashlog_incomplete += 1
 
         # ================================================
         # 3) CHECK EACH SEGMENT AND CREATE REQUIRED VALUES
