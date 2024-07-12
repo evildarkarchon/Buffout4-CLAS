@@ -1,6 +1,14 @@
 =====================================================================================================
 # CLASSIC CHANGELOG #
 
+7.25.8 Unofficial
+*CHANGES*
+- Check the registry instead of shell32.dll for the location of the "Documents" directory
+- Add a cache to the YAML lookup code to improve performance (hopefully)
+- Reclassified loose previsibine files as a *CAUTION* instead of a *NOTICE* since current conensus is that loose previsibine files are problematic.
+- Fix log stat counting.
+- Change latest Buffout 4 NG version to 1.35.1
+
 7.25.7 Unofficial
 *CHANGES*
 - Further improve exception handling when parsing INI files with FCX mode or Scan Game Files.
