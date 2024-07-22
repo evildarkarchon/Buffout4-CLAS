@@ -14,7 +14,6 @@ import chardet
 from pathlib import Path
 from bs4 import BeautifulSoup
 from urllib3.exceptions import InsecureRequestWarning
-from functools import lru_cache
 
 if platform.system() == "Windows":
     import winreg
@@ -83,14 +82,18 @@ def remove_readonly(file_path):
     except (ValueError, OSError) as err:
         logging.error(f"> > > ERROR (remove_readonly) : {err}")
 
-@lru_cache(maxsize=None)
+yaml_cache = {} # Cache for YAML files to prevent multiple reads.
+
 def yaml_settings(yaml_path, key_path, new_value=None):
     yaml = ruamel.yaml.YAML()
     yaml.indent(offset=2)
     yaml.width = 300
+    
+    if yaml_path not in yaml_cache:
+        with open(yaml_path, 'r', encoding='utf-8') as yaml_file:
+            yaml_cache[yaml_path] = yaml.load(yaml_file)
 
-    with open(yaml_path, 'r', encoding='utf-8') as yaml_file:
-        data = yaml.load(yaml_file)
+    data = yaml_cache[yaml_path]
 
     keys = key_path.split('.') if isinstance(key_path, str) else key_path
     value = data
@@ -111,6 +114,8 @@ def yaml_settings(yaml_path, key_path, new_value=None):
                 return None  # Key not found.
         if value is None and "Path" not in key_path:  # Error me if I mistype or screw up the value grab.
             print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'")
+
+    yaml_cache[yaml_path] = data  # Update the cache with the modified data
     return value
 
 
@@ -152,8 +157,8 @@ def classic_logging():
 
 def create_formid_db():
     with sqlite3.connect(f"CLASSIC Data/databases/{game} FormIDs.db") as conn, open(f"CLASSIC Data/databases/{game} FID Main.txt", encoding="utf-8", errors="ignore") as f:
-        conn.execute(f'''CREATE TABLE IF NOT EXISTS {game}
-            (id INTEGER PRIMARY KEY AUTOINCREMENT,
+        conn.execute(f'''CREATE TABLE IF NOT EXISTS {game} 
+            (id INTEGER PRIMARY KEY AUTOINCREMENT,  
             plugin TEXT, formid TEXT, entry TEXT)''')
         conn.execute(f"CREATE INDEX IF NOT EXISTS Fallout4_index ON {game}(formid, plugin COLLATE nocase);")
         if conn.in_transaction:
@@ -186,7 +191,7 @@ def classic_data_extract():
         print("❌ ERROR : UNABLE TO FIND CLASSIC Data.zip! This archive is required for CLASSIC to function.")
         print("Please ensure that you have extracted all CLASSIC files into the same folder after downloading.")
         raise
-
+        
     try:
         if not os.path.exists(f"CLASSIC Data/databases/{game} FID Main.txt"):
             with open_zip() as zip_data:
@@ -195,7 +200,7 @@ def classic_data_extract():
         print(f"❌ ERROR : UNABLE TO FIND {game} FID Main.txt! CLASSIC will not be able to show FormID values.")
         print("Please ensure that you have extracted all CLASSIC files into the same folder after downloading.")
         raise
-
+    
     if os.path.exists(f"CLASSIC Data/databases/{game} FID Main.txt") and not os.path.exists(f"CLASSIC Data/databases/{game} FormIDs.db"):
         create_formid_db()
 
@@ -252,13 +257,13 @@ def docs_path_find():
         except WindowsError:
             # Fallback to a default path if registry key is not found
             documents_path = os.path.join(os.path.expanduser("~"), "Documents")
-
+    
         # Construct the full path
         win_docs = os.path.join(documents_path, f"My Games\\{docs_name}")
-
+    
         # Update the YAML settings (assuming this function exists)
         yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs", f"{win_docs}")
-
+    
         return win_docs
 
     def get_linux_docs_path():
@@ -411,7 +416,7 @@ def xse_check_integrity() -> str:  # RESERVED | NEED VR HASH/FILE CHECK
     xse_full_name = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.XSE_FullName")
     xse_ver_latest = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.XSE_Ver_Latest")
     adlib_file = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Game_File_AddressLib")
-
+    
     match adlib_file:
         case str() | Path():
             if Path(adlib_file).exists():
