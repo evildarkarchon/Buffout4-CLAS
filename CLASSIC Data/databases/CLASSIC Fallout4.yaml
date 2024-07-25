@@ -652,6 +652,18 @@ Mods_CONF:  # 2) MODS THAT CONFLICT WITH OTHER MODS
         SKK Craft Weapons & Ammo Version 008 is incompatible with AWKCR and will cause crashes while saving the game.
         If you encounter problems or crashes, remove AWKCR and / or switch to Equipment and Crafting Overhaul instead.
         -----
+  fallrimpriority | x-cell-fo4: |
+    Fallout Priority ❌ CONFLICTS WITH : X-Cell
+        X-Cell has equivalent functionality to Fallout Priority when the threads feature is enabled.
+        -----
+  prioritymod | x-cell-fo4: |
+    Fallout Priority ❌ CONFLICTS WITH : X-Cell
+        X-Cell has equivalent functionality to Fallout Priority when the threads feature is enabled.
+        -----
+  bakascrapheap | x-cell-fo4: |
+    Baka ScrapHeap ❌ CONFLICTS WITH : X-Cell
+        X-Cell has equivalent functionality to Baka ScrapHeap when the memory feature is enabled.
+        -----
 
 
 Mods_SOLU:  # 3) MODS WITH SOLUTIONS & COMMUNITY PATCHES
