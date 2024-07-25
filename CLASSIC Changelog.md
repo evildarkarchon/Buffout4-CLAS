@@ -1,6 +1,10 @@
 =====================================================================================================
 # CLASSIC CHANGELOG #
 
+7.25.9 Unofficial
+*CHANGES*
+- Add conflict and configuration checks for perchik71's X-Cell mod.
+
 7.25.8 Unofficial
 *CHANGES*
 - Check the registry instead of shell32.dll for the location of the "Documents" directory
