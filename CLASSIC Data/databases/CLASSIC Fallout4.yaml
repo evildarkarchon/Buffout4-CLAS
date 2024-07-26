@@ -664,6 +664,10 @@ Mods_CONF:  # 2) MODS THAT CONFLICT WITH OTHER MODS
     Baka ScrapHeap ❌ CONFLICTS WITH : X-Cell
         X-Cell has equivalent functionality to Baka ScrapHeap when the memory feature is enabled.
         -----
+  PrivateProfileRedirector | x-cell-fo4: |
+    Private Profile Redirector ❌ CONFLICTS WITH : X-Cell
+        X-Cell has equivalent functionality to Private Profile Redirector when the io feature is enabled.
+        -----
 
 
 Mods_SOLU:  # 3) MODS WITH SOLUTIONS & COMMUNITY PATCHES
