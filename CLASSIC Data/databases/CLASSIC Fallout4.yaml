@@ -666,7 +666,11 @@ Mods_CONF:  # 2) MODS THAT CONFLICT WITH OTHER MODS
         -----
   PrivateProfileRedirector | x-cell-fo4: |
     Private Profile Redirector ❌ CONFLICTS WITH : X-Cell
-        X-Cell has equivalent functionality to Private Profile Redirector when the io feature is enabled.
+        X-Cell has equivalent functionality to Private Profile Redirector when the io feature (changed to profile in v1.2-b2+) is enabled.
+        -----
+  libdiskCacheEnabler | x-cell-fo4: |
+    Disk Cache Enabler ❌ CONFLICTS WITH : X-Cell
+        X-Cell has equivalent functionality to Disk Cache Enabler when the io feature is enabled.
         -----
 
 
