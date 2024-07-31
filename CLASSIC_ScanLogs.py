@@ -449,13 +449,6 @@ def crashlogs_scan():
                         if not Is_XCellPresent:
                             autoscan_report.append(f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
-                if "f4ee:" in line.lower():
-                    if "false" in line.lower() and any("f4ee.dll" in elem.lower() for elem in segment_xsemodules):
-                        autoscan_report.extend(["# ❌ CAUTION : Looks Menu is installed, but F4EE parameter under [Compatibility] is set to FALSE # \n",
-                                                f" FIX: Open {crashgen_name}'s TOML file and change F4EE to TRUE, this prevents bugs and crashes from Looks Menu.\n-----\n"])
-                    else:
-                        autoscan_report.append(f"✔️ F4EE (Looks Menu) parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
-
                 if "bstexturestreamerlocalheap:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
                         autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE # \n",
                                                 f" FIX: Open {crashgen_name}'s TOML file and change BSTextureStreamerLocalHeap to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
@@ -479,6 +472,15 @@ def crashlogs_scan():
                                             f" FIX: Open {crashgen_name}'s TOML file and change SmallBlockAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
                 elif "smallblockallocator:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True:
                     autoscan_report.extend([f"✔️ SmallBlockAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"])
+
+                if "f4ee:" in line.lower():
+                    if "false" in line.lower() and any("f4ee.dll" in elem.lower() for elem in segment_xsemodules):
+                        autoscan_report.extend(["# ❌ CAUTION : Looks Menu is installed, but F4EE parameter under [Compatibility] is set to FALSE # \n",
+                                                f" FIX: Open {crashgen_name}'s TOML file and change F4EE to TRUE, this prevents bugs and crashes from Looks Menu.\n-----\n"])
+                    else:
+                        autoscan_report.append(f"✔️ F4EE (Looks Menu) parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+
+
         else:
             autoscan_report.extend(["* NOTICE: FCX MODE IS ENABLED. CLASSIC MUST BE RUN BY THE ORIGINAL USER FOR CORRECT DETECTION * \n",
                                     "[ To disable mod & game files detection, disable FCX Mode in the exe or CLASSIC Settings.yaml ] \n\n"])
