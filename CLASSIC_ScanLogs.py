@@ -440,6 +440,11 @@ def crashlogs_scan():
                     if "true" in line.lower() and any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules) and not Is_XCellPresent:
                         autoscan_report.extend(["# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but MemoryManager parameter is set to TRUE # \n",
                                                 f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with {crashgen_name}.\n-----\n"])
+                    elif "true" in line.lower() and Is_XCellPresent and not any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules):
+                        autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but MemoryManager parameter is set to TRUE # \n",
+                                            f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
+                    elif "false" in line.lower() and Is_XCellPresent and not any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules):
+                        autoscan_report.extend([f"✔️ Memory Manager parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"])
                     else:
                         if not Is_XCellPresent:
                             autoscan_report.append(f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
@@ -462,12 +467,6 @@ def crashlogs_scan():
                                             f" FIX: Open {crashgen_name}'s TOML file and change HavokMemorySystem to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
                 elif "havokmemorysystem:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True:
                     autoscan_report.append(f"✔️ HavokMemorySystem parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n")
-
-                if "memorymanager:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True and not any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules):
-                    autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but MemoryManager parameter is set to TRUE # \n",
-                                            f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
-                elif "memorymanager:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True and not any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules):
-                    autoscan_report.extend([f"✔️ Memory Manager parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"])
 
                 if "scaleformallocator:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
                     autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but ScaleformAllocator parameter is set to TRUE # \n",
