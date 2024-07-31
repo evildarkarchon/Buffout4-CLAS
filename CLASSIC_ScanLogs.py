@@ -446,8 +446,7 @@ def crashlogs_scan():
                     elif "false" in line.lower() and Is_XCellPresent and not any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules):
                         autoscan_report.extend([f"✔️ Memory Manager parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"])
                     else:
-                        if not Is_XCellPresent:
-                            autoscan_report.append(f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+                        autoscan_report.append(f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
                 if "bstexturestreamerlocalheap:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
                         autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE # \n",
