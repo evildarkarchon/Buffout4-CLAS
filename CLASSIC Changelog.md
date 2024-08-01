@@ -1,6 +1,11 @@
 =====================================================================================================
 # CLASSIC CHANGELOG #
 
+7.25.10 Unofficial
+*CHANGES*
+- Add Buffout 4 configuration fixes to FCX mode.
+- Added conflict between X-Cell and PrivateProfileRedirector (from 7.25.9-hotfix2)
+
 7.25.9 Unofficial
 *CHANGES*
 - Add conflict and configuration checks for perchik71's X-Cell mod.
