@@ -1,6 +1,10 @@
 =====================================================================================================
 # CLASSIC CHANGELOG #
 
+7.25.11 Unofficial
+*CHANGES*
+- Add separate core mod list for Fallout: London
+
 7.25.10 Unofficial
 *CHANGES*
 - Add Buffout 4 configuration fixes to FCX mode.

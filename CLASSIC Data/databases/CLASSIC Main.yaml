@@ -4,8 +4,8 @@ CLASSIC_Info:
   # ========================================================================================
   # CAUTION: DO NOT CHANGE YOUR SETTINGS HERE! OPEN & EDIT CLASSIC Settings.yaml instead!
   # ========================================================================================
-  version: CLASSIC v7.25.10 Unofficial
-  version_date: 24.07.31 #YY/MM/DD
+  version: CLASSIC v7.25.11 Unofficial
+  version_date: 24.08.08 #YY/MM/DD
   default_settings: |
     # This file contains settings for CLASSIC v7.00+, used by both source scripts and the executable.
 
