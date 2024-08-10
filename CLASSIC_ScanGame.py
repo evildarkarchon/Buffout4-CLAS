@@ -6,6 +6,7 @@ import tomlkit
 import subprocess
 import configparser
 import functools
+import chardet
 import CLASSIC_Main as CMain
 from bs4 import BeautifulSoup
 from pathlib import Path
@@ -36,7 +37,10 @@ def handle_ini_exceptions(func):
 def mod_ini_config(ini_path, section, key, new_value=None):
     mod_config = configparser.ConfigParser()
     mod_config.optionxform = str
-    mod_config.read(ini_path)
+
+    with open(ini_path, 'rb') as config_file:
+        ini_encoding = chardet.detect(config_file.read())['encoding']
+    mod_config.read(ini_path, encoding=ini_encoding)
 
     if section not in mod_config.keys():
         raise KeyError(f"Section '{section}' does not exist in '{ini_path}'")
@@ -46,7 +50,7 @@ def mod_ini_config(ini_path, section, key, new_value=None):
     # If new_value is specified, update value in INI.
     if new_value is not None:
         mod_config.set(section, key, str(new_value))
-        with open(ini_path, 'w') as config_file:
+        with open(ini_path, 'w', encoding=ini_encoding) as config_file:
             mod_config.write(config_file)
         return new_value
 
