@@ -5,6 +5,7 @@ import time
 import platform
 import subprocess
 import multiprocessing
+import asyncio
 try:  # soundfile (specically its Numpy dependency) seem to cause virus alerts from some AV programs, including Windows Defender.
     import soundfile as sfile
     import sounddevice as sdev
@@ -216,6 +217,14 @@ def play_sound(sound_file):
 class UiCLASSICMainWin(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
+
+        async def update_check():
+            return await CMain.classic_update_check(quiet=True)
+
+        if CMain.classic_settings("Update Check"):
+            self.is_uptodate = asyncio.run(update_check())
+            if not self.is_uptodate:
+                QTimer.singleShot(0, self.update_popup)
 
         # MULTIPROCESSING
         self.papyrus_process = None
@@ -431,11 +440,11 @@ class UiCLASSICMainWin(QtWidgets.QMainWindow):
 
     def update_popup(self):
         update_popup_text = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Interface.update_popup_text")
-        if CMain.classic_update_check():
+        if self.is_uptodate:
             popup = custom_popup_window(self, title="CLASSIC UPDATE", text="You have the latest version of CLASSIC!")
             popup.exec()
         else:
-            popup = custom_popup_window(self, title="CLASSIC UPDATE", text=update_popup_text, callback="https://www.nexusmods.com/fallout4/mods/56255?tab=files")
+            popup = custom_popup_window(self, title="CLASSIC UPDATE", text=update_popup_text, callback="https://github.com/evildarkarchon/CLASSIC-Fallout4/releases/latest")
             popup.exec()
 
 
@@ -583,6 +592,7 @@ if __name__ == "__main__":
     CMain.main_generate_required()
     print(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Interface.start_message"))
     classic_ver = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.version")
+
     app = QtWidgets.QApplication(sys.argv)
     if platform.system() == "Windows":
         app.setStyle("windowsvista")

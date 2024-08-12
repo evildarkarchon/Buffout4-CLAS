@@ -141,11 +141,9 @@ CLASSIC_Interface:
     Press OK to open the server link in your default browser.
 
   update_popup_text: |
-    New CLASSIC version is available! Press OK to open the CLASSIC Nexus Page.
-    REMINDER: CLASSIC should automatically check for updates every 7 days.
+    New CLASSIC version is available! Press OK to open the CLASSIC Unofficial GitHub Page.
 
-    CLASSIC for Fallout 4 : https://www.nexusmods.com/fallout4/mods/56255
-    CLASSIC for Skyrim SE : https://www.nexusmods.com/fallout4/mods/xxxxx
+    CLASSIC Unofficial : https://www.github.com/evildarkarchon/CLASSIC-Fallout4/releases/latest
 
   update_warning_Fallout4: |
     ❌ WARNING : YOUR FALLOUT 4 CLASSIC VERSION IS OUT OF DATE!

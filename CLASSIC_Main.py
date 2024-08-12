@@ -11,6 +11,8 @@ import ruamel.yaml
 import configparser
 import sqlite3
 import chardet
+import aiohttp
+import sys
 from pathlib import Path
 from bs4 import BeautifulSoup
 from urllib3.exceptions import InsecureRequestWarning
@@ -82,41 +84,67 @@ def remove_readonly(file_path):
     except (ValueError, OSError) as err:
         logging.error(f"> > > ERROR (remove_readonly) : {err}")
 
-yaml_cache = {} # Cache for YAML files to prevent multiple reads.
+class YamlSettingsCache:
+    def __init__(self):
+        self.cache = {}
+        self.file_mod_times = {}
 
+    def load_yaml(self, yaml_path):
+        # Check if the file has been modified since it was last cached
+        last_mod_time = os.path.getmtime(yaml_path)
+        if (yaml_path not in self.file_mod_times or
+            self.file_mod_times[yaml_path] != last_mod_time):
+
+            # Update the file modification time
+            self.file_mod_times[yaml_path] = last_mod_time
+
+            # Reload the YAML file
+            with open(yaml_path, 'r', encoding='utf-8') as yaml_file:
+                yaml = ruamel.yaml.YAML()
+                yaml.indent(offset=2)
+                yaml.width = 300
+                self.cache[yaml_path] = yaml.load(yaml_file)
+
+        return self.cache[yaml_path]
+
+    def get_setting(self, yaml_path, key_path, new_value=None):
+        data = self.load_yaml(yaml_path)
+        keys = key_path.split('.') if isinstance(key_path, str) else key_path
+        value = data
+
+        # If new_value is provided, update the value
+        if new_value is not None:
+            for key in keys[:-1]:
+                value = value.setdefault(key, {})
+            value[keys[-1]] = new_value
+
+            # Write changes back to the YAML file
+            with open(yaml_path, 'w', encoding='utf-8') as yaml_file:
+                yaml = ruamel.yaml.YAML()
+                yaml.indent(offset=2)
+                yaml.width = 300
+                yaml.dump(data, yaml_file)
+
+            # Update the cache
+            self.cache[yaml_path] = data
+            return new_value
+        else:
+            # Traverse YAML structure to get value
+            for key in keys:
+                if key in value:
+                    value = value[key]
+                else:
+                    return None  # Key not found
+            if value is None and "Path" not in key_path:  # Error me if I mistype or screw up the value grab.
+                print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'")
+            return value
+
+# Instantiate a global cache object
+yaml_cache = YamlSettingsCache()
+
+# Function compatible with the old interface
 def yaml_settings(yaml_path, key_path, new_value=None):
-    yaml = ruamel.yaml.YAML()
-    yaml.indent(offset=2)
-    yaml.width = 300
-    
-    if yaml_path not in yaml_cache:
-        with open(yaml_path, 'r', encoding='utf-8') as yaml_file:
-            yaml_cache[yaml_path] = yaml.load(yaml_file)
-
-    data = yaml_cache[yaml_path]
-
-    keys = key_path.split('.') if isinstance(key_path, str) else key_path
-    value = data
-    # If new_value is provided, update the value.
-    if new_value is not None:
-        for key in keys[:-1]:
-            value = value[key]
-
-        value[keys[-1]] = new_value
-        with open(yaml_path, 'w', encoding='utf-8') as yaml_file:
-            yaml.dump(data, yaml_file)
-    # Otherwise, traverse YAML structure to get value.
-    else:
-        for key in keys:
-            if key in value:
-                value = value[key]
-            else:
-                return None  # Key not found.
-        if value is None and "Path" not in key_path:  # Error me if I mistype or screw up the value grab.
-            print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'")
-
-    yaml_cache[yaml_path] = data  # Update the cache with the modified data
-    return value
+    return yaml_cache.get_setting(yaml_path, key_path, new_value)
 
 
 # ================================================
@@ -147,18 +175,16 @@ def classic_logging():
         log_age = current_time - log_time
         if log_age.days > 7:
             try:
-                classic_update_check()
                 os.remove("CLASSIC Journal.log")  # We do this to trigger an auto update check every X days.
                 print("CLASSIC Journal.log has been deleted and regenerated due to being older than 7 days.")
                 logging.basicConfig(level=logging.INFO, filename="CLASSIC Journal.log", filemode="a", format="%(asctime)s | %(levelname)s | %(message)s")
             except (ValueError, OSError) as err:
                 print(f"An error occurred while deleting CLASSIC Journal.log: {err}")
-                classic_update_check()
 
 def create_formid_db():
     with sqlite3.connect(f"CLASSIC Data/databases/{game} FormIDs.db") as conn, open(f"CLASSIC Data/databases/{game} FID Main.txt", encoding="utf-8", errors="ignore") as f:
-        conn.execute(f'''CREATE TABLE IF NOT EXISTS {game} 
-            (id INTEGER PRIMARY KEY AUTOINCREMENT,  
+        conn.execute(f'''CREATE TABLE IF NOT EXISTS {game}
+            (id INTEGER PRIMARY KEY AUTOINCREMENT,
             plugin TEXT, formid TEXT, entry TEXT)''')
         conn.execute(f"CREATE INDEX IF NOT EXISTS Fallout4_index ON {game}(formid, plugin COLLATE nocase);")
         if conn.in_transaction:
@@ -191,7 +217,7 @@ def classic_data_extract():
         print("❌ ERROR : UNABLE TO FIND CLASSIC Data.zip! This archive is required for CLASSIC to function.")
         print("Please ensure that you have extracted all CLASSIC files into the same folder after downloading.")
         raise
-        
+
     try:
         if not os.path.exists(f"CLASSIC Data/databases/{game} FID Main.txt"):
             with open_zip() as zip_data:
@@ -200,7 +226,7 @@ def classic_data_extract():
         print(f"❌ ERROR : UNABLE TO FIND {game} FID Main.txt! CLASSIC will not be able to show FormID values.")
         print("Please ensure that you have extracted all CLASSIC files into the same folder after downloading.")
         raise
-    
+
     if os.path.exists(f"CLASSIC Data/databases/{game} FID Main.txt") and not os.path.exists(f"CLASSIC Data/databases/{game} FormIDs.db"):
         create_formid_db()
 
@@ -216,29 +242,48 @@ def classic_settings(setting=None):
         return get_setting
 
 
-def classic_update_check():
+async def classic_update_check(quiet=False):
     logging.debug("- - - INITIATED UPDATE CHECK")
     if classic_settings("Update Check"):
         classic_local = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.version")
-        print("❓ (Needs internet connection) CHECKING FOR NEW CLASSIC VERSIONS...")
-        print("   (You can disable this check in the EXE or CLASSIC Settings.yaml) \n")
-        try:
-            response = requests.get("https://api.github.com/repos/evildarkarchon/CLASSIC-Fallout4/releases/latest", timeout=10)
-            if not response.status_code == requests.codes.ok:
-                response.raise_for_status()
-            classic_ver_received = response.json()["name"]
-            print(f"Your CLASSIC Version: {classic_local}\nNewest CLASSIC Version: {classic_ver_received}\n")
-            if classic_ver_received == classic_local:
-                print("✔️ You have the latest version of CLASSIC! \n")
-                return True
-            else:
-                print(yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.update_warning_{game}"))
-        except (ValueError, OSError, requests.exceptions.RequestException) as err:
-            print(err)
-            print(yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.update_unable_{game}"))
+        if not quiet:
+            print("❓ (Needs internet connection) CHECKING FOR NEW CLASSIC VERSIONS...")
+            sys.stdout.flush()
+            print("   (You can disable this check in the EXE or CLASSIC Settings.yaml) \n")
+            sys.stdout.flush()
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get("https://api.github.com/repos/evildarkarchon/CLASSIC-Fallout4/releases/latest") as response:
+                    if response.status != 200:
+                        response.raise_for_status()
+                    response_json = await response.json()  # Await the JSON response
+
+                    # Now you can access items in the JSON response
+                    classic_ver_received = response_json["name"]
+
+                    if classic_ver_received == classic_local:
+                        if not quiet:
+                            print(f"Your CLASSIC Version: {classic_local}\nNewest CLASSIC Version: {classic_ver_received}\n")
+                            sys.stdout.flush()
+                            print("✔️ You have the latest version of CLASSIC! \n")
+                            sys.stdout.flush()
+                        return True
+                    else:
+                        if not quiet:
+                            print(yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.update_warning_{game}"))
+                            sys.stdout.flush()
+            except (ValueError, OSError, aiohttp.ClientError) as err:
+                if not quiet:
+                    print(err)
+                    sys.stdout.flush()
+                    print(yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.update_unable_{game}"))
+                    sys.stdout.flush()
     else:
-        print("\n❌ NOTICE: UPDATE CHECK IS DISABLED IN CLASSIC Settings.yaml \n")
-        print("===============================================================================")
+        if not quiet:
+            print("\n❌ NOTICE: UPDATE CHECK IS DISABLED IN CLASSIC Settings.yaml \n")
+            sys.stdout.flush()
+            print("===============================================================================")
+            sys.stdout.flush()
     return False
 
 
@@ -257,13 +302,13 @@ def docs_path_find():
         except WindowsError:
             # Fallback to a default path if registry key is not found
             documents_path = os.path.join(os.path.expanduser("~"), "Documents")
-    
+
         # Construct the full path
         win_docs = os.path.join(documents_path, f"My Games\\{docs_name}")
-    
+
         # Update the YAML settings (assuming this function exists)
         yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs", f"{win_docs}")
-    
+
         return win_docs
 
     def get_linux_docs_path():
@@ -416,7 +461,7 @@ def xse_check_integrity() -> str:  # RESERVED | NEED VR HASH/FILE CHECK
     xse_full_name = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.XSE_FullName")
     xse_ver_latest = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.XSE_Ver_Latest")
     adlib_file = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Game_File_AddressLib")
-    
+
     match adlib_file:
         case str() | Path():
             if Path(adlib_file).exists():
