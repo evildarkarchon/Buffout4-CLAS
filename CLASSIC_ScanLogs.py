@@ -468,7 +468,7 @@ def crashlogs_scan():
                     autoscan_report.extend([f"✔️ ScaleformAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"])
 
                 if "smallblockallocator:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
-                    autoscan_report.extend(["# ❌ CAUTION : SmallBlockAllocator parameter is set to TRUE # \n",
+                    autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but SmallBlockAllocator parameter is set to TRUE # \n",
                                             f" FIX: Open {crashgen_name}'s TOML file and change SmallBlockAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
                 elif "smallblockallocator:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True:
                     autoscan_report.extend([f"✔️ SmallBlockAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"])
