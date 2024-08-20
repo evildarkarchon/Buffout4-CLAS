@@ -440,7 +440,8 @@ def crashlogs_scan():
                 if "memorymanager:" in line.lower():
                     if "true" in line.lower() and any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules) and not Is_XCellPresent:
                         autoscan_report.extend(["# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but MemoryManager parameter is set to TRUE # \n",
-                                                f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with {crashgen_name}.\n-----\n"])
+                                                f" FIX: Remove Baka Scrapheap as Buffout 4's memory manager is more sophisticated.\n",
+                                                " ALTERNATE FIX: Open Buffout 4's TOML file and change MemoryManager to FALSE.\n-----\n"])
                     elif "true" in line.lower() and Is_XCellPresent and not any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules):
                         autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but MemoryManager parameter is set to TRUE # \n",
                                             f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
@@ -675,7 +676,7 @@ def crashlogs_scan():
             autoscan_output = "".join(autoscan_report)
             autoscan_file.write(autoscan_output)
 
-        if trigger_scan_failed and CMain.classic_settings("Move Unsolved"):
+        if trigger_scan_failed and CMain.classic_settings("Move Unsolved Logs"):
             backup_path = "CLASSIC Backup/Unsolved Logs"
             Path(backup_path).mkdir(parents=True, exist_ok=True)
             autoscan_file = crashlog_file.with_name(crashlog_file.stem + "-AUTOSCAN.md")
