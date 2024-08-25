@@ -31,19 +31,21 @@ def pastebin_fetch(url):
         outfile.write_text(response.text, encoding="utf-8", errors="ignore")
     else:
         response.raise_for_status()
-@lru_cache(maxsize=None)
+
+query_cache = {}
+
 def get_entry(formid, plugin) -> str | None:
-    if os.path.isfile(f"CLASSIC Data/databases/{CMain.game} FormIDs.db"):
+    if (entry := query_cache.get((formid, plugin))) is not None:
+        return entry
+    if Path(f"CLASSIC Data/databases/{CMain.game} FormIDs.db").is_file():
         with sqlite3.connect(f"CLASSIC Data/databases/{CMain.game} FormIDs.db") as conn:
             c = conn.cursor()
             c.execute(f'''SELECT entry FROM {CMain.game} WHERE formid=? AND plugin=? COLLATE nocase''', (formid, plugin))
             entry = c.fetchone()
             if entry:
-                return entry[0]
-            else:
-                return None
-    else:
-        return None
+                if query_cache.get((formid, plugin)) is None:
+                    query_cache[(formid, plugin)] = entry[0]
+    return query_cache.get((formid, plugin))
 
 # ================================================
 # INITIAL REFORMAT FOR CRASH LOG FILES

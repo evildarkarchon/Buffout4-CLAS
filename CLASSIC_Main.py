@@ -90,22 +90,25 @@ class YamlSettingsCache:
         self.file_mod_times = {}
 
     def load_yaml(self, yaml_path):
-        # Check if the file has been modified since it was last cached
-        last_mod_time = os.path.getmtime(yaml_path)
-        if (yaml_path not in self.file_mod_times or
-            self.file_mod_times[yaml_path] != last_mod_time):
+        # Use pathlib for file handling and caching
+        yaml_path = Path(yaml_path)
+        if yaml_path.exists():
+            # Check if the file has been modified since it was last cached
+            last_mod_time = yaml_path.stat().st_mtime
+            if (yaml_path not in self.file_mod_times or
+                self.file_mod_times[yaml_path] != last_mod_time):
 
-            # Update the file modification time
-            self.file_mod_times[yaml_path] = last_mod_time
+                # Update the file modification time
+                self.file_mod_times[yaml_path] = last_mod_time
 
-            # Reload the YAML file
-            with open(yaml_path, 'r', encoding='utf-8') as yaml_file:
-                yaml = ruamel.yaml.YAML()
-                yaml.indent(offset=2)
-                yaml.width = 300
-                self.cache[yaml_path] = yaml.load(yaml_file)
+                # Reload the YAML file
+                with yaml_path.open('r', encoding='utf-8') as yaml_file:
+                    yaml = ruamel.yaml.YAML()
+                    yaml.indent(offset=2)
+                    yaml.width = 300
+                    self.cache[yaml_path] = yaml.load(yaml_file)
 
-        return self.cache[yaml_path]
+        return self.cache.get(yaml_path, {})
 
     def get_setting(self, yaml_path, key_path, new_value=None):
         data = self.load_yaml(yaml_path)
@@ -181,6 +184,31 @@ def classic_logging():
             except (ValueError, OSError) as err:
                 print(f"An error occurred while deleting CLASSIC Journal.log: {err}")
 
+def batch_insert_entries_from_file(file_path, db_path):
+    batch_size = 1000  # Define the batch size for inserts
+    entries = []
+
+    with open(file_path, 'r', encoding='utf-8') as file:
+        for line in file:
+            # Assume each line is formatted as 'plugin | formid | entry'
+            parts = line.strip().split(' | ')
+            if len(parts) == 3:
+                entries.append(tuple(parts))
+
+            # When we reach the batch size, insert and clear the list
+            if len(entries) >= batch_size:
+                insert_entries_to_db(db_path, entries)
+                entries.clear()
+
+        # Insert any remaining entries after the loop
+        if entries:
+            insert_entries_to_db(db_path, entries)
+
+def insert_entries_to_db(db_path, entries):
+    with sqlite3.connect(db_path) as conn:
+        conn.executemany(f'''INSERT INTO {game} (plugin, formid, entry) VALUES (?, ?, ?)''', entries)
+        conn.commit()
+
 def create_formid_db():
     with sqlite3.connect(f"CLASSIC Data/databases/{game} FormIDs.db") as conn, open(f"CLASSIC Data/databases/{game} FID Main.txt", encoding="utf-8", errors="ignore") as f:
         conn.execute(f'''CREATE TABLE IF NOT EXISTS {game}
@@ -189,16 +217,9 @@ def create_formid_db():
         conn.execute(f"CREATE INDEX IF NOT EXISTS Fallout4_index ON {game}(formid, plugin COLLATE nocase);")
         if conn.in_transaction:
             conn.commit()
-        lines = f.readlines()
-        if len(lines) > 0:
+        if not Path(f"CLASSIC Data/databases/{game} FormIDs.db").exists() or not Path(f"CLASSIC Data/databases/{game} FormIDs.db").stat().st_size > 0:
             print("⏳ Generating FormID cache...", end="")
-            for line in lines:
-                line = line.strip()
-                if "|" in line and len(line.split(" | ")) >= 3:
-                    plugin, formid, entry, *extra = line.split(" | ")  # the *extra is for any extraneous data that might be in the line (Python thinks there are more than 3 items in the list for some reason)
-                    conn.execute(f'''INSERT INTO {game} (plugin, formid, entry) VALUES (?, ?, ?)''', (plugin, formid, entry))
-            if conn.in_transaction:
-                conn.commit()
+            batch_insert_entries_from_file(f"CLASSIC Data/databases/{game} FID Main.txt", f"CLASSIC Data/databases/{game} FormIDs.db")
             print(" Done!")
 
 def classic_data_extract():
