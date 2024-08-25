@@ -440,8 +440,7 @@ def crashlogs_scan():
                 if "memorymanager:" in line.lower():
                     if "true" in line.lower() and any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules) and not Is_XCellPresent:
                         autoscan_report.extend(["# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but MemoryManager parameter is set to TRUE # \n",
-                                                f" FIX: Remove Baka Scrapheap as Buffout 4's memory manager is more sophisticated.\n",
-                                                " ALTERNATE FIX: Open Buffout 4's TOML file and change MemoryManager to FALSE.\n-----\n"])
+                                                f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with {crashgen_name}.\n-----\n"])
                     elif "true" in line.lower() and Is_XCellPresent and not any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules):
                         autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but MemoryManager parameter is set to TRUE # \n",
                                             f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
