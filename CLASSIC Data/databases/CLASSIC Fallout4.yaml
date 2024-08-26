@@ -382,7 +382,7 @@ Crashlog_Stack_Check:
 
   5 | Antivirus Crash: [ME-OPT|24A48D48, ME-OPT|bdhkm64.dll, usvfs::hook_DeleteFileW, ::Manager, ::zlibStreamDetail]
 
-  5 | BA2 Limit Crash: [LooseFileAsyncStream]
+  6 | BA2 Limit Crash: [LooseFileAsyncStream]
 
   5 | Grid Scrap Crash: [GridAdjacencyMapNode, PowerUtils]
 
