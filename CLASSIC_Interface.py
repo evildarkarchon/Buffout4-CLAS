@@ -9,10 +9,9 @@ import asyncio
 try:  # soundfile (specically its Numpy dependency) seem to cause virus alerts from some AV programs, including Windows Defender.
     import soundfile as sfile
     import sounddevice as sdev
+    has_soundfile = True
 except ImportError:
     has_soundfile = False
-else:
-    has_soundfile = True
 # sfile and sdev need Numpy
 import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
@@ -206,9 +205,9 @@ def papyrus_worker(q, stop_event):
 def play_sound(sound_file):
     if not has_soundfile:
         return
-    sound, samplerate = sfile.read(f"CLASSIC Data/sounds/{sound_file}")
-    sdev.play(sound, samplerate)
-    sdev.wait()
+    sound, samplerate = sfile.read(f"CLASSIC Data/sounds/{sound_file}") # type: ignore
+    sdev.play(sound, samplerate) # type: ignore
+    sdev.wait() # type: ignore
 
 
 # ================================================

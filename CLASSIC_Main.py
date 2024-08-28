@@ -204,9 +204,12 @@ def batch_insert_entries_from_file(file_path, db_path):
         if entries:
             insert_entries_to_db(db_path, entries)
 
-def insert_entries_to_db(db_path, entries):
+def insert_entries_to_db(db_path, entries, query=None):
     with sqlite3.connect(db_path) as conn:
-        conn.executemany(f'''INSERT INTO {game} (plugin, formid, entry) VALUES (?, ?, ?)''', entries)
+        if not query:
+            conn.executemany(f'''INSERT INTO {game} (plugin, formid, entry) VALUES (?, ?, ?)''', entries)
+        else:
+            conn.executemany(query, entries)
         conn.commit()
 
 def create_formid_db():
@@ -224,10 +227,14 @@ def create_formid_db():
 
 def classic_data_extract():
     def open_zip():
-        if os.path.exists("CLASSIC Data/CLASSIC Data.zip"):
-            return zipfile.ZipFile("CLASSIC Data/CLASSIC Data.zip", "r")
-        elif os.path.exists("CLASSIC Data.zip"):
-            return zipfile.ZipFile("CLASSIC Data.zip", "r")
+
+        if getattr(sys, 'frozen', False):
+            exedir = Path(sys.executable).parent
+        else:
+            exedir = Path(__file__).parent
+
+        if datafile := tuple(Path(exedir).rglob("CLASSIC Data.zip", case_sensitive=False)):
+            return zipfile.ZipFile(str(datafile[0]), "r")
         else:
             raise FileNotFoundError
     try:
@@ -318,8 +325,8 @@ def docs_path_find():
 
     def get_windows_docs_path():
         try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders") as key:
-                documents_path = winreg.QueryValueEx(key, "Personal")[0]
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders") as key: # type: ignore
+                documents_path = winreg.QueryValueEx(key, "Personal")[0] # type: ignore
         except WindowsError:
             # Fallback to a default path if registry key is not found
             documents_path = os.path.join(os.path.expanduser("~"), "Documents")

@@ -421,7 +421,10 @@ def crashlogs_scan():
         autoscan_report.extend(["====================================================\n",
                                 "CHECKING IF NECESSARY FILES/SETTINGS ARE CORRECT...\n",
                                 "====================================================\n"])
+
         Is_XCellPresent = any("x-cell-fo4.dll" in elem.lower() for elem in segment_xsemodules)
+        Is_BakaScrapheapPresent = any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules)
+
         if not CMain.classic_settings("FCX Mode"):
             autoscan_report.extend(["* NOTICE: FCX MODE IS DISABLED. YOU CAN ENABLE IT TO DETECT PROBLEMS IN YOUR MOD & GAME FILES * \n",
                                     "[ FCX Mode can be enabled in the exe or CLASSIC Settings.yaml located in your CLASSIC folder. ] \n\n"])
@@ -440,13 +443,13 @@ def crashlogs_scan():
                         autoscan_report.append(f"✔️ Achievements parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
                 if "memorymanager:" in line.lower():
-                    if "true" in line.lower() and any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules) and not Is_XCellPresent:
+                    if "true" in line.lower() and Is_BakaScrapheapPresent and not Is_XCellPresent:
                         autoscan_report.extend(["# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but MemoryManager parameter is set to TRUE # \n",
                                                 f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with {crashgen_name}.\n-----\n"])
-                    elif "true" in line.lower() and Is_XCellPresent and not any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules):
+                    elif "true" in line.lower() and Is_XCellPresent and not Is_BakaScrapheapPresent:
                         autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but MemoryManager parameter is set to TRUE # \n",
                                             f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
-                    elif "false" in line.lower() and Is_XCellPresent and not any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules):
+                    elif "false" in line.lower() and Is_XCellPresent and not Is_BakaScrapheapPresent:
                         autoscan_report.extend([f"✔️ Memory Manager parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"])
                     else:
                         autoscan_report.append(f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
