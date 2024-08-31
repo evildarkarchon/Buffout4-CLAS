@@ -1,6 +1,16 @@
 =====================================================================================================
 # CLASSIC CHANGELOG #
 
+7.25.12 Unofficial
+*CHANGES*
+- Add encoding detection to INI file checks to prevent issues with some non-latin encodings
+- Update Check will now display in the window instead of the terminal.
+- Minor consistency changes
+- Bump BA2 Limit check to severity 6 because other suspects might actually be triggered by the BA2 limit.
+- Minor backend optimizations
+- Fixed plugin detection for FONG logs.
+
+
 7.25.11 Unofficial
 *CHANGES*
 - Add separate core mod list for Fallout: London
