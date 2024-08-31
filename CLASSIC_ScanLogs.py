@@ -102,7 +102,7 @@ def crashlogs_reformat():  # Reformat plugin lists in crash logs, so that old an
 # CRASH LOG SCAN START
 # ================================================
 def crashlogs_scan():
-    pluginsearch = re.compile(r"\s*\[(FE(:[0-9A-F]{3})?|[0-9A-F]{2})\]\s*([\w\s-]+\.es[pml])", flags=re.IGNORECASE)
+    pluginsearch = re.compile(r"\s*\[(FE:([0-9A-F]{3})?|[0-9A-F]{2})\]\s*([\w\s-]+\.es[pml])", flags=re.IGNORECASE)
     print("REFORMATTING CRASH LOGS, PLEASE WAIT...\n")
     crashlogs_reformat()
 
