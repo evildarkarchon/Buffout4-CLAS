@@ -102,6 +102,7 @@ def crashlogs_reformat():  # Reformat plugin lists in crash logs, so that old an
 # CRASH LOG SCAN START
 # ================================================
 def crashlogs_scan():
+    pluginsearch = re.compile(r"\s*\[(FE(:[0-9A-F]{3})?|[0-9A-F]{2})\]\s*([\w\s-]+\.es[pml])", flags=re.IGNORECASE)
     print("REFORMATTING CRASH LOGS, PLEASE WAIT...\n")
     crashlogs_reformat()
 
@@ -329,11 +330,17 @@ def crashlogs_scan():
             for elem in segment_plugins:
                 if "[FF]" in elem:
                     trigger_plugin_limit = True
-                if " " in elem:
+                pluginmatch = pluginsearch.match(elem)
+                if pluginmatch is not None:
+                    plugin_fid = pluginmatch.group(1)
+                    plugin_name = pluginmatch.group(3)
+                    if all(plugin_name not in item for item in crashlog_plugins):
+                        crashlog_plugins[plugin_name] = plugin_fid.replace(":", "")
+                """if " " in elem:
                     elem = elem.replace("     ", " ").strip()
                     elem_parts = elem.split(" ", 1)
                     elem_parts[0] = elem_parts[0].replace("[", "").replace(":", "").replace("]", "")
-                    crashlog_plugins[elem_parts[1]] = elem_parts[0]
+                    crashlog_plugins[elem_parts[1]] = elem_parts[0]"""
 
         for elem in segment_xsemodules:
             # SOME IMPORTANT DLLs HAVE A VERSION, REMOVE IT
