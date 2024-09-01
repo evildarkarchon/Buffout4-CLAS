@@ -1,5 +1,5 @@
 import os
-import re
+import regex as re
 import shutil
 import logging
 import hashlib
@@ -692,7 +692,7 @@ def main_files_backup():
             links = soup.find_all('a')  # Find all anchor tags (links) in HTML.
             for link in links:
                 href = link.get('href')  # We only care about links for archives.
-                if href and (re.search(r'\.7z$', href) or re.search(r'\.zip$', href)):
+                if href and (re.search(r'\.7z$', href, concurrent=True) or re.search(r'\.zip$', href, concurrent=True)):
                     xse_links.append(str(href))
         else:
             print(f"❌ ERROR : Unable to check for {xse_acronym} updates. \n Status Code: {response.status_code} \n")
