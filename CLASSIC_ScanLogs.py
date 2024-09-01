@@ -1,5 +1,5 @@
 import os
-import re
+import regex as re
 import time
 import shutil
 import random
@@ -331,7 +331,7 @@ def crashlogs_scan():
             for elem in segment_plugins:
                 if "[FF]" in elem:
                     trigger_plugin_limit = True
-                pluginmatch = pluginsearch.match(elem)
+                pluginmatch = pluginsearch.match(elem, concurrent=True)
                 if pluginmatch is not None:
                     if is_ng_log.search(elem) is not None:
                         plugin_fid = pluginmatch.group(2)
