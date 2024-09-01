@@ -102,7 +102,7 @@ def crashlogs_reformat():  # Reformat plugin lists in crash logs, so that old an
 # ================================================
 def crashlogs_scan():
     pluginsearch = re.compile(r"\s*\[(FE:([0-9A-F]{3})?|[0-9A-F]{2})\]\s*([\w\s-]+\.es[pml])", flags=re.IGNORECASE)
-    is_ng_log = re.compile(r"\s*\[[0-9A-F]{2}\]([^\s]+.*)", flags=re.IGNORECASE)
+    # is_ng_log = re.compile(r"\s*\[([0-9A-F]{2})\]([^\s]+.*)", flags=re.IGNORECASE)
     print("REFORMATTING CRASH LOGS, PLEASE WAIT...\n")
     crashlogs_reformat()
 
@@ -332,10 +332,11 @@ def crashlogs_scan():
                     trigger_plugin_limit = True
                 pluginmatch = pluginsearch.match(elem, concurrent=True)
                 if pluginmatch is not None:
-                    if is_ng_log.search(elem, concurrent=True) is not None:
+                    """if ng_log_match and ng_log_match.group(1) and ng_log_match.group(2):
                         plugin_fid = pluginmatch.group(2)
                     else:
-                        plugin_fid = pluginmatch.group(1)
+                        plugin_fid = pluginmatch.group(1)"""
+                    plugin_fid = pluginmatch.group(1)
                     plugin_name = pluginmatch.group(3)
                     if all(plugin_name not in item for item in crashlog_plugins) and plugin_fid is not None:
                         crashlog_plugins[plugin_name] = plugin_fid.replace(":", "")
