@@ -11,7 +11,6 @@ import CLASSIC_ScanGame as CGame
 from urllib.parse import urlparse
 from collections import Counter
 from pathlib import Path
-from functools import lru_cache
 
 CMain.configure_logging()
 
