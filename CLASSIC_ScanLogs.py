@@ -332,7 +332,7 @@ def crashlogs_scan():
                     trigger_plugin_limit = True
                 pluginmatch = pluginsearch.match(elem, concurrent=True)
                 if pluginmatch is not None:
-                    if is_ng_log.search(elem) is not None:
+                    if is_ng_log.search(elem, concurrent=True) is not None:
                         plugin_fid = pluginmatch.group(2)
                     else:
                         plugin_fid = pluginmatch.group(1)
