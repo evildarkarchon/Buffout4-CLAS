@@ -690,6 +690,12 @@ Mods_CONF:  # 2) MODS THAT CONFLICT WITH OTHER MODS
         X-Cell has equivalent functionality to Disk Cache Enabler when the io feature is enabled.
         -----
 
+  SovietPowerArmor | OpenLexington: |
+    Soviet Power Armor ❌ CONFLICTS WITH : Open Lexington
+        Both mods modify the same location and can cause crashes.
+        You can download a compatibility patch here: https://www.nexusmods.com/fallout4/mods/84930
+        -----
+
 
 Mods_SOLU:  # 3) MODS WITH SOLUTIONS & COMMUNITY PATCHES
   DLCUltraHighResolution: |
