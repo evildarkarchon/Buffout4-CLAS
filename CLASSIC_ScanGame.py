@@ -4,7 +4,7 @@ import shutil
 import logging
 import tomlkit
 import subprocess
-import configparser
+import iniparse
 import functools
 import chardet
 import CLASSIC_Main as CMain
@@ -35,32 +35,30 @@ def handle_ini_exceptions(func):
 
 @handle_ini_exceptions
 def mod_ini_config(ini_path, section, key, new_value=None):
-    mod_config = configparser.ConfigParser()
-    mod_config.optionxform = str
-
     with open(ini_path, 'rb') as config_file:
         ini_encoding = chardet.detect(config_file.read())['encoding']
-    mod_config.read(ini_path, encoding=ini_encoding)
 
-    if section not in mod_config.keys():
+    config = iniparse.ConfigParser()
+    with open(ini_path, 'r', encoding=ini_encoding) as config_file:
+        config.readfp(config_file)
+
+    if not config.has_section(section):
         raise KeyError(f"Section '{section}' does not exist in '{ini_path}'")
-    if key not in mod_config[section]:
+    if not config.has_option(section, key):
         raise KeyError(f"Key '{key}' does not exist in section '{section}'")
 
     # If new_value is specified, update value in INI.
     if new_value is not None:
-        mod_config.set(section, key, str(new_value))
+        config.set(section, key, str(new_value))
         with open(ini_path, 'w', encoding=ini_encoding) as config_file:
-            mod_config.write(config_file)
+            config.write(config_file)
         return new_value
 
-    value = mod_config[section][key].lower()
-    if value in ("1", "true"):
-        return True
-    elif value in ("0", "false"):
-        return False
+    value = config.get(section, key).lower()
+    if value in ("1", "true") or value in ("0", "false"):
+        return config.getboolean(section, key)
 
-    return mod_config[section][key]
+    return config.get(section, key)
 
 
 def mod_toml_config(toml_path, section, key, new_value=None):
