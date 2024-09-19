@@ -28,6 +28,8 @@ def handle_ini_exceptions(func):
             logging.error(f"ERROR: Invalid section or key - {e}")
         except IOError as e:
             logging.error(f"ERROR: Unable to read or write the file - {e}")
+        except UnicodeError as e:
+            logging.error(f"ERROR: Unable to read the file due to encoding issues - {e}")
         except Exception as e:
             logging.error(f"ERROR: An unexpected error occurred - {e}")
         return None
