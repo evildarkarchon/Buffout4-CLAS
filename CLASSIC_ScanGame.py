@@ -56,11 +56,11 @@ def mod_ini_config(ini_path, section, key, new_value=None):
             config.write(config_file)
         return new_value
 
-    value = config.get(section, key).lower()
-    if value in ("1", "true") or value in ("0", "false"):
+    value = config.get(section, key)
+    if value.lower() in ("1", "true", "0", "false"):
         return config.getboolean(section, key)
 
-    return config.get(section, key)
+    return value
 
 
 def mod_toml_config(toml_path, section, key, new_value=None):
