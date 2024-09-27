@@ -164,10 +164,22 @@ class MainWindow(QMainWindow):
         if not self.is_update_check_running:
             self.is_update_check_running = True
             self.update_check_timer.start(0)  # Start immediately
+    def update_popup_explicit(self):
+        self.update_check_timer.timeout.disconnect(self.perform_update_check)
+        self.update_check_timer.timeout.connect(self.force_update_check)
+        if not self.is_update_check_running:
+            self.is_update_check_running = True
+            self.update_check_timer.start(0)
 
     def perform_update_check(self):
         self.update_check_timer.stop()
-        asyncio.ensure_future(self.async_update_check())
+        asyncio.run(self.async_update_check())
+
+    def force_update_check(self):
+        # Directly perform the update check without reading from settings
+        self.is_update_check_running = True
+        self.update_check_timer.stop()
+        asyncio.run(self.async_update_check_explicit())  # Perform async check
 
     async def async_update_check(self):
         try:
@@ -177,6 +189,17 @@ class MainWindow(QMainWindow):
             self.show_update_error(str(e))
         finally:
             self.is_update_check_running = False
+            self.update_check_timer.stop()  # Ensure the timer is always stopped
+
+    async def async_update_check_explicit(self):
+        try:
+            is_up_to_date = await CMain.classic_update_check(quiet=True, gui_request=True)
+            self.show_update_result(is_up_to_date)
+        except Exception as e:
+            self.show_update_error(str(e))
+        finally:
+            self.is_update_check_running = False
+            self.update_check_timer.stop()  # Ensure the timer is always stopped
 
     def show_update_result(self, is_up_to_date):
         if is_up_to_date:
@@ -519,7 +542,7 @@ class MainWindow(QMainWindow):
         bottom_buttons_layout.setSpacing(5)
         self.add_bottom_button(bottom_buttons_layout, "CHANGE INI PATH", self.select_folder_ini)
         self.add_bottom_button(bottom_buttons_layout, "OPEN CLASSIC SETTINGS", self.open_settings)
-        self.add_bottom_button(bottom_buttons_layout, "CHECK UPDATES", self.update_popup)
+        self.add_bottom_button(bottom_buttons_layout, "CHECK UPDATES", self.update_popup_explicit)
         layout.addLayout(bottom_buttons_layout)
 
     @staticmethod
