@@ -1,10 +1,13 @@
 import os
 import sys
 import time
+import io
 import platform
 import subprocess
+import traceback
 import multiprocessing
 import asyncio
+
 try:  # soundfile (specically its Numpy dependency) seem to cause virus alerts from some AV programs, including Windows Defender.
     import soundfile as sfile
     import sounddevice as sdev
@@ -15,13 +18,44 @@ except ImportError:
 from pathlib import Path
 from PySide6.QtWidgets import (QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout,
                                QPushButton, QLineEdit, QLabel, QFileDialog, QSizePolicy, QMessageBox, QFrame,
-                               QCheckBox, QGridLayout, QTextEdit)
-from PySide6.QtGui import QIcon, QDesktopServices, QBrush, QPixmap, QPalette
-from PySide6.QtCore import Qt, QUrl, QSize, QObject, Signal, QThread, Slot, QTimer
+                               QCheckBox, QGridLayout, QTextEdit, QPlainTextEdit, QDialog, QButtonGroup)
+from PySide6.QtGui import QIcon, QDesktopServices, QBrush, QPixmap, QPalette, QKeyEvent, QFont, QPainter, QFontMetrics
+from PySide6.QtCore import Qt, QUrl, QSize, QObject, Signal, QThread, Slot, QTimer, QEvent, QRect
 
 import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
 import CLASSIC_ScanLogs as CLogs
+
+class ErrorDialog(QDialog):
+    def __init__(self, error_text):
+        super().__init__()
+        self.setWindowTitle("Error")
+        self.setMinimumSize(600, 400)
+        layout = QVBoxLayout(self)
+
+        self.text_edit = QPlainTextEdit(self)
+        self.text_edit.setReadOnly(True)
+        self.text_edit.setPlainText(error_text)
+        layout.addWidget(self.text_edit)
+
+        copy_button = QPushButton("Copy to Clipboard", self)
+        copy_button.clicked.connect(self.copy_to_clipboard)
+        layout.addWidget(copy_button)
+
+    def copy_to_clipboard(self):
+        QApplication.clipboard().setText(self.text_edit.toPlainText())
+
+def show_exception_box(error_text):
+    dialog = ErrorDialog(error_text)
+    dialog.show()
+    dialog.exec()
+
+def custom_excepthook(exc_type, exc_value, exc_traceback):
+    error_text = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+    print(error_text)  # Still print to console
+    show_exception_box(error_text)
+
+sys.excepthook = custom_excepthook
 
 def play_sound(sound_file):
     if has_soundfile:
@@ -72,6 +106,9 @@ class MainWindow(QMainWindow):
         self.setStyleSheet("font-family: Yu Gothic; font-size: 13px")
         self.setMinimumSize(700, 950)  # Increase minimum width from 650 to 700
 
+        # Set up the custom exception handler for the main window
+        self.installEventFilter(self)
+
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.main_layout = QVBoxLayout(self.central_widget)
@@ -85,9 +122,11 @@ class MainWindow(QMainWindow):
         self.backups_tab = QWidget()
         self.tab_widget.addTab(self.main_tab, "MAIN OPTIONS")
         self.tab_widget.addTab(self.backups_tab, "FILE BACKUP")
-
+        self.scan_button_group = QButtonGroup()
         self.setup_main_tab()
         self.setup_backups_tab()
+        # In __init__ method, after setting up the main tab:
+        self.initialize_folder_paths()
         self.setup_output_redirection()
         self.output_buffer = ""
         CMain.main_generate_required()
@@ -105,9 +144,21 @@ class MainWindow(QMainWindow):
         self.worker_process = None
         self.is_worker_running = False
 
+        # Initialize thread attributes
+        self.crash_logs_thread = None
+        self.game_files_thread = None
+
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_output_text_box_papyrus_watcher)
         self.timer.start(5000)  # Update every 5 seconds
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if event.type() == QEvent.KeyPress:
+            key_event = QKeyEvent(event)
+            if key_event.key() == Qt.Key_F12:
+                # Simulate an exception when F12 is pressed (for testing)
+                raise Exception("This is a test exception")
+        return super().eventFilter(watched, event)
 
     def update_popup(self):
         if not self.is_update_check_running:
@@ -146,8 +197,8 @@ class MainWindow(QMainWindow):
         layout.setSpacing(10)
 
         # Top section
-        self.setup_folder_section(layout, "STAGING MODS FOLDER", "Box_SelectedMods", self.select_folder_mods)
-        self.setup_folder_section(layout, "CUSTOM SCAN FOLDER", "Box_SelectedScan", self.select_folder_scan)
+        self.mods_folder_edit = self.setup_folder_section(layout, "STAGING MODS FOLDER", "Box_SelectedMods", self.select_folder_mods)
+        self.scan_folder_edit = self.setup_folder_section(layout, "CUSTOM SCAN FOLDER", "Box_SelectedScan", self.select_folder_scan)
 
         # Add first separator
         layout.addWidget(self.create_separator())
@@ -299,20 +350,48 @@ class MainWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl.fromLocalFile(backup_path))
 
     def setup_output_text_box(self, layout):
-        self.output_text_box = QTextEdit()
+        self.output_text_box = QTextEdit(self)
         self.output_text_box.setReadOnly(True)
         self.output_text_box.setStyleSheet("""
             QTextEdit {
                 color: white;
+                font-family: Consolas, monospace;
                 background: rgba(10, 10, 10, 0.75);
                 border-radius: 10px;
                 border: 1px solid white;
                 font-size: 13px;
             }
-        """)
+        """) # Have to use alternate font here because the default font doesn't support some characters.
+
         self.output_text_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.output_text_box.setMinimumHeight(150)  # Set a minimum height
+        self.output_text_box.setMinimumHeight(150)
         layout.addWidget(self.output_text_box)
+
+        self.output_buffer = ""
+
+    def update_output_text_box(self, text):
+        try:
+            if isinstance(text, bytes):
+                text = text.decode('utf-8', errors='replace')
+            else:
+                text = str(text)
+
+            self.output_buffer += text
+            lines = self.output_buffer.splitlines(True)
+
+            complete_lines = lines[:-1] if not self.output_buffer.endswith('\n') else lines
+            if complete_lines:
+                current_text = self.output_text_box.toPlainText()
+                new_text = current_text + ''.join(complete_lines)
+                self.output_text_box.setPlainText(new_text)
+
+                # Scroll to the bottom
+                scrollbar = self.output_text_box.verticalScrollBar()
+                scrollbar.setValue(scrollbar.maximum())
+
+            self.output_buffer = lines[-1] if not self.output_buffer.endswith('\n') else ""
+        except Exception as e:
+            print(f"Error in update_output_text_box: {e}")
 
     def process_lines(self, lines):
         for line in lines:
@@ -329,20 +408,6 @@ class MainWindow(QMainWindow):
         self.output_redirector.outputWritten.connect(self.update_output_text_box)
         sys.stdout = self.output_redirector
         sys.stderr = self.output_redirector  # Also redirect stderr
-
-
-    def update_output_text_box(self, text):
-        self.output_buffer += text
-        lines = self.output_buffer.splitlines(True)  # Keep the newline characters
-
-        if self.output_buffer.endswith('\n'):
-            # Process all lines
-            self.output_buffer = ""
-            self.process_lines(lines)
-        else:
-            # Process all but the last line
-            self.process_lines(lines[:-1])
-            self.output_buffer = lines[-1]
 
     @staticmethod
     def create_separator():
@@ -437,13 +502,16 @@ class MainWindow(QMainWindow):
         section_layout.addWidget(browse_button)
 
         layout.addLayout(section_layout)
+        return line_edit  # Return the created QLineEdit
 
     def setup_main_buttons(self, layout):
         # Main action buttons
         main_buttons_layout = QHBoxLayout()
         main_buttons_layout.setSpacing(10)
-        self.add_main_button(main_buttons_layout, "SCAN CRASH LOGS", self.crash_logs_scan)
-        self.add_main_button(main_buttons_layout, "SCAN GAME FILES", self.game_files_scan)
+        self.crash_logs_button = self.add_main_button(main_buttons_layout, "SCAN CRASH LOGS", self.crash_logs_scan)
+        self.scan_button_group.addButton(self.crash_logs_button)
+        self.game_files_button = self.add_main_button(main_buttons_layout, "SCAN GAME FILES", self.game_files_scan)
+        self.scan_button_group.addButton(self.game_files_button)
         layout.addLayout(main_buttons_layout)
 
         # Bottom row buttons
@@ -494,6 +562,10 @@ class MainWindow(QMainWindow):
                 }
                 QPushButton:hover {
                     background-color: rgba(50, 50, 50, 0.75);
+                }
+                QPushButton:disabled {
+                    color: gray;
+                    background-color: rgba(10, 10, 10, 0.75);
                 }
             """)
             button.clicked.connect(lambda _, url=data["url"]: QDesktopServices.openUrl(QUrl(url)))
@@ -589,19 +661,26 @@ class MainWindow(QMainWindow):
         button = QPushButton(text)
         button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         button.setStyleSheet("""
-            color: black;
-            background: rgba(250, 250, 250, 0.90);
-            border-radius: 10px;
-            border: 1px solid white;
-            font-size: 17px;
-            font-weight: bold;  /* Add this line to make the text bold */
-            min-height: 48px;
-            max-height: 48px;
+            QPushButton {
+                color: black;
+                background: rgba(250, 250, 250, 0.90);
+                border-radius: 10px;
+                border: 1px solid white;
+                font-size: 17px;
+                font-weight: bold;  /* Add this line to make the text bold */
+                min-height: 48px;
+                max-height: 48px;
+            }
+            QPushButton:disabled {
+                color: gray;
+                background-color: rgba(10, 10, 10, 0.75);
+            }
         """)
         if tooltip:
             button.setToolTip(tooltip)
         button.clicked.connect(callback)
         layout.addWidget(button)
+        return button
 
     @staticmethod
     def add_bottom_button(layout, text, callback, tooltip=""):
@@ -621,17 +700,26 @@ class MainWindow(QMainWindow):
         button.clicked.connect(callback)
         layout.addWidget(button)
 
-    def select_folder_mods(self):
-        folder = QFileDialog.getExistingDirectory(self)
+    def select_folder_scan(self):
+        folder = QFileDialog.getExistingDirectory(self, "Select Custom Scan Folder")
         if folder:
-            self.main_tab.findChild(QLineEdit, "Box_SelectedMods").setText(folder)
+            self.scan_folder_edit.setText(folder)
+            CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.SCAN Custom Path", folder)
+
+    def select_folder_mods(self):
+        folder = QFileDialog.getExistingDirectory(self, "Select Staging Mods Folder")
+        if folder:
+            self.mods_folder_edit.setText(folder)
             CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.MODS Folder Path", folder)
 
-    def select_folder_scan(self):
-        folder = QFileDialog.getExistingDirectory(self)
-        if folder:
-            self.main_tab.findChild(QLineEdit, "Box_SelectedScan").setText(folder)
-            CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.SCAN Custom Path", folder)
+    def initialize_folder_paths(self):
+        scan_folder = CMain.classic_settings("SCAN Custom Path")
+        mods_folder = CMain.classic_settings("MODS Folder Path")
+
+        if scan_folder:
+            self.scan_folder_edit.setText(scan_folder)
+        if mods_folder:
+            self.mods_folder_edit.setText(mods_folder)
 
     def select_folder_ini(self):
         folder = QFileDialog.getExistingDirectory(self)
@@ -654,11 +742,10 @@ class MainWindow(QMainWindow):
             self.crash_logs_thread.finished.connect(self.crash_logs_thread.deleteLater)
             self.crash_logs_thread.finished.connect(self.crash_logs_scan_finished)
 
-            self.crash_logs_thread.start()
+            # Disable buttons and update text
+            self.disable_scan_buttons()
 
-    def crash_logs_scan_finished(self):
-        self.crash_logs_thread = None
-        print("Crash logs scan completed.")
+            self.crash_logs_thread.start()
 
     def game_files_scan(self):
         if self.game_files_thread is None:
@@ -671,11 +758,28 @@ class MainWindow(QMainWindow):
             self.game_files_thread.finished.connect(self.game_files_thread.deleteLater)
             self.game_files_thread.finished.connect(self.game_files_scan_finished)
 
+            # Disable buttons and update text
+            self.disable_scan_buttons()
+
             self.game_files_thread.start()
+
+    def disable_scan_buttons(self):
+        for button_id in self.scan_button_group.buttons():
+            button_id.setEnabled(False)
+
+    def enable_scan_buttons(self):
+        for button_id in self.scan_button_group.buttons():
+            button_id.setEnabled(True)
+
+    def crash_logs_scan_finished(self):
+        self.crash_logs_thread = None
+        self.enable_scan_buttons()
+        self.update_output_text_box("Crash logs scan completed.")
 
     def game_files_scan_finished(self):
         self.game_files_thread = None
-        print("Game files scan completed.")
+        self.enable_scan_buttons()
+        self.update_output_text_box("Game files scan completed.")
 
     def toggle_papyrus_worker(self):
         if not self.is_worker_running:
@@ -723,7 +827,11 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = MainWindow()
-    outputredirector = OutputRedirector()
-    window.show()
-    sys.exit(app.exec())
+
+    try:
+        window = MainWindow()
+        window.show()
+        sys.exit(app.exec())
+    except Exception as e:
+        error_text = traceback.format_exc()
+        show_exception_box(error_text)
