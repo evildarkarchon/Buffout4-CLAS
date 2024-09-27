@@ -12,15 +12,28 @@ try:  # soundfile (specically its Numpy dependency) seem to cause virus alerts f
 except ImportError:
     has_soundfile = False
 # sfile and sdev need Numpy
+from pathlib import Path
 from PySide6.QtWidgets import (QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout,
                                QPushButton, QLineEdit, QLabel, QFileDialog, QSizePolicy, QMessageBox, QFrame,
                                QCheckBox, QGridLayout, QTextEdit)
-from PySide6.QtGui import QIcon, QDesktopServices
-from PySide6.QtCore import Qt, QUrl, QSize, QObject, Signal
+from PySide6.QtGui import QIcon, QDesktopServices, QBrush, QPixmap, QPalette
+from PySide6.QtCore import Qt, QUrl, QSize, QObject, Signal, QThread, Slot, QTimer
 
 import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
 import CLASSIC_ScanLogs as CLogs
+
+def play_sound(sound_file):
+    if has_soundfile:
+        sound, samplerate = sfile.read(f"CLASSIC Data/sounds/{sound_file}") # type: ignore
+        sdev.play(sound, samplerate) # type: ignore
+        sdev.wait() # type: ignore
+
+def papyrus_worker(q, stop_event):
+    while not stop_event.is_set():
+        papyrus_result = CGame.papyrus_logging()
+        q.put(papyrus_result)
+        time.sleep(3)
 
 class OutputRedirector(QObject):
     outputWritten = Signal(str)
@@ -30,6 +43,26 @@ class OutputRedirector(QObject):
 
     def flush(self):
         pass
+
+class CrashLogsScanWorker(QObject):
+    finished = Signal()
+
+    @Slot()
+    def run(self):
+        CLogs.crashlogs_scan()
+        play_sound("classic_notify.wav")
+        self.finished.emit()
+
+class GameFilesScanWorker(QObject):
+    finished = Signal()
+
+    @Slot()
+    def run(self):
+        print(CGame.game_combined_result())
+        print(CGame.mods_combined_result())
+        CGame.write_combined_results()
+        play_sound("classic_notify.wav")
+        self.finished.emit()
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -54,9 +87,58 @@ class MainWindow(QMainWindow):
         self.tab_widget.addTab(self.backups_tab, "FILE BACKUP")
 
         self.setup_main_tab()
+        self.setup_backups_tab()
         self.setup_output_redirection()
         self.output_buffer = ""
         CMain.main_generate_required()
+        # Perform initial update check
+        if CMain.classic_settings("Update Check"):
+            QTimer.singleShot(0, self.update_popup)
+
+        self.update_check_timer = QTimer()
+        self.update_check_timer.timeout.connect(self.perform_update_check)
+        self.is_update_check_running = False
+
+        # Set up Papyrus monitoring
+        self.result_queue = multiprocessing.Queue()
+        self.worker_stop_event = multiprocessing.Event()
+        self.worker_process = None
+        self.is_worker_running = False
+
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_output_text_box_papyrus_watcher)
+        self.timer.start(5000)  # Update every 5 seconds
+
+    def update_popup(self):
+        if not self.is_update_check_running:
+            self.is_update_check_running = True
+            self.update_check_timer.start(0)  # Start immediately
+
+    def perform_update_check(self):
+        self.update_check_timer.stop()
+        asyncio.ensure_future(self.async_update_check())
+
+    async def async_update_check(self):
+        try:
+            is_up_to_date = await CMain.classic_update_check(quiet=True)
+            self.show_update_result(is_up_to_date)
+        except Exception as e:
+            self.show_update_error(str(e))
+        finally:
+            self.is_update_check_running = False
+
+    def show_update_result(self, is_up_to_date):
+        if is_up_to_date:
+            QMessageBox.information(self, "CLASSIC UPDATE", "You have the latest version of CLASSIC!")
+        else:
+            update_popup_text = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Interface.update_popup_text")
+            result = QMessageBox.question(self, "CLASSIC UPDATE", update_popup_text,
+                                          QMessageBox.Yes | QMessageBox.No)
+            if result == QMessageBox.Yes:
+                QDesktopServices.openUrl(QUrl("https://github.com/evildarkarchon/CLASSIC-Fallout4/releases/latest"))
+
+    def show_update_error(self, error_message):
+        QMessageBox.warning(self, "Update Check Failed", f"Failed to check for updates: {error_message}")
 
     def setup_main_tab(self):
         layout = QVBoxLayout(self.main_tab)
@@ -96,6 +178,132 @@ class MainWindow(QMainWindow):
 
         # Set the layout to be stretchable
         layout.setStretchFactor(self.output_text_box, 1)
+
+    def setup_backups_tab(self):
+        layout = QVBoxLayout(self.backups_tab)
+        layout.setContentsMargins(20, 10, 20, 10)
+        layout.setSpacing(10)
+
+        # Add explanation labels
+        layout.addWidget(QLabel("BACKUP > Backup files from the game folder into the CLASSIC Backup folder."))
+        layout.addWidget(QLabel("RESTORE > Restore file backup from the CLASSIC Backup folder into the game folder."))
+        layout.addWidget(QLabel("REMOVE > Remove files only from the game folder without removing existing backups."))
+
+        # Add separators and category buttons
+        categories = ["XSE", "RESHADE", "VULKAN", "ENB"]
+        for category in categories:
+            layout.addWidget(self.create_separator())
+            layout.addWidget(QLabel(category, alignment=Qt.AlignCenter))
+
+            button_layout = QHBoxLayout()
+
+            backup_button = QPushButton(f"BACKUP {category}")
+            backup_button.clicked.connect(lambda _, c=category: self.classic_files_manage(f"Backup {c}", "BACKUP"))
+            button_layout.addWidget(backup_button)
+
+            restore_button = QPushButton(f"RESTORE {category}")
+            restore_button.clicked.connect(lambda _, c=category: self.classic_files_manage(f"Backup {c}", "RESTORE"))
+            restore_button.setEnabled(False)  # Initially disabled
+            setattr(self, f"RestoreButton_{category}", restore_button)  # Store reference to the button
+            button_layout.addWidget(restore_button)
+
+            remove_button = QPushButton(f"REMOVE {category}")
+            remove_button.clicked.connect(lambda _, c=category: self.classic_files_manage(f"Backup {c}", "REMOVE"))
+            button_layout.addWidget(remove_button)
+
+            layout.addLayout(button_layout)
+
+        # Check if backups exist and enable restore buttons accordingly
+        self.check_existing_backups()
+
+        # Add a button to open the backups folder
+        open_backups_button = QPushButton("OPEN CLASSIC BACKUPS")
+        open_backups_button.clicked.connect(self.open_backup_folder)
+        layout.addWidget(open_backups_button)
+
+    def check_existing_backups(self):
+        for category in ["XSE", "RESHADE", "VULKAN", "ENB"]:
+            backup_path = f"CLASSIC Backup/Game Files/Backup {category}"
+            if os.path.isdir(backup_path) and any(Path(backup_path).iterdir()):
+                restore_button = getattr(self, f"RestoreButton_{category}", None)
+                if restore_button:
+                    restore_button.setEnabled(True)
+                    restore_button.setStyleSheet("""
+                        QPushButton {
+                            color: black;
+                            background: rgb(250, 250, 250);
+                            border-radius: 10px;
+                            border: 2px solid black;
+                        }
+                    """)
+
+def open_backup_folder(self):
+    backup_path = "CLASSIC Backup/Game Files"
+    if platform.system() == "Windows":
+        os.startfile(backup_path)
+    else:
+        subprocess.run(["xdg-open", backup_path])
+
+    def add_backup_section(self, layout, title, backup_type):
+        layout.addWidget(self.create_separator())
+
+        title_label = QLabel(title)
+        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setStyleSheet("color: white; font-weight: bold; font-size: 14px;")
+        layout.addWidget(title_label)
+
+        buttons_layout = QHBoxLayout()
+        backup_button = QPushButton(f"BACKUP {backup_type}")
+        restore_button = QPushButton(f"RESTORE {backup_type}")
+        remove_button = QPushButton(f"REMOVE {backup_type}")
+
+        for button, action in [(backup_button, "BACKUP"), (restore_button, "RESTORE"), (remove_button, "REMOVE")]:
+            button.clicked.connect(lambda _, b=backup_type, a=action: self.classic_files_manage(f"Backup {b}", a))
+            button.setStyleSheet("""
+                QPushButton {
+                    color: white;
+                    background: rgba(10, 10, 10, 0.75);
+                    border-radius: 10px;
+                    border: 1px solid white;
+                    font-size: 11px;
+                    min-height: 48px;
+                    max-height: 48px;
+                    min-width: 180px;
+                    max-width: 180px;
+                }
+            """)
+            buttons_layout.addWidget(button)
+
+        layout.addLayout(buttons_layout)
+
+    def classic_files_manage(self, selected_list, selected_mode="BACKUP"):
+        list_name = selected_list.split(" ", 1)
+        try:
+            CGame.game_files_manage(selected_list, selected_mode)
+            if selected_mode == "BACKUP":
+                # Enable the corresponding restore button
+                restore_button = getattr(self, f"RestoreButton_{list_name[1]}", None)
+                if restore_button:
+                    restore_button.setEnabled(True)
+                    restore_button.setStyleSheet("""
+                        QPushButton {
+                            color: black;
+                            background: rgb(250, 250, 250);
+                            border-radius: 10px;
+                            border: 2px solid black;
+                        }
+                    """)
+        except PermissionError:
+            QMessageBox.critical(self, "Error", "Unable to access files from your game folder. Please run CLASSIC in admin mode to resolve this problem.")
+
+    def help_popup_backup(self):
+        help_popup_text = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Interface.help_popup_backup")
+        QMessageBox.information(self, "NEED HELP?", help_popup_text)
+
+    @staticmethod
+    def open_backup_folder():
+        backup_path = os.path.join(os.getcwd(), "CLASSIC Backup", "Game Files")
+        QDesktopServices.openUrl(QUrl.fromLocalFile(backup_path))
 
     def setup_output_text_box(self, layout):
         self.output_text_box = QTextEdit()
@@ -143,7 +351,8 @@ class MainWindow(QMainWindow):
             self.process_lines(lines[:-1])
             self.output_buffer = lines[-1]
 
-    def create_separator(self):
+    @staticmethod
+    def create_separator():
         separator = QFrame()
         separator.setFrameShape(QFrame.HLine)
         separator.setFrameShadow(QFrame.Sunken)
@@ -188,7 +397,8 @@ class MainWindow(QMainWindow):
         # Add a separator after the checkboxes
         layout.addWidget(self.create_separator())
 
-    def create_checkbox(self, label_text, setting):
+    @staticmethod
+    def create_checkbox(label_text, setting):
         checkbox = QCheckBox(label_text)
         checkbox.setChecked(CMain.classic_settings(setting))
         checkbox.stateChanged.connect(lambda state: CMain.yaml_settings("CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}", bool(state)))
@@ -212,7 +422,8 @@ class MainWindow(QMainWindow):
 
         return checkbox
 
-    def setup_folder_section(self, layout, title, box_name, browse_callback, tooltip=""):
+    @staticmethod
+    def setup_folder_section(layout, title, box_name, browse_callback, tooltip=""):
         section_layout = QHBoxLayout()
         section_layout.setContentsMargins(0, 0, 0, 0)
         section_layout.setSpacing(5)
@@ -250,7 +461,8 @@ class MainWindow(QMainWindow):
         self.add_bottom_button(bottom_buttons_layout, "CHECK UPDATES", self.update_popup)
         layout.addLayout(bottom_buttons_layout)
 
-    def setup_articles_section(self, layout):
+    @staticmethod
+    def setup_articles_section(layout):
         # Title for the articles section
         title_label = QLabel("ARTICLES / WEBSITES / NEXUS LINKS")
         title_label.setAlignment(Qt.AlignCenter)
@@ -379,32 +591,8 @@ class MainWindow(QMainWindow):
         help_popup_text = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Interface.help_popup_main")
         QMessageBox.information(self, "NEED HELP?", help_popup_text)
 
-    def toggle_papyrus_worker(self):
-        # Implement Papyrus monitoring logic here
-        if self.papyrus_button.text() == "START PAPYRUS MONITORING":
-            self.papyrus_button.setText("STOP PAPYRUS MONITORING")
-            self.papyrus_button.setStyleSheet("""
-                QPushButton {
-                    color: black;
-                    background: rgb(240, 63, 40);
-                    border-radius: 10px;
-                    border: 1px solid black;
-                    font-weight: bold;
-                }
-            """)
-        else:
-            self.papyrus_button.setText("START PAPYRUS MONITORING")
-            self.papyrus_button.setStyleSheet("""
-                QPushButton {
-                    color: black;
-                    background: rgb(45, 237, 138);
-                    border-radius: 10px;
-                    border: 1px solid black;
-                    font-weight: bold;
-                }
-            """)
-
-    def add_main_button(self, layout, text, callback, tooltip=""):
+    @staticmethod
+    def add_main_button(layout, text, callback, tooltip=""):
         button = QPushButton(text)
         button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         button.setStyleSheet("""
@@ -422,7 +610,8 @@ class MainWindow(QMainWindow):
         button.clicked.connect(callback)
         layout.addWidget(button)
 
-    def add_bottom_button(self, layout, text, callback, tooltip=""):
+    @staticmethod
+    def add_bottom_button(layout, text, callback, tooltip=""):
         button = QPushButton(text)
         button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         button.setStyleSheet("""
@@ -456,24 +645,88 @@ class MainWindow(QMainWindow):
         if folder:
             CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.INI Folder Path", folder)
             QMessageBox.information(self, "New INI Path Set", f"You have set the new path to: \n{folder}")
-
-    def open_settings(self):
+    @staticmethod
+    def open_settings():
         settings_file = "CLASSIC Settings.yaml"
         QDesktopServices.openUrl(QUrl.fromLocalFile(settings_file))
 
-    def update_popup(self):
-        # Implement update check logic here
-        pass
-
     def crash_logs_scan(self):
-        CLogs.crashlogs_scan()
-        # Implement any UI updates or notifications here
+        if self.crash_logs_thread is None:
+            self.crash_logs_thread = QThread()
+            self.crash_logs_worker = CrashLogsScanWorker()
+            self.crash_logs_worker.moveToThread(self.crash_logs_thread)
+            self.crash_logs_thread.started.connect(self.crash_logs_worker.run)
+            self.crash_logs_worker.finished.connect(self.crash_logs_thread.quit)
+            self.crash_logs_worker.finished.connect(self.crash_logs_worker.deleteLater)
+            self.crash_logs_thread.finished.connect(self.crash_logs_thread.deleteLater)
+            self.crash_logs_thread.finished.connect(self.crash_logs_scan_finished)
+
+            self.crash_logs_thread.start()
+
+    def crash_logs_scan_finished(self):
+        self.crash_logs_thread = None
+        print("Crash logs scan completed.")
 
     def game_files_scan(self):
-        print(CGame.game_combined_result())
-        print(CGame.mods_combined_result())
-        CGame.write_combined_results()
-        # Implement any UI updates or notifications here
+        if self.game_files_thread is None:
+            self.game_files_thread = QThread()
+            self.game_files_worker = GameFilesScanWorker()
+            self.game_files_worker.moveToThread(self.game_files_thread)
+            self.game_files_thread.started.connect(self.game_files_worker.run)
+            self.game_files_worker.finished.connect(self.game_files_thread.quit)
+            self.game_files_worker.finished.connect(self.game_files_worker.deleteLater)
+            self.game_files_thread.finished.connect(self.game_files_thread.deleteLater)
+            self.game_files_thread.finished.connect(self.game_files_scan_finished)
+
+            self.game_files_thread.start()
+
+    def game_files_scan_finished(self):
+        self.game_files_thread = None
+        print("Game files scan completed.")
+
+    def toggle_papyrus_worker(self):
+        if not self.is_worker_running:
+            self.worker_stop_event.clear()
+            self.worker_process = multiprocessing.Process(target=papyrus_worker, args=(self.result_queue, self.worker_stop_event))
+            self.worker_process.daemon = True
+            self.worker_process.start()
+            self.papyrus_button.setText("STOP PAPYRUS MONITORING")
+            self.papyrus_button.setStyleSheet("""
+                QPushButton {
+                    color: black;
+                    background: rgb(240, 63, 40);
+                    border-radius: 10px;
+                    border: 1px solid black;
+                    font-weight: bold;
+                }
+            """)
+        else:
+            self.worker_stop_event.set()
+            if self.worker_process:
+                self.worker_process.join()
+            self.worker_process = None
+            self.papyrus_button.setText("START PAPYRUS MONITORING")
+            self.papyrus_button.setStyleSheet("""
+                QPushButton {
+                    color: black;
+                    background: rgb(45, 237, 138);
+                    border-radius: 10px;
+                    border: 1px solid black;
+                    font-weight: bold;
+                }
+            """)
+        self.is_worker_running = not self.is_worker_running
+
+    def update_output_text_box_papyrus_watcher(self):
+        while not self.result_queue.empty():
+            queue_result = self.result_queue.get()
+            new_papyrus_text, new_dump_count = queue_result[:2]
+            old_papyrus_text = self.output_text_box.toPlainText()
+            old_dump_count = next((line for line in old_papyrus_text.split("\n") if "DUMPS" in line), None)
+            if old_dump_count and new_dump_count > int(old_dump_count.split(" : ")[1]):
+                play_sound("classic_error.wav")
+                time.sleep(3)
+            self.output_text_box.setPlainText(new_papyrus_text)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
