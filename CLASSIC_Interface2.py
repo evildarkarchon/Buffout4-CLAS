@@ -237,13 +237,6 @@ class MainWindow(QMainWindow):
                         }
                     """)
 
-def open_backup_folder(self):
-    backup_path = "CLASSIC Backup/Game Files"
-    if platform.system() == "Windows":
-        os.startfile(backup_path)
-    else:
-        subprocess.run(["xdg-open", backup_path])
-
     def add_backup_section(self, layout, title, backup_type):
         layout.addWidget(self.create_separator())
 
