@@ -270,9 +270,9 @@ def classic_settings(setting=None):
         return get_setting
 
 
-async def classic_update_check(quiet=False):
+async def classic_update_check(quiet=False, gui_request=False):
     logging.debug("- - - INITIATED UPDATE CHECK")
-    if classic_settings("Update Check"):
+    if classic_settings("Update Check") or gui_request:
         classic_local = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.version")
         if not quiet:
             print("❓ (Needs internet connection) CHECKING FOR NEW CLASSIC VERSIONS...")

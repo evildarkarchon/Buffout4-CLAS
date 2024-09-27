@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QTabWidget, QWidget, Q
                                QCheckBox, QGridLayout, QTextEdit, QPlainTextEdit, QDialog, QButtonGroup)
 from PySide6.QtGui import QIcon, QDesktopServices, QBrush, QPixmap, QPalette, QKeyEvent, QFont, QPainter, QFontMetrics
 from PySide6.QtCore import Qt, QUrl, QSize, QObject, Signal, QThread, Slot, QTimer, QEvent, QRect
+from qasync import QEventLoop
 
 import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
@@ -167,11 +168,26 @@ class MainWindow(QMainWindow):
 
     def perform_update_check(self):
         self.update_check_timer.stop()
-        asyncio.ensure_future(self.async_update_check())
+        asyncio.create_task(self.async_update_check())
+
+    def explicit_update_popup(self):
+        if not self.is_update_check_running:
+            self.is_update_check_running = True
+            self.update_check_timer.stop()
+            asyncio.create_task(self.async_update_check_explicit())
 
     async def async_update_check(self):
         try:
             is_up_to_date = await CMain.classic_update_check(quiet=True)
+            self.show_update_result(is_up_to_date)
+        except Exception as e:
+            self.show_update_error(str(e))
+        finally:
+            self.is_update_check_running = False
+
+    async def async_update_check_explicit(self):
+        try:
+            is_up_to_date = await CMain.classic_update_check(quiet=True, gui_request=True)
             self.show_update_result(is_up_to_date)
         except Exception as e:
             self.show_update_error(str(e))
@@ -519,7 +535,7 @@ class MainWindow(QMainWindow):
         bottom_buttons_layout.setSpacing(5)
         self.add_bottom_button(bottom_buttons_layout, "CHANGE INI PATH", self.select_folder_ini)
         self.add_bottom_button(bottom_buttons_layout, "OPEN CLASSIC SETTINGS", self.open_settings)
-        self.add_bottom_button(bottom_buttons_layout, "CHECK UPDATES", self.update_popup)
+        self.add_bottom_button(bottom_buttons_layout, "CHECK UPDATES", self.explicit_update_popup)
         layout.addLayout(bottom_buttons_layout)
 
     @staticmethod
@@ -827,11 +843,14 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    loop = QEventLoop(app)
+    asyncio.set_event_loop(loop)
 
     try:
         window = MainWindow()
         window.show()
-        sys.exit(app.exec())
+        with loop:
+            loop.run_forever()
     except Exception as e:
         error_text = traceback.format_exc()
         show_exception_box(error_text)
