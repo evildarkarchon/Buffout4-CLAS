@@ -153,11 +153,11 @@ class MainWindow(QMainWindow):
         self.timer.start(5000)  # Update every 5 seconds
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        if event.type() == QEvent.KeyPress:
+        """if event.type() == QEvent.KeyPress:
             key_event = QKeyEvent(event)
             if key_event.key() == Qt.Key_F12:
                 # Simulate an exception when F12 is pressed (for testing)
-                raise Exception("This is a test exception")
+                raise Exception("This is a test exception")"""
         return super().eventFilter(watched, event)
 
     def update_popup(self):
@@ -378,7 +378,7 @@ class MainWindow(QMainWindow):
         self.output_text_box.setStyleSheet("""
             QTextEdit {
                 color: white;
-                font-family: Consolas, monospace;
+                font-family: "Cascadia Mono", Consolas, monospace;
                 background: rgba(10, 10, 10, 0.75);
                 border-radius: 10px;
                 border: 1px solid white;
