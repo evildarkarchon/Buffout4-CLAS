@@ -1,3 +1,4 @@
+# mypy: allow-untyped-imports
 import asyncio
 import multiprocessing
 import os
@@ -26,6 +27,17 @@ from PySide6.QtWidgets import (QApplication, QButtonGroup, QCheckBox, QDialog,
 import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
 import CLASSIC_ScanLogs as CLogs
+
+# Define a Worker class that will run the main_generate_required function
+class GenerateWorker(QObject):
+    finished = Signal()
+
+    @Slot()
+    def run(self):
+        # Call the main_generate_required function
+        CMain.main_generate_required()
+        # Emit the finished signal once the task is done
+        self.finished.emit()
 
 
 class ErrorDialog(QDialog):
@@ -103,6 +115,9 @@ class GameFilesScanWorker(QObject):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        # Initialize thread attributes
+        self.generate_thread = None
+
         self.setWindowTitle(f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings('CLASSIC Data/databases/CLASSIC Main.yaml', 'CLASSIC_Info.version')}")
         self.setWindowIcon(QIcon("CLASSIC Data/graphics/CLASSIC.ico"))
         self.setStyleSheet('font-family: "Segoe UI", sans-serif; font-size: 13px')
@@ -128,11 +143,11 @@ class MainWindow(QMainWindow):
         self.scan_button_group = QButtonGroup()
         self.setup_main_tab()
         self.setup_backups_tab()
-        # In __init__ method, after setting up the main tab:
         self.initialize_folder_paths()
         self.setup_output_redirection()
         self.output_buffer = ""
-        CMain.main_generate_required()
+        # Call the method to start the worker thread for main_generate_required
+        self.start_generate_thread()
         # Perform initial update check
         if CMain.classic_settings("Update Check"):
             QTimer.singleShot(0, self.update_popup)
@@ -153,7 +168,25 @@ class MainWindow(QMainWindow):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_output_text_box_papyrus_watcher)
-        self.timer.start(5000)  # Update every 5 seconds
+
+    def start_generate_thread(self):
+        # Create the QThread and worker
+        self.generate_thread = QThread()
+        self.generate_worker = GenerateWorker()
+
+        # Move the worker to the thread
+        self.generate_worker.moveToThread(self.generate_thread)
+
+        # Connect the thread start signal to the worker's run method
+        self.generate_thread.started.connect(self.generate_worker.run)
+
+        # Connect the worker's finished signal to thread quitting and cleanup
+        self.generate_worker.finished.connect(self.generate_thread.quit)
+        self.generate_worker.finished.connect(self.generate_worker.deleteLater)
+        self.generate_thread.finished.connect(self.generate_thread.deleteLater)
+
+        # Start the thread
+        self.generate_thread.start()
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         """if event.type() == QEvent.KeyPress:
@@ -805,23 +838,14 @@ class MainWindow(QMainWindow):
         self.game_files_thread = None
         self.enable_scan_buttons()
 
+    def start_timer(self):
+        self.timer.start(5000)  # Update every 5 seconds
+
+    def stop_timer(self):
+        self.timer.stop()
+
     def toggle_papyrus_worker(self):
-        if not self.is_worker_running:
-            self.worker_stop_event.clear()
-            self.worker_process = multiprocessing.Process(target=papyrus_worker, args=(self.result_queue, self.worker_stop_event))
-            self.worker_process.daemon = True
-            self.worker_process.start()
-            self.papyrus_button.setText("STOP PAPYRUS MONITORING")
-            self.papyrus_button.setStyleSheet("""
-                QPushButton {
-                    color: black;
-                    background: rgb(240, 63, 40);
-                    border-radius: 10px;
-                    border: 1px solid black;
-                    font-weight: bold;
-                }
-            """)
-        else:
+        if self.is_worker_running:
             self.worker_stop_event.set()
             if self.worker_process:
                 self.worker_process.join()
@@ -836,6 +860,23 @@ class MainWindow(QMainWindow):
                     font-weight: bold;
                 }
             """)
+            self.stop_timer()  # Stop the timer when the worker is stopped
+        else:
+            self.worker_stop_event.clear()
+            self.worker_process = multiprocessing.Process(target=papyrus_worker, args=(self.result_queue, self.worker_stop_event))
+            self.worker_process.daemon = True
+            self.worker_process.start()
+            self.papyrus_button.setText("STOP PAPYRUS MONITORING")
+            self.papyrus_button.setStyleSheet("""
+                QPushButton {
+                    color: black;
+                    background: rgb(240, 63, 40);
+                    border-radius: 10px;
+                    border: 1px solid black;
+                    font-weight: bold;
+                }
+            """)
+            self.start_timer()  # Start the timer when the worker is started
         self.is_worker_running = not self.is_worker_running
 
     def update_output_text_box_papyrus_watcher(self):
