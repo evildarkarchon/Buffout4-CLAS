@@ -103,7 +103,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle(f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings('CLASSIC Data/databases/CLASSIC Main.yaml', 'CLASSIC_Info.version')}")
         self.setWindowIcon(QIcon("CLASSIC Data/graphics/CLASSIC.ico"))
-        self.setStyleSheet("font-family: Yu Gothic; font-size: 13px")
+        self.setStyleSheet('font-family: "Segoe UI", sans-serif; font-size: 13px')
         self.setMinimumSize(700, 950)  # Increase minimum width from 650 to 700
 
         # Set up the custom exception handler for the main window
@@ -647,7 +647,7 @@ class MainWindow(QMainWindow):
                 border-radius: 10px;
                 border: 1px solid black;
                 font-weight: bold;
-                font-size: 11px;
+                font-size: 14px;
             }
         """)
         bottom_layout.addWidget(self.papyrus_button)
