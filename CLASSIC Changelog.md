@@ -1,6 +1,19 @@
 =====================================================================================================
 # CLASSIC CHANGELOG #
 
+7.26 Unofficial
+*NEW UI*
+- Scans run off the main thread, so the window no longer freezes when scans are running.
+- Terminal is now embedded into the window, in the text box formerly reserved for the credits.
+- Credits have been moved to an about screen, the button for it is next to the help button.
+I think it looks better like that, anyways.
+- No more custom widgets, which will make maintainance and feature development easier.
+- Crash dialog with a button to easily copy the traceback to the clipboard.
+
+*WHAT'S NOT PORTED YET*
+- The background image, still working on how to integrate it.
+- The game selection box, until there are other games to switch to (Skyrim support is coming someday), there's no point for it to be there.
+
 7.25.12 Unofficial
 *CHANGES*
 - Add encoding detection to INI file checks to prevent issues with some non-latin encodings
