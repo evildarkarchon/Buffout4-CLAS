@@ -1,30 +1,32 @@
+import asyncio
+import multiprocessing
 import os
 import sys
 import time
-import io
-import platform
-import subprocess
 import traceback
-import multiprocessing
-import asyncio
 
 try:  # soundfile (specically its Numpy dependency) seem to cause virus alerts from some AV programs, including Windows Defender.
-    import soundfile as sfile
     import sounddevice as sdev
+    import soundfile as sfile
     has_soundfile = True
 except ImportError:
     has_soundfile = False
 # sfile and sdev need Numpy
 from pathlib import Path
-from PySide6.QtWidgets import (QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout,
-                               QPushButton, QLineEdit, QLabel, QFileDialog, QSizePolicy, QMessageBox, QFrame,
-                               QCheckBox, QGridLayout, QTextEdit, QPlainTextEdit, QDialog, QButtonGroup)
-from PySide6.QtGui import QIcon, QDesktopServices, QBrush, QPixmap, QPalette, QKeyEvent, QFont, QPainter, QFontMetrics
-from PySide6.QtCore import Qt, QUrl, QSize, QObject, Signal, QThread, Slot, QTimer, QEvent, QRect
+
+from PySide6.QtCore import (QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal,
+                            Slot)
+from PySide6.QtGui import QDesktopServices, QIcon
+from PySide6.QtWidgets import (QApplication, QButtonGroup, QCheckBox, QDialog,
+                               QFileDialog, QFrame, QGridLayout, QHBoxLayout,
+                               QLabel, QLineEdit, QMainWindow, QMessageBox,
+                               QPlainTextEdit, QPushButton, QSizePolicy,
+                               QTabWidget, QTextEdit, QVBoxLayout, QWidget)
 
 import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
 import CLASSIC_ScanLogs as CLogs
+
 
 class ErrorDialog(QDialog):
     def __init__(self, error_text):
@@ -104,7 +106,8 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings('CLASSIC Data/databases/CLASSIC Main.yaml', 'CLASSIC_Info.version')}")
         self.setWindowIcon(QIcon("CLASSIC Data/graphics/CLASSIC.ico"))
         self.setStyleSheet('font-family: "Segoe UI", sans-serif; font-size: 13px')
-        self.setMinimumSize(700, 950)  # Increase minimum width from 650 to 700
+        # self.setMinimumSize(700, 950)  # Increase minimum width from 650 to 700
+        self.setFixedSize(700, 950)  # Set fixed size to prevent resizing, for now.
 
         # Set up the custom exception handler for the main window
         self.installEventFilter(self)
@@ -566,7 +569,7 @@ class MainWindow(QMainWindow):
             {"text": "CLASSIC NEXUS PAGE", "url": "https://www.nexusmods.com/fallout4/mods/56255"},
             {"text": "CLASSIC GITHUB", "url": "https://github.com/GuidanceOfGrace/CLASSIC-Fallout4"},
             {"text": "DDS TEXTURE SCANNER", "url": "https://www.nexusmods.com/fallout4/mods/71588"},
-            {"text": "BETHINI TOOL", "url": "https://www.nexusmods.com/site/mods/631"},
+            {"text": "BETHINI PIE", "url": "https://www.nexusmods.com/site/mods/631"},
             {"text": "WRYE BASH TOOL", "url": "https://www.nexusmods.com/fallout4/mods/20032"}
         ]
 
@@ -603,11 +606,11 @@ class MainWindow(QMainWindow):
 
     def setup_bottom_buttons(self, layout):
         bottom_layout = QHBoxLayout()
-        bottom_layout.setSpacing(5)  # Reduce spacing between buttons
+        bottom_layout.setSpacing(5)
 
         # ABOUT button
         about_button = QPushButton("ABOUT")
-        about_button.setFixedSize(80, 30)  # Reduce width
+        about_button.setFixedSize(80, 30)
         about_button.clicked.connect(self.show_about)
         about_button.setStyleSheet("""
             QPushButton {
@@ -622,7 +625,7 @@ class MainWindow(QMainWindow):
 
         # HELP button
         help_button = QPushButton("HELP")
-        help_button.setFixedSize(80, 30)  # Reduce width
+        help_button.setFixedSize(80, 30)
         help_button.clicked.connect(self.help_popup_main)
         help_button.setStyleSheet("""
             QPushButton {
@@ -654,7 +657,7 @@ class MainWindow(QMainWindow):
 
         # EXIT button
         exit_button = QPushButton("EXIT")
-        exit_button.setFixedSize(80, 30)  # Reduce width
+        exit_button.setFixedSize(80, 30)
         exit_button.clicked.connect(QApplication.quit)
         exit_button.setStyleSheet("""
             QPushButton {
@@ -797,12 +800,10 @@ class MainWindow(QMainWindow):
     def crash_logs_scan_finished(self):
         self.crash_logs_thread = None
         self.enable_scan_buttons()
-        self.update_output_text_box("Crash logs scan completed.")
 
     def game_files_scan_finished(self):
         self.game_files_thread = None
         self.enable_scan_buttons()
-        self.update_output_text_box("Game files scan completed.")
 
     def toggle_papyrus_worker(self):
         if not self.is_worker_running:
