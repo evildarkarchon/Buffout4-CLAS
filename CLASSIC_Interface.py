@@ -178,12 +178,10 @@ class MainWindow(QMainWindow):
         self.generate_worker.moveToThread(self.generate_thread)
 
         # Connect the thread start signal to the worker's run method
-        self.generate_thread.started.connect(self.disable_scan_buttons)
         self.generate_thread.started.connect(self.generate_worker.run)
 
         # Connect the worker's finished signal to thread quitting and cleanup
         self.generate_worker.finished.connect(self.generate_thread.quit)
-        self.generate_worker.finished.connect(self.enable_scan_buttons)
         self.generate_worker.finished.connect(self.generate_worker.deleteLater)
         self.generate_thread.finished.connect(self.generate_thread.deleteLater)
 
