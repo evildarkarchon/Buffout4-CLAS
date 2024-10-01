@@ -652,7 +652,13 @@ class MainWindow(QMainWindow):
                 font-weight: bold;
                 font-size: 14px;
             }
+            QPushButton:disabled {
+                color: gray;
+                background: rgba(10, 10, 10, 0.75);
+            }
         """)
+        self.papyrus_button.setToolTip("Start monitoring the Papyrus logs for new errors. Temprorarily disabled until the feature is fully implemented.")
+        self.papyrus_button.setEnabled(False) # Temporarily disabled until the feature is fully implemented.
         bottom_layout.addWidget(self.papyrus_button)
 
         # EXIT button
