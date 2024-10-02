@@ -57,7 +57,7 @@ def mod_ini_config(ini_path, section, key, new_value=None):
         return new_value
 
     value = config.get(section, key)
-    if value.lower() in ("1", "true", "0", "false"):
+    if value.lower() in {"1", "true", "0", "false"}:
         return config.getboolean(section, key)
 
     return value
