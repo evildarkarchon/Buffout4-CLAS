@@ -131,16 +131,16 @@ class YamlSettingsCache:
             # Update the cache
             self.cache[yaml_path] = data
             return new_value
-        else:
-            # Traverse YAML structure to get value
-            for key in keys:
-                if key in value:
-                    value = value[key]
-                else:
-                    return None  # Key not found
-            if value is None and "Path" not in key_path:  # Error me if I mistype or screw up the value grab.
-                print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'")
-            return value
+
+        # Traverse YAML structure to get value
+        for key in keys:
+            if key in value:
+                value = value[key]
+            else:
+                return None  # Key not found
+        if value is None and "Path" not in key_path:  # Error me if I mistype or screw up the value grab.
+            print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'")
+        return value
 
 # Instantiate a global cache object
 yaml_cache = YamlSettingsCache()
@@ -235,8 +235,7 @@ def classic_data_extract():
 
         if datafile := tuple(Path(exedir).rglob("CLASSIC Data.zip", case_sensitive=False)):
             return zipfile.ZipFile(str(datafile[0]), "r")
-        else:
-            raise FileNotFoundError
+        raise FileNotFoundError
     try:
         if not os.path.exists("CLASSIC Data/databases/CLASSIC Main.yaml"):
             with open_zip() as zip_data:
@@ -296,10 +295,10 @@ async def classic_update_check(quiet=False, gui_request=True):
                             print("✔️ You have the latest version of CLASSIC! \n")
                             sys.stdout.flush()
                         return True
-                    else:
-                        if not quiet:
-                            print(yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.update_warning_{game}"))
-                            sys.stdout.flush()
+
+                    if not quiet:
+                        print(yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.update_warning_{game}"))
+                        sys.stdout.flush()
             except (ValueError, OSError, aiohttp.ClientError) as err:
                 if not quiet:
                     print(err)
@@ -363,8 +362,8 @@ def docs_path_find():
                 manual_docs = Path(path_input.strip())
                 yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs", manual_docs)
                 break
-            else:
-                print(f"'{path_input}' is not a valid or existing directory path. Please try again.")
+
+            print(f"'{path_input}' is not a valid or existing directory path. Please try again.")
 
     # =========== CHECK IF GAME DOCUMENTS FOLDER PATH WAS GENERATED AND FOUND ===========
     docs_path = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs")

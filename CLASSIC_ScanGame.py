@@ -79,10 +79,8 @@ def mod_toml_config(toml_path, section, key, new_value=None):
                     toml_file.write(data.as_string())
 
             return current_value
-        else:
-            return None  # Key not found in the section.
-    else:
-        return None  # Section not found in the TOML.
+        return None  # Key not found in the section.
+    return None  # Section not found in the TOML.
 
 
 # ================================================
