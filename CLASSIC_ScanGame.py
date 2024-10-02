@@ -502,7 +502,7 @@ def scan_mods_unpacked():
     else:
         message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Missing"))
 
-    modscan_unique_list = list(sorted(set(modscan_list)))
+    modscan_unique_list = sorted(set(modscan_list))
     return "".join(message_list) + "".join(cleanup_list) + "".join(modscan_unique_list)
 
 
@@ -593,7 +593,7 @@ def scan_mods_archived():
     else:
         message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Missing"))
 
-    modscan_unique_list = list(sorted(set(modscan_list)))
+    modscan_unique_list = sorted(set(modscan_list))
     return "".join(message_list) + "".join(modscan_unique_list)
 
 
