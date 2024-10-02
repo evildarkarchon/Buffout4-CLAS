@@ -550,10 +550,9 @@ def scan_mods_archived():
                                         dds_meta_split = dds_meta.split(":")
                                         width = dds_meta_split[1].replace("  Height", "").strip()
                                         height = dds_meta_split[2].replace("  CubeMap", "").strip()
-                                        if width.isdecimal() and height.isdecimal():
-                                            if int(width) % 2 != 0 or int(height) % 2 != 0:
-                                                root_main = main_path.split(os.path.sep)[1]
-                                                modscan_list.append(f"[!] CAUTION (DDS-DIMS) : ({root_main}) {line} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n")
+                                        if (width.isdecimal() and int(width) % 2 != 0) or (height.isdecimal() and int(height) % 2 != 0):
+                                            root_main = main_path.split(os.path.sep)[1]
+                                            modscan_list.append(f"[!] CAUTION (DDS-DIMS) : ({root_main}) {line} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n")
                                     # ================================================
                                     # DETECT INVALID TEXTURE FILE FORMATS
                                     elif any(ext in line.lower() for ext in (".tga", ".png")):
