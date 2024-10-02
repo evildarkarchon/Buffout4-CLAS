@@ -446,7 +446,7 @@ def crashlogs_scan():
                     autoscan_report.append(f"* NOTICE : {line_split[0].strip()} is disabled in your {crashgen_name} settings, is this intentional? * \n-----\n")
 
                 if "achievements:" in line.lower():
-                    if "true" in line.lower() and any(("achievements.dll" or "unlimitedsurvivalmode.dll") in elem.lower() for elem in segment_xsemodules):
+                    if "true" in line.lower() and any(any(dll in elem.lower() for dll in ("achievements.dll", "unlimitedsurvivalmode.dll")) for elem in segment_xsemodules):
                         autoscan_report.extend(["# ❌ CAUTION : The Achievements Mod and/or Unlimited Survival Mode is installed, but Achievements is set to TRUE # \n",
                                                 f" FIX: Open {crashgen_name}'s TOML file and change Achievements to FALSE, this prevents conflicts with {crashgen_name}.\n-----\n"])
                     else:

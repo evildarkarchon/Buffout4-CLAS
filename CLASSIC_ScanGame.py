@@ -467,12 +467,12 @@ def scan_mods_unpacked():
                                 modscan_list.append(f"[!] CAUTION (DDS-DIMS) : {dds_file_path} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n")
                     # ================================================
                     # DETECT INVALID TEXTURE FILE FORMATS
-                    elif (".tga" or ".png") in filename.lower():
+                    elif any(ext in filename.lower() for ext in (".tga", ".png")):
                         inv_file_path = os.path.join(root, filename)
                         modscan_list.append(f"[-] NOTICE (-FORMAT-) : {inv_file_path} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n")
                     # ================================================
                     # DETECT INVALID SOUND FILE FORMATS
-                    elif (".mp3" or ".m4a") in filename.lower():
+                    elif any(ext in filename.lower() for ext in (".mp3", ".m4a")):
                         root_main = main_path.split(os.path.sep)[1]
                         modscan_list.append(f"[-] NOTICE (-FORMAT-) : {root_main} > {filename} > HAS THE WRONG SOUND FORMAT, SHOULD BE XWM OR WAV \n")
                     # ================================================
@@ -484,7 +484,7 @@ def scan_mods_unpacked():
                             modscan_list.append(f"[!] CAUTION (XSE-COPY) : {root_main} > CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES \n")
                     # ================================================
                     # DETECT MODS WITH PRECOMBINE / PREVIS FILES
-                    elif (".uvd" or "_oc.nif") in filename.lower():
+                    elif any(ext in filename.lower() for ext in (".uvd", "_oc.nif")):
                         root_main = main_path.split(os.path.sep)[1]
                         modscan_list.append(f"[!] CAUTION (-PREVIS-) : {root_main} > CONTAINS LOOSE PRECOMBINE / PREVIS FILES \n")
                     # ================================================
@@ -556,7 +556,7 @@ def scan_mods_archived():
                                                 modscan_list.append(f"[!] CAUTION (DDS-DIMS) : ({root_main}) {line} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n")
                                     # ================================================
                                     # DETECT INVALID TEXTURE FILE FORMATS
-                                    elif (".tga" or ".png") in line.lower():
+                                    elif any(ext in line.lower() for ext in (".tga", ".png")):
                                         root_main = main_path.split(os.path.sep)[1]
                                         modscan_list.append(f"[-] NOTICE (-FORMAT-) : ({root_main}) {line} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n")
                             else:
@@ -572,7 +572,7 @@ def scan_mods_archived():
                                 archived_output = archived_list.stdout
                                 # ================================================
                                 # DETECT INVALID SOUND FILE FORMATS
-                                if (".mp3" or ".m4a") in archived_output.lower():
+                                if any(ext in archived_output.lower() for ext in (".mp3", ".m4a")):
                                     root_main = main_path.split(os.path.sep)[1]
                                     modscan_list.append(f"[-] NOTICE (-FORMAT-) : {root_main} > BA2 ARCHIVE CONTAINS SOUND FILES IN THE WRONG FORMAT \n")
                                 # ================================================
@@ -587,7 +587,7 @@ def scan_mods_archived():
                                     modscan_list.append(f"[!] CAUTION (XSE-COPY) : {root_main} > BA2 ARCHIVE CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES \n")
                                 # ================================================
                                 # DETECT MODS WITH PRECOMBINE / PREVIS FILES
-                                if (".uvd" or "_oc.nif") in archived_output.lower() and "previs repair pack" not in root.lower():
+                                if any(ext in archived_output.lower()for ext in (".uvd", "_oc.nif")) and "previs repair pack" not in root.lower():
                                     root_main = main_path.split(os.path.sep)[1]
                                     modscan_list.append(f"[-] NOTICE (-PREVIS-) : {root_main} > BA2 ARCHIVE CONTAINS CUSTOM PRECOMBINE / PREVIS FILES \n")
                             else:
