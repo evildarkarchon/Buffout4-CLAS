@@ -326,7 +326,7 @@ def docs_path_find():
         try:
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders") as key: # type: ignore
                 documents_path = winreg.QueryValueEx(key, "Personal")[0] # type: ignore
-        except WindowsError:
+        except OSError:
             # Fallback to a default path if registry key is not found
             documents_path = os.path.join(os.path.expanduser("~"), "Documents")
 
