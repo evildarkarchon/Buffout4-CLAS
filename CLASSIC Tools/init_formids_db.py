@@ -12,8 +12,8 @@ if os.path.exists("../CLASSIC Data/databases/Starfield FormIDs.db"):
 
 if os.path.exists("../CLASSIC Data/databases/Fallout4 FID Main.txt"):
     with sqlite3.connect("../CLASSIC Data/databases/Fallout4 FormIDs.db") as conn:
-        conn.execute('''CREATE TABLE IF NOT EXISTS Fallout4 
-              (id INTEGER PRIMARY KEY AUTOINCREMENT,  
+        conn.execute('''CREATE TABLE IF NOT EXISTS Fallout4
+              (id INTEGER PRIMARY KEY AUTOINCREMENT,
                plugin TEXT, formid TEXT, entry TEXT)''')
         conn.execute("CREATE INDEX IF NOT EXISTS Fallout4_index ON Fallout4(formid, plugin COLLATE nocase);")
         if conn.in_transaction:
@@ -22,16 +22,16 @@ if os.path.exists("../CLASSIC Data/databases/Fallout4 FID Main.txt"):
 if os.path.exists("../CLASSIC Data/databases/Skyrim FID Main.txt"):
     with sqlite3.connect("../CLASSIC Data/databases/Skyrim FormIDs.db") as conn:
         conn.execute('''CREATE TABLE IF NOT EXISTS Skyrim
-                (id INTEGER PRIMARY KEY AUTOINCREMENT,  
+                (id INTEGER PRIMARY KEY AUTOINCREMENT,
                  plugin TEXT, formid TEXT, entry TEXT)''')
         conn.execute("CREATE INDEX IF NOT EXISTS Skyrim_index ON Skyrim (formid, plugin COLLATE nocase);")
         if conn.in_transaction:
             conn.commit()
-    
+
 if os.path.exists("../CLASSIC Data/databases/Starfield FID Main.txt"):
     with sqlite3.connect("../CLASSIC Data/databases/Starfield FormIDs.db") as conn:
         conn.execute('''CREATE TABLE IF NOT EXISTS Starfield
-                (id INTEGER PRIMARY KEY AUTOINCREMENT,  
+                (id INTEGER PRIMARY KEY AUTOINCREMENT,
                  plugin TEXT, formid TEXT, entry TEXT)''')
         conn.execute("CREATE INDEX IF NOT EXISTS Starfield_index ON Starfield (formid, plugin COLLATE nocase);")
     if conn.in_transaction:
@@ -45,7 +45,7 @@ def insert(lines, table="Fallout4"):
                 line = line.strip()
                 if "|" in line and len(line.split(" | ")) >= 3:
                     plugin, formid, entry, *extra = line.split(" | ")  # the *extra is for any extraneous data that might be in the line (Python thinks there are more than 3 items in the list for some reason)
-                    c.execute(f'''INSERT INTO {table} (plugin, formid, entry) 
+                    c.execute(f'''INSERT INTO {table} (plugin, formid, entry)
                           VALUES (?, ?, ?)''', (plugin, formid, entry))
             if conn.in_transaction:
                 conn.commit()
