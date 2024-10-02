@@ -1,11 +1,15 @@
 import asyncio
+from collections.abc import Callable
 import multiprocessing
+import multiprocessing.synchronize
 import os
 import sys
 import time
 import traceback
 import queue
 import logging
+from types import TracebackType
+from typing import Literal
 
 try:  # soundfile (specically its Numpy dependency) seem to cause virus alerts from some AV programs, including Windows Defender.
     import sounddevice as sdev
@@ -20,6 +24,7 @@ from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, S
 from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtWidgets import (
     QApplication,
+    QBoxLayout,
     QButtonGroup,
     QCheckBox,
     QDialog,
@@ -28,6 +33,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QLineEdit,
     QMainWindow,
     QMessageBox,
@@ -49,12 +55,12 @@ class PapyrusLogProcessor(QThread):
     # Signal to update the UI with new log messages
     new_log_messages = Signal(str)
 
-    def __init__(self, result_queue, parent=None):
+    def __init__(self, result_queue: multiprocessing.Queue, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self.result_queue = result_queue
         self.is_running = True  # Control flag to stop the thread
 
-    def run(self):
+    def run(self) -> None:
         while self.is_running:
             messages = []
             try:
@@ -71,12 +77,12 @@ class PapyrusLogProcessor(QThread):
             # Sleep for a bit to avoid hammering the CPU (you can adjust the interval)
             self.msleep(500)  # 500 ms, adjust as needed
 
-    def stop(self):
+    def stop(self) -> None:
         self.is_running = False
 
 
 class ErrorDialog(QDialog):
-    def __init__(self, error_text):
+    def __init__(self, error_text: str) -> None:
         super().__init__()
         self.setWindowTitle("Error")
         self.setMinimumSize(600, 400)
@@ -91,17 +97,17 @@ class ErrorDialog(QDialog):
         copy_button.clicked.connect(self.copy_to_clipboard)
         layout.addWidget(copy_button)
 
-    def copy_to_clipboard(self):
+    def copy_to_clipboard(self) -> None:
         QApplication.clipboard().setText(self.text_edit.toPlainText())
 
 
-def show_exception_box(error_text):
+def show_exception_box(error_text: str) -> None:
     dialog = ErrorDialog(error_text)
     dialog.show()
     dialog.exec()
 
 
-def custom_excepthook(exc_type, exc_value, exc_traceback):
+def custom_excepthook(exc_type: type[BaseException], exc_value: BaseException, exc_traceback: TracebackType) -> None:
     error_text = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
     print(error_text)  # Still print to console
     show_exception_box(error_text)
@@ -110,14 +116,14 @@ def custom_excepthook(exc_type, exc_value, exc_traceback):
 sys.excepthook = custom_excepthook
 
 
-def play_sound(sound_file):
+def play_sound(sound_file: str) -> None:
     if has_soundfile:
         sound, samplerate = sfile.read(f"CLASSIC Data/sounds/{sound_file}")  # type: ignore
         sdev.play(sound, samplerate)  # type: ignore
         sdev.wait()  # type: ignore
 
 
-def papyrus_worker(q, stop_event):
+def papyrus_worker(q: multiprocessing.Queue, stop_event: multiprocessing.synchronize.Event) -> None:
     while not stop_event.is_set():
         papyrus_result, _ = CGame.papyrus_logging()
         # Ensure the message starts and ends with newlines
@@ -129,10 +135,10 @@ def papyrus_worker(q, stop_event):
 class OutputRedirector(QObject):
     outputWritten = Signal(str)
 
-    def write(self, text):
+    def write(self, text: str) -> None:
         self.outputWritten.emit(str(text))
 
-    def flush(self):
+    def flush(self) -> None:
         pass
 
 
@@ -140,7 +146,7 @@ class CrashLogsScanWorker(QObject):
     finished = Signal()
 
     @Slot()
-    def run(self):
+    def run(self) -> None:
         CLogs.crashlogs_scan()
         play_sound("classic_notify.wav")
         self.finished.emit()
@@ -150,7 +156,7 @@ class GameFilesScanWorker(QObject):
     finished = Signal()
 
     @Slot()
-    def run(self):
+    def run(self) -> None:
         print(CGame.game_combined_result())
         print(CGame.mods_combined_result())
         CGame.write_combined_results()
@@ -159,7 +165,7 @@ class GameFilesScanWorker(QObject):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle(
             f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings('CLASSIC Data/databases/CLASSIC Main.yaml', 'CLASSIC_Info.version')}"
@@ -280,29 +286,29 @@ class MainWindow(QMainWindow):
                     raise Exception("This is a test exception")"""
         return super().eventFilter(watched, event)
 
-    def update_popup(self):
+    def update_popup(self) -> None:
         if not self.is_update_check_running:
             self.is_update_check_running = True
             self.update_check_timer.start(0)  # Start immediately
 
-    def update_popup_explicit(self):
+    def update_popup_explicit(self) -> None:
         self.update_check_timer.timeout.disconnect(self.perform_update_check)
         self.update_check_timer.timeout.connect(self.force_update_check)
         if not self.is_update_check_running:
             self.is_update_check_running = True
             self.update_check_timer.start(0)
 
-    def perform_update_check(self):
+    def perform_update_check(self) -> None:
         self.update_check_timer.stop()
         asyncio.run(self.async_update_check())
 
-    def force_update_check(self):
+    def force_update_check(self) -> None:
         # Directly perform the update check without reading from settings
         self.is_update_check_running = True
         self.update_check_timer.stop()
         asyncio.run(self.async_update_check_explicit())  # Perform async check
 
-    async def async_update_check(self):
+    async def async_update_check(self) -> None:
         try:
             is_up_to_date = await CMain.classic_update_check(quiet=True)
             self.show_update_result(is_up_to_date)
@@ -312,7 +318,7 @@ class MainWindow(QMainWindow):
             self.is_update_check_running = False
             self.update_check_timer.stop()  # Ensure the timer is always stopped
 
-    async def async_update_check_explicit(self):
+    async def async_update_check_explicit(self) -> None:
         try:
             is_up_to_date = await CMain.classic_update_check(
                 quiet=True, gui_request=True
@@ -324,7 +330,7 @@ class MainWindow(QMainWindow):
             self.is_update_check_running = False
             self.update_check_timer.stop()  # Ensure the timer is always stopped
 
-    def show_update_result(self, is_up_to_date):
+    def show_update_result(self, is_up_to_date: bool) -> None:
         if is_up_to_date:
             QMessageBox.information(
                 self, "CLASSIC UPDATE", "You have the latest version of CLASSIC!"
@@ -347,12 +353,12 @@ class MainWindow(QMainWindow):
                     )
                 )
 
-    def show_update_error(self, error_message):
+    def show_update_error(self, error_message: str) -> None:
         QMessageBox.warning(
             self, "Update Check Failed", f"Failed to check for updates: {error_message}"
         )
 
-    def setup_main_tab(self):
+    def setup_main_tab(self) -> None:
         layout = QVBoxLayout(self.main_tab)
         layout.setContentsMargins(20, 10, 20, 10)
         layout.setSpacing(10)
@@ -395,7 +401,7 @@ class MainWindow(QMainWindow):
         # Set the layout to be stretchable
         layout.setStretchFactor(self.output_text_box, 1)
 
-    def setup_backups_tab(self):
+    def setup_backups_tab(self) -> None:
         layout = QVBoxLayout(self.backups_tab)
         layout.setContentsMargins(20, 10, 20, 10)
         layout.setSpacing(10)
@@ -459,7 +465,7 @@ class MainWindow(QMainWindow):
         open_backups_button.clicked.connect(self.open_backup_folder)
         layout.addWidget(open_backups_button)
 
-    def check_existing_backups(self):
+    def check_existing_backups(self) -> None:
         for category in ["XSE", "RESHADE", "VULKAN", "ENB"]:
             backup_path = f"CLASSIC Backup/Game Files/Backup {category}"
             if os.path.isdir(backup_path) and any(Path(backup_path).iterdir()):
@@ -477,7 +483,7 @@ class MainWindow(QMainWindow):
                     """
                     )
 
-    def add_backup_section(self, layout, title, backup_type):
+    def add_backup_section(self, layout: QLayout, title: str, backup_type: Literal["XSE", "RESHADE", "VULKAN", "ENB"]) -> None:
         layout.addWidget(self.create_separator())
 
         title_label = QLabel(title)
@@ -519,7 +525,7 @@ class MainWindow(QMainWindow):
 
         layout.addLayout(buttons_layout)
 
-    def classic_files_manage(self, selected_list, selected_mode="BACKUP"):
+    def classic_files_manage(self, selected_list: str, selected_mode: Literal["BACKUP", "RESTORE", "REMOVE"] = "BACKUP") -> None:
         list_name = selected_list.split(" ", 1)
         try:
             CGame.game_files_manage(selected_list, selected_mode)
@@ -545,7 +551,7 @@ class MainWindow(QMainWindow):
                 "Unable to access files from your game folder. Please run CLASSIC in admin mode to resolve this problem.",
             )
 
-    def help_popup_backup(self):
+    def help_popup_backup(self) -> None:
         help_popup_text = CMain.yaml_settings(
             "CLASSIC Data/databases/CLASSIC Main.yaml",
             "CLASSIC_Interface.help_popup_backup",
@@ -553,11 +559,11 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "NEED HELP?", help_popup_text)
 
     @staticmethod
-    def open_backup_folder():
+    def open_backup_folder() -> None:
         backup_path = os.path.join(os.getcwd(), "CLASSIC Backup", "Game Files")
         QDesktopServices.openUrl(QUrl.fromLocalFile(backup_path))
 
-    def setup_output_text_box(self, layout):
+    def setup_output_text_box(self, layout: QLayout) -> None:
         self.output_text_box = QTextEdit(self)
         self.output_text_box.setReadOnly(True)
         self.output_text_box.setStyleSheet(
@@ -579,7 +585,7 @@ class MainWindow(QMainWindow):
 
         self.output_buffer = ""
 
-    def update_output_text_box(self, text):
+    def update_output_text_box(self, text: str | bytes) -> None:
         try:
             # If the incoming text is bytes, decode it
             if isinstance(text, bytes):
@@ -616,7 +622,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(f"Error in update_output_text_box: {e}")
 
-    def process_lines(self, lines):
+    def process_lines(self, lines: list[str]) -> None:
         for line in lines:
             stripped_line = line.rstrip()
             if stripped_line or line.endswith("\n"):
@@ -626,20 +632,20 @@ class MainWindow(QMainWindow):
         scrollbar = self.output_text_box.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
 
-    def setup_output_redirection(self):
+    def setup_output_redirection(self) -> None:
         self.output_redirector = OutputRedirector()
         self.output_redirector.outputWritten.connect(self.update_output_text_box)
         sys.stdout = self.output_redirector
         sys.stderr = self.output_redirector  # Redirect stderr as well
 
     @staticmethod
-    def create_separator():
+    def create_separator() -> QFrame:
         separator = QFrame()
         separator.setFrameShape(QFrame.HLine)
         separator.setFrameShadow(QFrame.Sunken)
         return separator
 
-    def setup_checkboxes(self, layout):
+    def setup_checkboxes(self, layout: QLayout) -> None:
         checkbox_layout = QVBoxLayout()
 
         # Title for the checkbox section
@@ -679,7 +685,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.create_separator())
 
     @staticmethod
-    def create_checkbox(label_text, setting):
+    def create_checkbox(label_text: str, setting: str) -> QCheckBox:
         checkbox = QCheckBox(label_text)
         checkbox.setChecked(CMain.classic_settings(setting))
         checkbox.stateChanged.connect(
@@ -710,7 +716,7 @@ class MainWindow(QMainWindow):
         return checkbox
 
     @staticmethod
-    def setup_folder_section(layout, title, box_name, browse_callback, tooltip=""):
+    def setup_folder_section(layout: QLayout, title: str, box_name: str, browse_callback: Callable[[], None], tooltip: str = "") -> QLineEdit:
         section_layout = QHBoxLayout()
         section_layout.setContentsMargins(0, 0, 0, 0)
         section_layout.setSpacing(5)
@@ -733,7 +739,7 @@ class MainWindow(QMainWindow):
         layout.addLayout(section_layout)
         return line_edit  # Return the created QLineEdit
 
-    def setup_main_buttons(self, layout):
+    def setup_main_buttons(self, layout: QLayout) -> None:
         # Main action buttons
         main_buttons_layout = QHBoxLayout()
         main_buttons_layout.setSpacing(10)
@@ -762,7 +768,7 @@ class MainWindow(QMainWindow):
         layout.addLayout(bottom_buttons_layout)
 
     @staticmethod
-    def setup_articles_section(layout):
+    def setup_articles_section(layout: QBoxLayout) -> None:
         # Title for the articles section
         title_label = QLabel("ARTICLES / WEBSITES / NEXUS LINKS")
         title_label.setAlignment(Qt.AlignCenter)
@@ -845,7 +851,7 @@ class MainWindow(QMainWindow):
         # Add some vertical spacing after the articles section
         layout.addSpacing(20)
 
-    def setup_bottom_buttons(self, layout):
+    def setup_bottom_buttons(self, layout: QBoxLayout) -> None:
         bottom_layout = QHBoxLayout()
         bottom_layout.setSpacing(5)
 
@@ -930,7 +936,7 @@ class MainWindow(QMainWindow):
 
         layout.addLayout(bottom_layout)
 
-    def show_about(self):
+    def show_about(self) -> None:
         about_text = (
             "Crash Log Auto Scanner & Setup Integrity Checker\n\n"
             "Made by: Poet\n"
@@ -938,7 +944,7 @@ class MainWindow(QMainWindow):
         )
         QMessageBox.about(self, "About CLASSIC", about_text)
 
-    def help_popup_main(self):
+    def help_popup_main(self) -> None:
         help_popup_text = CMain.yaml_settings(
             "CLASSIC Data/databases/CLASSIC Main.yaml",
             "CLASSIC_Interface.help_popup_main",
@@ -946,7 +952,7 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "NEED HELP?", help_popup_text)
 
     @staticmethod
-    def add_main_button(layout, text, callback, tooltip=""):
+    def add_main_button(layout: QLayout, text: str, callback: Callable[[], None], tooltip: str = "") -> QPushButton:
         button = QPushButton(text)
         button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         button.setStyleSheet(
@@ -974,7 +980,7 @@ class MainWindow(QMainWindow):
         return button
 
     @staticmethod
-    def add_bottom_button(layout, text, callback, tooltip=""):
+    def add_bottom_button(layout: QLayout, text: str, callback: Callable[[], None], tooltip: str = "") -> None:
         button = QPushButton(text)
         button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         button.setStyleSheet(
@@ -993,7 +999,7 @@ class MainWindow(QMainWindow):
         button.clicked.connect(callback)
         layout.addWidget(button)
 
-    def select_folder_scan(self):
+    def select_folder_scan(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Select Custom Scan Folder")
         if folder:
             self.scan_folder_edit.setText(folder)
@@ -1001,7 +1007,7 @@ class MainWindow(QMainWindow):
                 "CLASSIC Settings.yaml", "CLASSIC_Settings.SCAN Custom Path", folder
             )
 
-    def select_folder_mods(self):
+    def select_folder_mods(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Select Staging Mods Folder")
         if folder:
             self.mods_folder_edit.setText(folder)
@@ -1009,7 +1015,7 @@ class MainWindow(QMainWindow):
                 "CLASSIC Settings.yaml", "CLASSIC_Settings.MODS Folder Path", folder
             )
 
-    def initialize_folder_paths(self):
+    def initialize_folder_paths(self) -> None:
         scan_folder = CMain.classic_settings("SCAN Custom Path")
         mods_folder = CMain.classic_settings("MODS Folder Path")
 
@@ -1018,7 +1024,7 @@ class MainWindow(QMainWindow):
         if mods_folder:
             self.mods_folder_edit.setText(mods_folder)
 
-    def select_folder_ini(self):
+    def select_folder_ini(self) -> None:
         folder = QFileDialog.getExistingDirectory(self)
         if folder:
             CMain.yaml_settings(
@@ -1029,11 +1035,11 @@ class MainWindow(QMainWindow):
             )
 
     @staticmethod
-    def open_settings():
+    def open_settings() -> None:
         settings_file = "CLASSIC Settings.yaml"
         QDesktopServices.openUrl(QUrl.fromLocalFile(settings_file))
 
-    def crash_logs_scan(self):
+    def crash_logs_scan(self) -> None:
         if self.crash_logs_thread is None:
             self.crash_logs_thread = QThread()
             self.crash_logs_worker = CrashLogsScanWorker()
@@ -1049,7 +1055,7 @@ class MainWindow(QMainWindow):
 
             self.crash_logs_thread.start()
 
-    def game_files_scan(self):
+    def game_files_scan(self) -> None:
         if self.game_files_thread is None:
             self.game_files_thread = QThread()
             self.game_files_worker = GameFilesScanWorker()
@@ -1065,23 +1071,23 @@ class MainWindow(QMainWindow):
 
             self.game_files_thread.start()
 
-    def disable_scan_buttons(self):
+    def disable_scan_buttons(self) -> None:
         for button_id in self.scan_button_group.buttons():
             button_id.setEnabled(False)
 
-    def enable_scan_buttons(self):
+    def enable_scan_buttons(self) -> None:
         for button_id in self.scan_button_group.buttons():
             button_id.setEnabled(True)
 
-    def crash_logs_scan_finished(self):
+    def crash_logs_scan_finished(self) -> None:
         self.crash_logs_thread = None
         self.enable_scan_buttons()
 
-    def game_files_scan_finished(self):
+    def game_files_scan_finished(self) -> None:
         self.game_files_thread = None
         self.enable_scan_buttons()
 
-    def toggle_papyrus_worker(self):
+    def toggle_papyrus_worker(self) -> None:
         if not self.is_worker_running:
             # Start the Papyrus log processor thread
             self.log_processor = PapyrusLogProcessor(self.result_queue)
@@ -1144,7 +1150,7 @@ class MainWindow(QMainWindow):
             )
             self.is_worker_running = False
 
-    def update_output_text_box_papyrus_watcher(self):
+    def update_output_text_box_papyrus_watcher(self) -> None:
         if not hasattr(self, "message_buffer"):
             self.message_buffer = ""
 
