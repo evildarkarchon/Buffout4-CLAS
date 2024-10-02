@@ -531,7 +531,7 @@ def scan_mods_archived():
                             ba2_file_path = os.path.join(root, filename)
                             command_dump = f'"{bsarch_path_full}" "{ba2_file_path}" -dump'
 
-                            archived_dump = subprocess.run(command_dump, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                            archived_dump = subprocess.run(command_dump, shell=True, capture_output=True, text=True)
                             if archived_dump.returncode == 0:
                                 archived_output = archived_dump.stdout
                                 # ================================================
@@ -560,7 +560,7 @@ def scan_mods_archived():
                             main_path = root.replace(mod_path, "")
                             ba2_file_path = os.path.join(root, filename)
                             command_list = f'"{bsarch_path_full}" "{ba2_file_path}" -list'
-                            archived_list = subprocess.run(command_list, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                            archived_list = subprocess.run(command_list, shell=True, capture_output=True, text=True)
                             if archived_list.returncode == 0:
                                 archived_output = archived_list.stdout
                                 # ================================================
