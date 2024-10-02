@@ -196,9 +196,8 @@ def crashlogs_scan():
                                             "IF THIS IS CORRECT, COMPLETELY UNINSTALL THIS MOD TO AVOID ANY PROBLEMS! \n\n"])
                 else:
                     autoscan_report.extend([f"✔️ {mod_split[1]} is installed!\n\n"])
-            else:
-                if gpu_rival not in mod_warn.lower():
-                    autoscan_report.extend([f"❌ {mod_split[1]} is not installed!\n", mod_warn, "\n"])
+            elif gpu_rival not in mod_warn.lower():
+                autoscan_report.extend([f"❌ {mod_split[1]} is not installed!\n", mod_warn, "\n"])
 
     crashlog_list = crashlogs_get_files()
     scan_failed_list = []

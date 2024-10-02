@@ -305,12 +305,11 @@ async def classic_update_check(quiet=False, gui_request=True):
                     sys.stdout.flush()
                     print(yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.update_unable_{game}"))
                     sys.stdout.flush()
-    else:
-        if not quiet:
-            print("\n❌ NOTICE: UPDATE CHECK IS DISABLED IN CLASSIC Settings.yaml \n")
-            sys.stdout.flush()
-            print("===============================================================================")
-            sys.stdout.flush()
+    elif not quiet:
+        print("\n❌ NOTICE: UPDATE CHECK IS DISABLED IN CLASSIC Settings.yaml \n")
+        sys.stdout.flush()
+        print("===============================================================================")
+        sys.stdout.flush()
     return False
 
 
