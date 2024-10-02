@@ -330,7 +330,7 @@ def scan_wryecheck():
                 elif warn_name in title:
                     message_list.append(warn_desc)
 
-            if title != "ESL Capable" and title != "Active Plugins:":
+            if title not in {"ESL Capable", "Active Plugins:"}:
                 for elem in plugin_list:
                     message_list.append(f"    > {elem} \n")
 
