@@ -470,28 +470,28 @@ def crashlogs_scan():
                     else:
                         autoscan_report.append(f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
-                if "bstexturestreamerlocalheap:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
+                if "bstexturestreamerlocalheap:" in line.lower() and "true" in line.lower() and Is_XCellPresent:
                         autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE # \n",
                                                 f" FIX: Open {crashgen_name}'s TOML file and change BSTextureStreamerLocalHeap to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
-                elif "bstexturestreamerlocalheap:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True:
+                elif "bstexturestreamerlocalheap:" in line.lower() and "false" in line.lower() and Is_XCellPresent:
                     autoscan_report.append(f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n")
 
-                if "havokmemorysystem:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
+                if "havokmemorysystem:" in line.lower() and "true" in line.lower() and Is_XCellPresent:
                     autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but HavokMemorySystem parameter is set to TRUE # \n",
                                             f" FIX: Open {crashgen_name}'s TOML file and change HavokMemorySystem to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
-                elif "havokmemorysystem:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True:
+                elif "havokmemorysystem:" in line.lower() and "false" in line.lower() and Is_XCellPresent:
                     autoscan_report.append(f"✔️ HavokMemorySystem parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n")
 
-                if "scaleformallocator:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
+                if "scaleformallocator:" in line.lower() and "true" in line.lower() and Is_XCellPresent:
                     autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but ScaleformAllocator parameter is set to TRUE # \n",
                                             f" FIX: Open {crashgen_name}'s TOML file and change ScaleformAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
-                elif "scaleformallocator:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True:
+                elif "scaleformallocator:" in line.lower() and "false" in line.lower() and Is_XCellPresent:
                     autoscan_report.extend([f"✔️ ScaleformAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"])
 
-                if "smallblockallocator:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
+                if "smallblockallocator:" in line.lower() and "true" in line.lower() and Is_XCellPresent:
                     autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but SmallBlockAllocator parameter is set to TRUE # \n",
                                             f" FIX: Open {crashgen_name}'s TOML file and change SmallBlockAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
-                elif "smallblockallocator:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True:
+                elif "smallblockallocator:" in line.lower() and "false" in line.lower() and Is_XCellPresent:
                     autoscan_report.extend([f"✔️ SmallBlockAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"])
 
                 if "f4ee:" in line.lower():
@@ -514,7 +514,7 @@ def crashlogs_scan():
                                 "CHECKING FOR MODS THAT CAN CAUSE FREQUENT CRASHES...\n",
                                 "====================================================\n"])
 
-        if trigger_plugins_loaded == True:
+        if trigger_plugins_loaded:
             if detect_mods_single(game_mods_freq):
                 autoscan_report.extend(["# [!] CAUTION : ANY ABOVE DETECTED MODS HAVE A MUCH HIGHER CHANCE TO CRASH YOUR GAME! #\n",
                                         "* YOU CAN DISABLE ANY / ALL OF THEM TEMPORARILY TO CONFIRM THEY CAUSED THIS CRASH. * \n\n"])
@@ -529,7 +529,7 @@ def crashlogs_scan():
                                 "CHECKING FOR MODS THAT CONFLICT WITH OTHER MODS...\n",
                                 "====================================================\n"])
 
-        if trigger_plugins_loaded == True:
+        if trigger_plugins_loaded:
             if detect_mods_double(game_mods_conf):
                 autoscan_report.extend(["# [!] CAUTION : FOUND MODS THAT ARE INCOMPATIBLE OR CONFLICT WITH YOUR OTHER MODS # \n",
                                         "* YOU SHOULD CHOOSE WHICH MOD TO KEEP AND DISABLE OR COMPLETELY REMOVE THE OTHER MOD * \n\n"])
@@ -542,7 +542,7 @@ def crashlogs_scan():
                                 "CHECKING FOR MODS WITH SOLUTIONS & COMMUNITY PATCHES\n",
                                 "====================================================\n"])
 
-        if trigger_plugins_loaded == True:
+        if trigger_plugins_loaded:
             if detect_mods_single(game_mods_solu):
                 autoscan_report.extend(["# [!] CAUTION : FOUND PROBLEMATIC MODS WITH SOLUTIONS AND COMMUNITY PATCHES # \n",
                                         "[Due to limitations, CLASSIC will show warnings for some mods even if fixes or patches are already installed.] \n",
@@ -557,7 +557,7 @@ def crashlogs_scan():
                                     "CHECKING FOR MODS PATCHED THROUGH OPC INSTALLER...\n",
                                     "====================================================\n"])
 
-            if trigger_plugins_loaded == True:
+            if trigger_plugins_loaded:
                 if detect_mods_single(game_mods_opc2):
                     autoscan_report.extend(["\n* FOR PATCH REPOSITORY THAT PREVENTS CRASHES AND FIXES PROBLEMS IN THESE AND OTHER MODS,* \n",
                                             "* VISIT OPTIMIZATION PATCHES COLLECTION: https://www.nexusmods.com/fallout4/mods/54872 * \n\n"])
@@ -570,7 +570,7 @@ def crashlogs_scan():
                                 "CHECKING IF IMPORTANT PATCHES & FIXES ARE INSTALLED\n",
                                 "====================================================\n"])
 
-        if trigger_plugins_loaded == True:
+        if trigger_plugins_loaded:
             if any("londonworldspace" in plugin.lower() for plugin in crashlog_plugins):
                 detect_mods_important(games_mods_core_folon)
             else:
