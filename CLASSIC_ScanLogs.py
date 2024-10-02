@@ -5,6 +5,7 @@ import shutil
 import random
 import logging
 import requests
+import ruamel.yaml
 import sqlite3
 import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
@@ -18,7 +19,7 @@ CMain.configure_logging()
 # ================================================
 # ASSORTED FUNCTIONS
 # ================================================
-def pastebin_fetch(url):
+def pastebin_fetch(url: str) -> None:
     if urlparse(url).netloc == "pastebin.com" and "/raw" not in url.path:
         url = url.replace("pastebin.com", "pastebin.com/raw")
     response = requests.get(url)
@@ -32,7 +33,7 @@ def pastebin_fetch(url):
 
 query_cache = {}
 
-def get_entry(formid, plugin) -> str | None:
+def get_entry(formid: str, plugin: str) -> str | None:
     if (entry := query_cache.get((formid, plugin))) is not None:
         return entry
     if Path(f"CLASSIC Data/databases/{CMain.game} FormIDs.db").is_file():
@@ -47,7 +48,7 @@ def get_entry(formid, plugin) -> str | None:
 # ================================================
 # INITIAL REFORMAT FOR CRASH LOG FILES
 # ================================================
-def crashlogs_get_files():  # Get paths of all available crash logs.
+def crashlogs_get_files() -> list[Path]:  # Get paths of all available crash logs.
     logging.debug("- - - INITIATED CRASH LOG FILE LIST GENERATION")
     CLASSIC_folder = Path.cwd()
     CUSTOM_folder = CMain.classic_settings("SCAN Custom Path")
@@ -68,7 +69,7 @@ def crashlogs_get_files():  # Get paths of all available crash logs.
     return crash_files
 
 
-def crashlogs_reformat():  # Reformat plugin lists in crash logs, so that old and new CRASHGEN formats match.
+def crashlogs_reformat() -> None:  # Reformat plugin lists in crash logs, so that old and new CRASHGEN formats match.
     CMain.vrmode_check()  # Only place where needed since crashlogs_reformat() runs first in crashlogs_scan()
     logging.debug("- - - INITIATED CRASH LOG FILE REFORMAT")
     xse_acronym = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_Acronym")
@@ -97,7 +98,7 @@ def crashlogs_reformat():  # Reformat plugin lists in crash logs, so that old an
 # ================================================
 # CRASH LOG SCAN START
 # ================================================
-def crashlogs_scan():
+def crashlogs_scan() -> None:
     pluginsearch = re.compile(r"\s*\[(FE:([0-9A-F]{3})?|[0-9A-F]{2})\]\s*([\w\s-]+\.es[pml])", flags=re.IGNORECASE)
     # is_ng_log = re.compile(r"\s*\[([0-9A-F]{2})\]([^\s]+.*)", flags=re.IGNORECASE)
     print("REFORMATTING CRASH LOGS, PLEASE WAIT...\n")
@@ -146,7 +147,7 @@ def crashlogs_scan():
         game_files_check = ""
 
     # DETECT ONE WHOLE KEY (1 MOD) PER LOOP IN YAML DICT
-    def detect_mods_single(yaml_dict):
+    def detect_mods_single(yaml_dict: ruamel.yaml.CommentedMap) -> bool:
         trigger_mod_found = False
         for mod_name in yaml_dict:
             mod_warn = yaml_dict.get(mod_name)
@@ -158,7 +159,7 @@ def crashlogs_scan():
         return trigger_mod_found
 
     # DETECT ONE SPLIT KEY (2 MODS) PER LOOP IN YAML DICT
-    def detect_mods_double(yaml_dict):
+    def detect_mods_double(yaml_dict: ruamel.yaml.CommentedMap) -> bool:
         trigger_mod_found = False
         for mod_name in yaml_dict:
             mod_warn = yaml_dict.get(mod_name)
@@ -177,7 +178,7 @@ def crashlogs_scan():
         return trigger_mod_found
 
     # DETECT ONE IMPORTANT CORE AND GPU SPECIFIC MOD PER LOOP IN YAML DICT
-    def detect_mods_important(yaml_dict):
+    def detect_mods_important(yaml_dict: ruamel.yaml.CommentedMap) -> None:
         gpu_rival = "nvidia" if (crashlog_GPUAMD or crashlog_GPUI) else "amd" if crashlog_GPUNV else None
         for mod_name in yaml_dict:
             mod_warn = yaml_dict.get(mod_name)
@@ -229,7 +230,7 @@ def crashlogs_scan():
         except StopIteration:
             index_mainerror = 3
 
-        def crashlog_generate_segment(segment_start, segment_end):
+        def crashlog_generate_segment(segment_start: str, segment_end: str) -> list[str]:
             try:
                 index_start = next(index for index, item in enumerate(crash_data) if segment_start.lower() in item.lower()) + 1
             except StopIteration:
@@ -289,7 +290,7 @@ def crashlogs_scan():
             ignore_plugins_list = False
 
         crashlog_GPUAMD = crashlog_GPUNV = False
-        crashlog_plugins = {}
+        crashlog_plugins: dict[str, str] = {}
         if CMain.game == "Fallout4":
             if any("Fallout4.esm" in elem for elem in segment_plugins):
                 trigger_plugins_loaded = True
