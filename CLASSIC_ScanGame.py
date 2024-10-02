@@ -195,8 +195,7 @@ def check_log_errors(folder_path):
                     message_list.extend(["[!] CAUTION : THE FOLLOWING LOG FILE REPORTS ONE OR MORE ERRORS! \n",
                                          "[ Errors do not necessarily mean that the mod is not working. ] \n",
                                          f"\nLOG PATH > {file} \n"])
-                    for elem in errors_list:
-                        message_list.append(elem)
+                    message_list.extend(errors_list)
 
                     message_list.append(f"\n* TOTAL NUMBER OF DETECTED LOG ERRORS * : {len(errors_list)} \n")
 
