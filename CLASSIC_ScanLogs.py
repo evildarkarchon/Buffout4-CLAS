@@ -309,9 +309,9 @@ def crashlogs_scan():
         # ================================================
 
         # CHECK GPU TYPE FOR CRASH LOG
-        crashlog_GPUAMD = True if any("GPU #1" in elem and "AMD" in elem for elem in segment_system) else False
-        crashlog_GPUNV = True if any("GPU #1" in elem and "Nvidia" in elem for elem in segment_system) else False
-        crashlog_GPUI = True if not crashlog_GPUAMD and not crashlog_GPUNV else False
+        crashlog_GPUAMD = any("GPU #1" in elem and "AMD" in elem for elem in segment_system)
+        crashlog_GPUNV = any("GPU #1" in elem and "Nvidia" in elem for elem in segment_system)
+        crashlog_GPUI = (not crashlog_GPUAMD and not crashlog_GPUNV)
 
         # IF LOADORDER FILE EXISTS, USE ITS PLUGINS
         if os.path.exists("loadorder.txt"):
