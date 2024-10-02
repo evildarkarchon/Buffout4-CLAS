@@ -272,7 +272,7 @@ def papyrus_logging():
                              "ENABLE PAPYRUS LOGGING MANUALLY OR WITH BETHINI AND START THE GAME TO GENERATE THE LOG FILE \n",
                              "BethINI Link | Use Manual Download : https://www.nexusmods.com/site/mods/631?tab=files \n"])
 
-    message_output = "".join(message_list)
+    message_output = "".join(message_list) # Debug print
     return message_output, count_dumps
 
 

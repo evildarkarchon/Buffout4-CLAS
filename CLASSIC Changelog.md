@@ -1,6 +1,31 @@
 =====================================================================================================
 # CLASSIC CHANGELOG #
 
+7.30 (Formerly known as 7.26.1 Unofficial)
+*CHANGE SUMMARY*
+- CLASSIC now uses a database cache, generated on startup, to improve query speed for the "Show FID Values" feature.
+- Fixes the NoneType error, which was caused by the initialization code failing to store the location of the F4SE Address Library.
+- FCX mode no longer crashes when duplicate section entries are found in an INI file or a section it's looking for doesn't exist.
+- Fix FCX mode for Fallout 4 VR. Turns out F4SEVR also uses the F4SE directory and not a separate F4SEVR directory in the "My Games" folder.
+- Add caching code for YAML file lookups to minimize the number of times a file actually needs to be read.
+- Add conflict and configuration checks for perchik71's X-Cell mod.
+- Bump BA2 Limit check's severity to 6 because any other crash suspects are likely the result of the BA2 limit crash.
+- Reclassified loose previsibine files as a *CAUTION* instead of a *NOTICE* since current conensus is that loose previsibine files are problematic.
+- Add separate core mod list for Fallout: London (Right now, it's pretty much the same as the vanilla one, just removes UFO4P and PRP since they are incompatible with FOLON)
+- Brand new UI made with the goal of making the window no longer confined to "650x950". It's still not resizable, but the groundwork is laid to make it scale better for larger resolutions.
+This new UI also no longer pops up a console window, all console output is now printed in a text box in the main window.
+- Custom crash handler that has a button to instantly copy the traceback message to the clipboard.
+- Scans now run off the main thread so the window no longer freezes while scans are running.
+- Update the current Buffout 4 NG version to 1.35.1.
+- Fix plugin tests running when no plugin list was loaded.
+- More fixes and optimizations that didn't make the changelogs of the past.
+
+7.26.1 Unofficial
+*BUG FIXES*
+- Papyrus Monitor no longer launches a new instance of CLASSIC.
+- Fixed formatting errors in Papyrus Monitor that were hidden by the old display method.
+- Revert the initialization threading changes from the previous versions hotfixes.
+
 7.26 Unofficial
 *NEW UI*
 - Scans run off the main thread, so the window no longer freezes when scans are running.
@@ -22,7 +47,6 @@ I think it looks better like that, anyways.
 - Bump BA2 Limit check to severity 6 because other suspects might actually be triggered by the BA2 limit.
 - Minor backend optimizations
 - Fixed plugin detection for FONG logs.
-
 
 7.25.11 Unofficial
 *CHANGES*
