@@ -10,23 +10,40 @@ import logging
 try:  # soundfile (specically its Numpy dependency) seem to cause virus alerts from some AV programs, including Windows Defender.
     import sounddevice as sdev
     import soundfile as sfile
+
     has_soundfile = True
 except ImportError:
     has_soundfile = False
 from pathlib import Path
 
-from PySide6.QtCore import (QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal,
-                            Slot)
+from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QIcon
-from PySide6.QtWidgets import (QApplication, QButtonGroup, QCheckBox, QDialog,
-                               QFileDialog, QFrame, QGridLayout, QHBoxLayout,
-                               QLabel, QLineEdit, QMainWindow, QMessageBox,
-                               QPlainTextEdit, QPushButton, QSizePolicy,
-                               QTabWidget, QTextEdit, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QApplication,
+    QButtonGroup,
+    QCheckBox,
+    QDialog,
+    QFileDialog,
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QPlainTextEdit,
+    QPushButton,
+    QSizePolicy,
+    QTabWidget,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
 import CLASSIC_ScanLogs as CLogs
+
 
 class PapyrusLogProcessor(QThread):
     # Signal to update the UI with new log messages
@@ -57,6 +74,7 @@ class PapyrusLogProcessor(QThread):
     def stop(self):
         self.is_running = False
 
+
 class ErrorDialog(QDialog):
     def __init__(self, error_text):
         super().__init__()
@@ -76,23 +94,28 @@ class ErrorDialog(QDialog):
     def copy_to_clipboard(self):
         QApplication.clipboard().setText(self.text_edit.toPlainText())
 
+
 def show_exception_box(error_text):
     dialog = ErrorDialog(error_text)
     dialog.show()
     dialog.exec()
 
+
 def custom_excepthook(exc_type, exc_value, exc_traceback):
-    error_text = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+    error_text = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
     print(error_text)  # Still print to console
     show_exception_box(error_text)
 
+
 sys.excepthook = custom_excepthook
+
 
 def play_sound(sound_file):
     if has_soundfile:
-        sound, samplerate = sfile.read(f"CLASSIC Data/sounds/{sound_file}") # type: ignore
-        sdev.play(sound, samplerate) # type: ignore
-        sdev.wait() # type: ignore
+        sound, samplerate = sfile.read(f"CLASSIC Data/sounds/{sound_file}")  # type: ignore
+        sdev.play(sound, samplerate)  # type: ignore
+        sdev.wait()  # type: ignore
+
 
 def papyrus_worker(q, stop_event):
     while not stop_event.is_set():
@@ -101,6 +124,7 @@ def papyrus_worker(q, stop_event):
         papyrus_result = f"\n{papyrus_result.strip()}\n"
         q.put(papyrus_result)
         time.sleep(5)  # Delay between checks
+
 
 class OutputRedirector(QObject):
     outputWritten = Signal(str)
@@ -111,6 +135,7 @@ class OutputRedirector(QObject):
     def flush(self):
         pass
 
+
 class CrashLogsScanWorker(QObject):
     finished = Signal()
 
@@ -119,6 +144,7 @@ class CrashLogsScanWorker(QObject):
         CLogs.crashlogs_scan()
         play_sound("classic_notify.wav")
         self.finished.emit()
+
 
 class GameFilesScanWorker(QObject):
     finished = Signal()
@@ -131,12 +157,72 @@ class GameFilesScanWorker(QObject):
         play_sound("classic_notify.wav")
         self.finished.emit()
 
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings('CLASSIC Data/databases/CLASSIC Main.yaml', 'CLASSIC_Info.version')}")
+        self.setWindowTitle(
+            f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings('CLASSIC Data/databases/CLASSIC Main.yaml', 'CLASSIC_Info.version')}"
+        )
         self.setWindowIcon(QIcon("CLASSIC Data/graphics/CLASSIC.ico"))
-        self.setStyleSheet('font-family: "Segoe UI", sans-serif; font-size: 13px')
+        dark_style = """
+        QWidget {
+            background-color: #2b2b2b;
+            color: #ffffff;
+            font-family: "Segoe UI", sans-serif;
+            font-size: 13px;
+        }
+
+        QLineEdit, QPlainTextEdit, QTextEdit, QComboBox, QSpinBox, QPushButton {
+            background-color: #3c3c3c;
+            border: 1px solid #5c5c5c;
+            color: #ffffff;
+        }
+
+        QCheckBox::indicator:unchecked {
+            image: url('unchecked.png');
+        }
+
+        QCheckBox::indicator:checked {
+            image: url('checked.png');
+        }
+
+        QTabWidget::pane {
+            border: 1px solid #444444;
+        }
+
+        QTabBar::tab {
+            background-color: #3c3c3c;
+            border: 1px solid #5c5c5c;
+            color: #ffffff;
+            padding: 5px;
+        }
+
+        QTabBar::tab:selected {
+            background-color: #2b2b2b;
+            color: #ffffff;
+        }
+
+        QPushButton {
+            background-color: #3c3c3c;
+            border: 1px solid #5c5c5c;
+            color: #ffffff;
+            padding: 5px;
+        }
+
+        QPushButton:hover {
+            background-color: #444444;
+        }
+
+        QPushButton:pressed {
+            background-color: #222222;
+        }
+
+        QLabel {
+            color: #ffffff;
+        }
+    """
+        self.setStyleSheet(dark_style)
         # self.setMinimumSize(700, 950)  # Increase minimum width from 650 to 700
         self.setFixedSize(700, 950)  # Set fixed size to prevent resizing, for now.
 
@@ -188,16 +274,17 @@ class MainWindow(QMainWindow):
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         """if event.type() == QEvent.KeyPress:
-            key_event = QKeyEvent(event)
-            if key_event.key() == Qt.Key_F12:
-                # Simulate an exception when F12 is pressed (for testing)
-                raise Exception("This is a test exception")"""
+                key_event = QKeyEvent(event)
+                if key_event.key() == Qt.Key_F12:
+                    # Simulate an exception when F12 is pressed (for testing)
+                    raise Exception("This is a test exception")"""
         return super().eventFilter(watched, event)
 
     def update_popup(self):
         if not self.is_update_check_running:
             self.is_update_check_running = True
             self.update_check_timer.start(0)  # Start immediately
+
     def update_popup_explicit(self):
         self.update_check_timer.timeout.disconnect(self.perform_update_check)
         self.update_check_timer.timeout.connect(self.force_update_check)
@@ -227,7 +314,9 @@ class MainWindow(QMainWindow):
 
     async def async_update_check_explicit(self):
         try:
-            is_up_to_date = await CMain.classic_update_check(quiet=True, gui_request=True)
+            is_up_to_date = await CMain.classic_update_check(
+                quiet=True, gui_request=True
+            )
             self.show_update_result(is_up_to_date)
         except Exception as e:
             self.show_update_error(str(e))
@@ -237,16 +326,31 @@ class MainWindow(QMainWindow):
 
     def show_update_result(self, is_up_to_date):
         if is_up_to_date:
-            QMessageBox.information(self, "CLASSIC UPDATE", "You have the latest version of CLASSIC!")
+            QMessageBox.information(
+                self, "CLASSIC UPDATE", "You have the latest version of CLASSIC!"
+            )
         else:
-            update_popup_text = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Interface.update_popup_text")
-            result = QMessageBox.question(self, "CLASSIC UPDATE", update_popup_text,
-                                          QMessageBox.Yes | QMessageBox.No)
+            update_popup_text = CMain.yaml_settings(
+                "CLASSIC Data/databases/CLASSIC Main.yaml",
+                "CLASSIC_Interface.update_popup_text",
+            )
+            result = QMessageBox.question(
+                self,
+                "CLASSIC UPDATE",
+                update_popup_text,
+                QMessageBox.Yes | QMessageBox.No,
+            )
             if result == QMessageBox.Yes:
-                QDesktopServices.openUrl(QUrl("https://github.com/evildarkarchon/CLASSIC-Fallout4/releases/latest"))
+                QDesktopServices.openUrl(
+                    QUrl(
+                        "https://github.com/evildarkarchon/CLASSIC-Fallout4/releases/latest"
+                    )
+                )
 
     def show_update_error(self, error_message):
-        QMessageBox.warning(self, "Update Check Failed", f"Failed to check for updates: {error_message}")
+        QMessageBox.warning(
+            self, "Update Check Failed", f"Failed to check for updates: {error_message}"
+        )
 
     def setup_main_tab(self):
         layout = QVBoxLayout(self.main_tab)
@@ -254,8 +358,12 @@ class MainWindow(QMainWindow):
         layout.setSpacing(10)
 
         # Top section
-        self.mods_folder_edit = self.setup_folder_section(layout, "STAGING MODS FOLDER", "Box_SelectedMods", self.select_folder_mods)
-        self.scan_folder_edit = self.setup_folder_section(layout, "CUSTOM SCAN FOLDER", "Box_SelectedScan", self.select_folder_scan)
+        self.mods_folder_edit = self.setup_folder_section(
+            layout, "STAGING MODS FOLDER", "Box_SelectedMods", self.select_folder_mods
+        )
+        self.scan_folder_edit = self.setup_folder_section(
+            layout, "CUSTOM SCAN FOLDER", "Box_SelectedScan", self.select_folder_scan
+        )
 
         # Add first separator
         layout.addWidget(self.create_separator())
@@ -293,9 +401,21 @@ class MainWindow(QMainWindow):
         layout.setSpacing(10)
 
         # Add explanation labels
-        layout.addWidget(QLabel("BACKUP > Backup files from the game folder into the CLASSIC Backup folder."))
-        layout.addWidget(QLabel("RESTORE > Restore file backup from the CLASSIC Backup folder into the game folder."))
-        layout.addWidget(QLabel("REMOVE > Remove files only from the game folder without removing existing backups."))
+        layout.addWidget(
+            QLabel(
+                "BACKUP > Backup files from the game folder into the CLASSIC Backup folder."
+            )
+        )
+        layout.addWidget(
+            QLabel(
+                "RESTORE > Restore file backup from the CLASSIC Backup folder into the game folder."
+            )
+        )
+        layout.addWidget(
+            QLabel(
+                "REMOVE > Remove files only from the game folder without removing existing backups."
+            )
+        )
 
         # Add separators and category buttons
         categories = ["XSE", "RESHADE", "VULKAN", "ENB"]
@@ -306,17 +426,27 @@ class MainWindow(QMainWindow):
             button_layout = QHBoxLayout()
 
             backup_button = QPushButton(f"BACKUP {category}")
-            backup_button.clicked.connect(lambda _, c=category: self.classic_files_manage(f"Backup {c}", "BACKUP"))
+            backup_button.clicked.connect(
+                lambda _, c=category: self.classic_files_manage(f"Backup {c}", "BACKUP")
+            )
             button_layout.addWidget(backup_button)
 
             restore_button = QPushButton(f"RESTORE {category}")
-            restore_button.clicked.connect(lambda _, c=category: self.classic_files_manage(f"Backup {c}", "RESTORE"))
+            restore_button.clicked.connect(
+                lambda _, c=category: self.classic_files_manage(
+                    f"Backup {c}", "RESTORE"
+                )
+            )
             restore_button.setEnabled(False)  # Initially disabled
-            setattr(self, f"RestoreButton_{category}", restore_button)  # Store reference to the button
+            setattr(
+                self, f"RestoreButton_{category}", restore_button
+            )  # Store reference to the button
             button_layout.addWidget(restore_button)
 
             remove_button = QPushButton(f"REMOVE {category}")
-            remove_button.clicked.connect(lambda _, c=category: self.classic_files_manage(f"Backup {c}", "REMOVE"))
+            remove_button.clicked.connect(
+                lambda _, c=category: self.classic_files_manage(f"Backup {c}", "REMOVE")
+            )
             button_layout.addWidget(remove_button)
 
             layout.addLayout(button_layout)
@@ -336,14 +466,16 @@ class MainWindow(QMainWindow):
                 restore_button = getattr(self, f"RestoreButton_{category}", None)
                 if restore_button:
                     restore_button.setEnabled(True)
-                    restore_button.setStyleSheet("""
+                    restore_button.setStyleSheet(
+                        """
                         QPushButton {
                             color: black;
                             background: rgb(250, 250, 250);
                             border-radius: 10px;
                             border: 2px solid black;
                         }
-                    """)
+                    """
+                    )
 
     def add_backup_section(self, layout, title, backup_type):
         layout.addWidget(self.create_separator())
@@ -358,9 +490,18 @@ class MainWindow(QMainWindow):
         restore_button = QPushButton(f"RESTORE {backup_type}")
         remove_button = QPushButton(f"REMOVE {backup_type}")
 
-        for button, action in [(backup_button, "BACKUP"), (restore_button, "RESTORE"), (remove_button, "REMOVE")]:
-            button.clicked.connect(lambda _, b=backup_type, a=action: self.classic_files_manage(f"Backup {b}", a))
-            button.setStyleSheet("""
+        for button, action in [
+            (backup_button, "BACKUP"),
+            (restore_button, "RESTORE"),
+            (remove_button, "REMOVE"),
+        ]:
+            button.clicked.connect(
+                lambda _, b=backup_type, a=action: self.classic_files_manage(
+                    f"Backup {b}", a
+                )
+            )
+            button.setStyleSheet(
+                """
                 QPushButton {
                     color: white;
                     background: rgba(10, 10, 10, 0.75);
@@ -372,7 +513,8 @@ class MainWindow(QMainWindow):
                     min-width: 180px;
                     max-width: 180px;
                 }
-            """)
+            """
+            )
             buttons_layout.addWidget(button)
 
         layout.addLayout(buttons_layout)
@@ -386,19 +528,28 @@ class MainWindow(QMainWindow):
                 restore_button = getattr(self, f"RestoreButton_{list_name[1]}", None)
                 if restore_button:
                     restore_button.setEnabled(True)
-                    restore_button.setStyleSheet("""
+                    restore_button.setStyleSheet(
+                        """
                         QPushButton {
                             color: black;
                             background: rgb(250, 250, 250);
                             border-radius: 10px;
                             border: 2px solid black;
                         }
-                    """)
+                    """
+                    )
         except PermissionError:
-            QMessageBox.critical(self, "Error", "Unable to access files from your game folder. Please run CLASSIC in admin mode to resolve this problem.")
+            QMessageBox.critical(
+                self,
+                "Error",
+                "Unable to access files from your game folder. Please run CLASSIC in admin mode to resolve this problem.",
+            )
 
     def help_popup_backup(self):
-        help_popup_text = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Interface.help_popup_backup")
+        help_popup_text = CMain.yaml_settings(
+            "CLASSIC Data/databases/CLASSIC Main.yaml",
+            "CLASSIC_Interface.help_popup_backup",
+        )
         QMessageBox.information(self, "NEED HELP?", help_popup_text)
 
     @staticmethod
@@ -409,7 +560,8 @@ class MainWindow(QMainWindow):
     def setup_output_text_box(self, layout):
         self.output_text_box = QTextEdit(self)
         self.output_text_box.setReadOnly(True)
-        self.output_text_box.setStyleSheet("""
+        self.output_text_box.setStyleSheet(
+            """
             QTextEdit {
                 color: white;
                 font-family: "Cascadia Mono", Consolas, monospace;
@@ -418,7 +570,8 @@ class MainWindow(QMainWindow):
                 border: 1px solid white;
                 font-size: 13px;
             }
-        """) # Have to use alternate font here because the default font doesn't support some characters.
+        """
+        )  # Have to use alternate font here because the default font doesn't support some characters.
 
         self.output_text_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.output_text_box.setMinimumHeight(150)
@@ -430,7 +583,7 @@ class MainWindow(QMainWindow):
         try:
             # If the incoming text is bytes, decode it
             if isinstance(text, bytes):
-                text = text.decode('utf-8', errors='replace')
+                text = text.decode("utf-8", errors="replace")
             else:
                 text = str(text)
 
@@ -441,7 +594,7 @@ class MainWindow(QMainWindow):
             lines = self.output_buffer.splitlines(True)
 
             # Initialize flag to track if the last line ended with a newline
-            ends_with_newline = self.output_buffer.endswith('\n')
+            ends_with_newline = self.output_buffer.endswith("\n")
 
             # Process all complete lines
             complete_lines = lines[:-1] if not ends_with_newline else lines
@@ -450,7 +603,7 @@ class MainWindow(QMainWindow):
                 current_text = self.output_text_box.toPlainText()
 
                 # Append complete lines without extra newlines
-                new_text = current_text + ''.join(complete_lines)
+                new_text = current_text + "".join(complete_lines)
                 self.output_text_box.setPlainText(new_text)
 
                 # Scroll to the bottom
@@ -466,7 +619,7 @@ class MainWindow(QMainWindow):
     def process_lines(self, lines):
         for line in lines:
             stripped_line = line.rstrip()
-            if stripped_line or line.endswith('\n'):
+            if stripped_line or line.endswith("\n"):
                 self.output_text_box.append(stripped_line)
 
         # Scroll to the bottom of the text box
@@ -506,7 +659,7 @@ class MainWindow(QMainWindow):
             ("UPDATE CHECK", "Update Check"),
             ("VR MODE", "VR Mode"),
             ("SHOW FID VALUES", "Show FormID Values"),
-            ("MOVE INVALID LOGS", "Move Unsolved Logs")
+            ("MOVE INVALID LOGS", "Move Unsolved Logs"),
         ]
 
         for index, (label, setting) in enumerate(checkboxes):
@@ -529,10 +682,15 @@ class MainWindow(QMainWindow):
     def create_checkbox(label_text, setting):
         checkbox = QCheckBox(label_text)
         checkbox.setChecked(CMain.classic_settings(setting))
-        checkbox.stateChanged.connect(lambda state: CMain.yaml_settings("CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}", bool(state)))
+        checkbox.stateChanged.connect(
+            lambda state: CMain.yaml_settings(
+                "CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}", bool(state)
+            )
+        )
 
         # Apply custom style sheet
-        checkbox.setStyleSheet("""
+        checkbox.setStyleSheet(
+            """
             QCheckBox {
                 spacing: 10px;
             }
@@ -546,7 +704,8 @@ class MainWindow(QMainWindow):
             QCheckBox::indicator:checked {
                 image: url(CLASSIC Data/graphics/checked.png);
             }
-        """)
+        """
+        )
 
         return checkbox
 
@@ -578,18 +737,28 @@ class MainWindow(QMainWindow):
         # Main action buttons
         main_buttons_layout = QHBoxLayout()
         main_buttons_layout.setSpacing(10)
-        self.crash_logs_button = self.add_main_button(main_buttons_layout, "SCAN CRASH LOGS", self.crash_logs_scan)
+        self.crash_logs_button = self.add_main_button(
+            main_buttons_layout, "SCAN CRASH LOGS", self.crash_logs_scan
+        )
         self.scan_button_group.addButton(self.crash_logs_button)
-        self.game_files_button = self.add_main_button(main_buttons_layout, "SCAN GAME FILES", self.game_files_scan)
+        self.game_files_button = self.add_main_button(
+            main_buttons_layout, "SCAN GAME FILES", self.game_files_scan
+        )
         self.scan_button_group.addButton(self.game_files_button)
         layout.addLayout(main_buttons_layout)
 
         # Bottom row buttons
         bottom_buttons_layout = QHBoxLayout()
         bottom_buttons_layout.setSpacing(5)
-        self.add_bottom_button(bottom_buttons_layout, "CHANGE INI PATH", self.select_folder_ini)
-        self.add_bottom_button(bottom_buttons_layout, "OPEN CLASSIC SETTINGS", self.open_settings)
-        self.add_bottom_button(bottom_buttons_layout, "CHECK UPDATES", self.update_popup_explicit)
+        self.add_bottom_button(
+            bottom_buttons_layout, "CHANGE INI PATH", self.select_folder_ini
+        )
+        self.add_bottom_button(
+            bottom_buttons_layout, "OPEN CLASSIC SETTINGS", self.open_settings
+        )
+        self.add_bottom_button(
+            bottom_buttons_layout, "CHECK UPDATES", self.update_popup_explicit
+        )
         layout.addLayout(bottom_buttons_layout)
 
     @staticmethod
@@ -606,21 +775,46 @@ class MainWindow(QMainWindow):
         grid_layout.setVerticalSpacing(10)
 
         button_data = [
-            {"text": "BUFFOUT 4 INSTALLATION", "url": "https://www.nexusmods.com/fallout4/articles/3115"},
-            {"text": "FALLOUT 4 SETUP TIPS", "url": "https://www.nexusmods.com/fallout4/articles/4141"},
-            {"text": "IMPORTANT PATCHES LIST", "url": "https://www.nexusmods.com/fallout4/articles/3769"},
-            {"text": "BUFFOUT 4 NEXUS PAGE", "url": "https://www.nexusmods.com/fallout4/mods/47359"},
-            {"text": "CLASSIC NEXUS PAGE", "url": "https://www.nexusmods.com/fallout4/mods/56255"},
-            {"text": "CLASSIC GITHUB", "url": "https://github.com/GuidanceOfGrace/CLASSIC-Fallout4"},
-            {"text": "DDS TEXTURE SCANNER", "url": "https://www.nexusmods.com/fallout4/mods/71588"},
+            {
+                "text": "BUFFOUT 4 INSTALLATION",
+                "url": "https://www.nexusmods.com/fallout4/articles/3115",
+            },
+            {
+                "text": "FALLOUT 4 SETUP TIPS",
+                "url": "https://www.nexusmods.com/fallout4/articles/4141",
+            },
+            {
+                "text": "IMPORTANT PATCHES LIST",
+                "url": "https://www.nexusmods.com/fallout4/articles/3769",
+            },
+            {
+                "text": "BUFFOUT 4 NEXUS PAGE",
+                "url": "https://www.nexusmods.com/fallout4/mods/47359",
+            },
+            {
+                "text": "CLASSIC NEXUS PAGE",
+                "url": "https://www.nexusmods.com/fallout4/mods/56255",
+            },
+            {
+                "text": "CLASSIC GITHUB",
+                "url": "https://github.com/GuidanceOfGrace/CLASSIC-Fallout4",
+            },
+            {
+                "text": "DDS TEXTURE SCANNER",
+                "url": "https://www.nexusmods.com/fallout4/mods/71588",
+            },
             {"text": "BETHINI PIE", "url": "https://www.nexusmods.com/site/mods/631"},
-            {"text": "WRYE BASH TOOL", "url": "https://www.nexusmods.com/fallout4/mods/20032"}
+            {
+                "text": "WRYE BASH TOOL",
+                "url": "https://www.nexusmods.com/fallout4/mods/20032",
+            },
         ]
 
         for i, data in enumerate(button_data):
             button = QPushButton(data["text"])
             button.setFixedSize(180, 50)  # Set fixed size for buttons
-            button.setStyleSheet("""
+            button.setStyleSheet(
+                """
                 QPushButton {
                     color: white;
                     background-color: rgba(10, 10, 10, 0.75);
@@ -637,8 +831,11 @@ class MainWindow(QMainWindow):
                     color: gray;
                     background-color: rgba(10, 10, 10, 0.75);
                 }
-            """)
-            button.clicked.connect(lambda _, url=data["url"]: QDesktopServices.openUrl(QUrl(url)))
+            """
+            )
+            button.clicked.connect(
+                lambda _, url=data["url"]: QDesktopServices.openUrl(QUrl(url))
+            )
             row = i // 3
             col = i % 3
             grid_layout.addWidget(button, row, col, Qt.AlignCenter)
@@ -656,7 +853,8 @@ class MainWindow(QMainWindow):
         about_button = QPushButton("ABOUT")
         about_button.setFixedSize(80, 30)
         about_button.clicked.connect(self.show_about)
-        about_button.setStyleSheet("""
+        about_button.setStyleSheet(
+            """
             QPushButton {
                 color: white;
                 background: rgba(10, 10, 10, 0.75);
@@ -664,14 +862,16 @@ class MainWindow(QMainWindow):
                 border: 1px solid white;
                 font-size: 11px;
             }
-        """)
+        """
+        )
         bottom_layout.addWidget(about_button)
 
         # HELP button
         help_button = QPushButton("HELP")
         help_button.setFixedSize(80, 30)
         help_button.clicked.connect(self.help_popup_main)
-        help_button.setStyleSheet("""
+        help_button.setStyleSheet(
+            """
             QPushButton {
                 color: white;
                 background: rgba(10, 10, 10, 0.75);
@@ -679,7 +879,8 @@ class MainWindow(QMainWindow):
                 border: 1px solid white;
                 font-size: 11px;
             }
-        """)
+        """
+        )
         bottom_layout.addWidget(help_button)
 
         # PAPYRUS MONITORING button
@@ -687,7 +888,8 @@ class MainWindow(QMainWindow):
         self.papyrus_button.setFixedHeight(30)
         self.papyrus_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.papyrus_button.clicked.connect(self.toggle_papyrus_worker)
-        self.papyrus_button.setStyleSheet("""
+        self.papyrus_button.setStyleSheet(
+            """
             QPushButton {
                 color: black;
                 background: rgb(45, 237, 138);
@@ -700,17 +902,21 @@ class MainWindow(QMainWindow):
                 color: gray;
                 background: rgba(10, 10, 10, 0.75);
             }
-        """)
-        self.papyrus_button.setToolTip("Start monitoring the Papyrus logs for new errors.")
+        """
+        )
+        self.papyrus_button.setToolTip(
+            "Start monitoring the Papyrus logs for new errors."
+        )
         self.papyrus_button.setCheckable(True)
-        #self.papyrus_button.setEnabled(False) # Temporarily disabled until the feature is fully implemented.
+        # self.papyrus_button.setEnabled(False) # Temporarily disabled until the feature is fully implemented.
         bottom_layout.addWidget(self.papyrus_button)
 
         # EXIT button
         exit_button = QPushButton("EXIT")
         exit_button.setFixedSize(80, 30)
         exit_button.clicked.connect(QApplication.quit)
-        exit_button.setStyleSheet("""
+        exit_button.setStyleSheet(
+            """
             QPushButton {
                 color: white;
                 background: rgba(10, 10, 10, 0.75);
@@ -718,26 +924,33 @@ class MainWindow(QMainWindow):
                 border: 1px solid white;
                 font-size: 11px;
             }
-        """)
+        """
+        )
         bottom_layout.addWidget(exit_button)
 
         layout.addLayout(bottom_layout)
 
     def show_about(self):
-        about_text = ("Crash Log Auto Scanner & Setup Integrity Checker\n\n"
-                    "Made by: Poet\n"
-                    "Contributors: evildarkarchon | kittivelae | AtomicFallout757")
+        about_text = (
+            "Crash Log Auto Scanner & Setup Integrity Checker\n\n"
+            "Made by: Poet\n"
+            "Contributors: evildarkarchon | kittivelae | AtomicFallout757"
+        )
         QMessageBox.about(self, "About CLASSIC", about_text)
 
     def help_popup_main(self):
-        help_popup_text = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Interface.help_popup_main")
+        help_popup_text = CMain.yaml_settings(
+            "CLASSIC Data/databases/CLASSIC Main.yaml",
+            "CLASSIC_Interface.help_popup_main",
+        )
         QMessageBox.information(self, "NEED HELP?", help_popup_text)
 
     @staticmethod
     def add_main_button(layout, text, callback, tooltip=""):
         button = QPushButton(text)
         button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        button.setStyleSheet("""
+        button.setStyleSheet(
+            """
             QPushButton {
                 color: black;
                 background: rgba(250, 250, 250, 0.90);
@@ -752,7 +965,8 @@ class MainWindow(QMainWindow):
                 color: gray;
                 background-color: rgba(10, 10, 10, 0.75);
             }
-        """)
+        """
+        )
         if tooltip:
             button.setToolTip(tooltip)
         button.clicked.connect(callback)
@@ -763,7 +977,8 @@ class MainWindow(QMainWindow):
     def add_bottom_button(layout, text, callback, tooltip=""):
         button = QPushButton(text)
         button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        button.setStyleSheet("""
+        button.setStyleSheet(
+            """
             color: white;
             background: rgba(10, 10, 10, 0.75);
             border-radius: 10px;
@@ -771,7 +986,8 @@ class MainWindow(QMainWindow):
             font-size: 11px;
             min-height: 32px;
             max-height: 32px;
-        """)
+        """
+        )
         if tooltip:
             button.setToolTip(tooltip)
         button.clicked.connect(callback)
@@ -781,13 +997,17 @@ class MainWindow(QMainWindow):
         folder = QFileDialog.getExistingDirectory(self, "Select Custom Scan Folder")
         if folder:
             self.scan_folder_edit.setText(folder)
-            CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.SCAN Custom Path", folder)
+            CMain.yaml_settings(
+                "CLASSIC Settings.yaml", "CLASSIC_Settings.SCAN Custom Path", folder
+            )
 
     def select_folder_mods(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Staging Mods Folder")
         if folder:
             self.mods_folder_edit.setText(folder)
-            CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.MODS Folder Path", folder)
+            CMain.yaml_settings(
+                "CLASSIC Settings.yaml", "CLASSIC_Settings.MODS Folder Path", folder
+            )
 
     def initialize_folder_paths(self):
         scan_folder = CMain.classic_settings("SCAN Custom Path")
@@ -801,8 +1021,13 @@ class MainWindow(QMainWindow):
     def select_folder_ini(self):
         folder = QFileDialog.getExistingDirectory(self)
         if folder:
-            CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.INI Folder Path", folder)
-            QMessageBox.information(self, "New INI Path Set", f"You have set the new path to: \n{folder}")
+            CMain.yaml_settings(
+                "CLASSIC Settings.yaml", "CLASSIC_Settings.INI Folder Path", folder
+            )
+            QMessageBox.information(
+                self, "New INI Path Set", f"You have set the new path to: \n{folder}"
+            )
+
     @staticmethod
     def open_settings():
         settings_file = "CLASSIC Settings.yaml"
@@ -865,7 +1090,9 @@ class MainWindow(QMainWindow):
 
             # Start the worker process for papyrus logs
             self.worker_stop_event = multiprocessing.Event()
-            self.worker_process = multiprocessing.Process(target=papyrus_worker, args=(self.result_queue, self.worker_stop_event))
+            self.worker_process = multiprocessing.Process(
+                target=papyrus_worker, args=(self.result_queue, self.worker_stop_event)
+            )
             self.worker_process.daemon = True
             self.worker_process.start()
 
@@ -874,7 +1101,8 @@ class MainWindow(QMainWindow):
 
             # Update button state and style
             self.papyrus_button.setText("STOP PAPYRUS MONITORING")
-            self.papyrus_button.setStyleSheet("""
+            self.papyrus_button.setStyleSheet(
+                """
                 QPushButton {
                     color: black;
                     background: rgb(240, 63, 40);  /* Red when monitoring is active */
@@ -883,7 +1111,8 @@ class MainWindow(QMainWindow):
                     font-weight: bold;
                     font-size: 14px;
                 }
-            """)
+            """
+            )
             self.is_worker_running = True
         else:
             # Stop the worker process and the thread
@@ -901,7 +1130,8 @@ class MainWindow(QMainWindow):
 
             # Update button state and style
             self.papyrus_button.setText("START PAPYRUS MONITORING")
-            self.papyrus_button.setStyleSheet("""
+            self.papyrus_button.setStyleSheet(
+                """
                 QPushButton {
                     color: black;
                     background: rgb(45, 237, 138);  /* Green when monitoring is off */
@@ -910,11 +1140,12 @@ class MainWindow(QMainWindow):
                     font-weight: bold;
                     font-size: 14px;
                 }
-            """)
+            """
+            )
             self.is_worker_running = False
 
     def update_output_text_box_papyrus_watcher(self):
-        if not hasattr(self, 'message_buffer'):
+        if not hasattr(self, "message_buffer"):
             self.message_buffer = ""
 
         try:
@@ -923,15 +1154,27 @@ class MainWindow(QMainWindow):
                 self.message_buffer += message
 
             # Process the buffer if it contains complete Papyrus data
-            if "NUMBER OF DUMPS" in self.message_buffer and "NUMBER OF ERRORS" in self.message_buffer:
+            if (
+                "NUMBER OF DUMPS" in self.message_buffer
+                and "NUMBER OF ERRORS" in self.message_buffer
+            ):
                 # Split the buffer into lines
-                lines = self.message_buffer.split('\n')
+                lines = self.message_buffer.split("\n")
                 papyrus_data = []
                 non_papyrus_data = []
 
                 # Separate Papyrus monitoring data from other data
                 for line in lines:
-                    if any(key in line for key in ["NUMBER OF DUMPS", "NUMBER OF STACKS", "DUMPS/STACKS RATIO", "NUMBER OF WARNINGS", "NUMBER OF ERRORS"]):
+                    if any(
+                        key in line
+                        for key in [
+                            "NUMBER OF DUMPS",
+                            "NUMBER OF STACKS",
+                            "DUMPS/STACKS RATIO",
+                            "NUMBER OF WARNINGS",
+                            "NUMBER OF ERRORS",
+                        ]
+                    ):
                         papyrus_data.append(line.strip())
                     elif line.strip():
                         non_papyrus_data.append(line)
@@ -939,7 +1182,7 @@ class MainWindow(QMainWindow):
                 # Update the text box with Papyrus data
                 if papyrus_data:
                     current_text = self.output_text_box.toPlainText()
-                    current_lines = current_text.split('\n')
+                    current_lines = current_text.split("\n")
 
                     # Find the Papyrus monitoring section
                     papyrus_start = -1
@@ -953,16 +1196,24 @@ class MainWindow(QMainWindow):
 
                     # Update or add the Papyrus monitoring section
                     if papyrus_start != -1 and papyrus_end != -1:
-                        updated_lines = current_lines[:papyrus_start] + papyrus_data + current_lines[papyrus_end:]
+                        updated_lines = (
+                            current_lines[:papyrus_start]
+                            + papyrus_data
+                            + current_lines[papyrus_end:]
+                        )
                     else:
-                        updated_lines = current_lines + ["\n--- Papyrus Monitoring ---"] + papyrus_data
+                        updated_lines = (
+                            current_lines
+                            + ["\n--- Papyrus Monitoring ---"]
+                            + papyrus_data
+                        )
 
-                    new_text = '\n'.join(updated_lines)
+                    new_text = "\n".join(updated_lines)
                     self.output_text_box.setPlainText(new_text)
 
                 # Append any non-Papyrus data
                 if non_papyrus_data:
-                    self.output_text_box.append('\n'.join(non_papyrus_data))
+                    self.output_text_box.append("\n".join(non_papyrus_data))
 
                 # Clear the processed data from the buffer
                 self.message_buffer = self.message_buffer.split("NUMBER OF ERRORS")[-1]
@@ -973,6 +1224,7 @@ class MainWindow(QMainWindow):
 
         except queue.Empty:
             pass  # No messages to process, continue
+
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
