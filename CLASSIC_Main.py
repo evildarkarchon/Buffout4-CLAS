@@ -472,8 +472,7 @@ def game_check_integrity() -> str:
             root_warn = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Warnings_GAME.warn_root_path")
             message_list.append(root_warn)
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # =========== CHECK GAME XSE SCRIPTS -> GET PATH AND HASHES ===========
@@ -523,8 +522,7 @@ def xse_check_integrity() -> str:  # RESERVED | NEED VR HASH/FILE CHECK
         case _:
             message_list.append(f"❌ Value for {xse_acronym.lower()}.log is invalid or missing from CLASSIC {game} Local.yaml!\n-----\n")
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 def xse_check_hashes() -> str:
@@ -565,8 +563,7 @@ def xse_check_hashes() -> str:
     if not xse_script_missing and not xse_script_mismatch:
         message_list.append("✔️ All Script Extender files have been found and accounted for! \n-----\n")
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # ================================================
@@ -578,8 +575,7 @@ def docs_check_folder():
     if "onedrive" in docs_name.lower():
         docs_warn = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Warnings_GAME.warn_docs_path")
         message_list.append(docs_warn)
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # =========== CHECK DOCS MAIN INI -> CHECK EXISTENCE & CORRUPTION ===========
@@ -640,8 +636,7 @@ def docs_check_ini(ini_name) -> str:
                 customini_config = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Default_CustomINI")
                 ini_file.write(customini_config)
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # =========== GENERATE FILE BACKUPS ===========
@@ -708,8 +703,7 @@ def main_combined_result():
     vrmode_check()
     combined_return = [game_check_integrity(), xse_check_integrity(), xse_check_hashes(), docs_check_folder(),
                        docs_check_ini(f"{game}.ini"), docs_check_ini(f"{game}Custom.ini"), docs_check_ini(f"{game}Prefs.ini")]
-    combined_result = "".join(combined_return)
-    return combined_result
+    return "".join(combined_return)
 
 
 def main_generate_required():

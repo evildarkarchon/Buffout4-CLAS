@@ -167,8 +167,7 @@ def check_crashgen_settings():
                              f"  To ensure this check doesn't get skipped, {crashgen_name} has to be installed manually. \n",
                              "  [ If you are using Mod Organizer 2, you need to run CLASSIC through a shortcut in MO2. ] \n-----\n"])
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # ================================================
@@ -206,8 +205,7 @@ def check_log_errors(folder_path):
                 logging.warning(f"> ! > DETECT LOG ERRORS > UNABLE TO SCAN : {file}")
                 continue
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # ================================================
@@ -239,8 +237,7 @@ def check_xse_plugins():  # RESERVED | Might be expanded upon in the future.
                              "  Please ensure that Address Libray is installed and that you have the latest version. \n",
                              f"  Link: {selected_version[2]} \n-----\n"])
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # ================================================
@@ -346,8 +343,7 @@ def scan_wryecheck():
     else:
         message_list.append(wrye_missinghtml)
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # ================================================
@@ -413,8 +409,7 @@ def scan_mod_inis():  # Mod INI files check.
 
     if vsync_list:
         message_list.append("* NOTICE : VSYNC IS CURRENTLY ENABLED IN THE FOLLOWING FILES * \n")
-    message_output = "".join(message_list) + "".join(vsync_list)
-    return message_output
+    return "".join(message_list) + "".join(vsync_list)
 
 
 # ================================================
@@ -508,8 +503,7 @@ def scan_mods_unpacked():
         message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Missing"))
 
     modscan_unique_list = list(sorted(set(modscan_list)))
-    message_output = "".join(message_list) + "".join(cleanup_list) + "".join(modscan_unique_list)
-    return message_output
+    return "".join(message_list) + "".join(cleanup_list) + "".join(modscan_unique_list)
 
 
 # ================================================
@@ -600,8 +594,7 @@ def scan_mods_archived():
         message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Missing"))
 
     modscan_unique_list = list(sorted(set(modscan_list)))
-    message_output = "".join(message_list) + "".join(modscan_unique_list)
-    return message_output
+    return "".join(message_list) + "".join(modscan_unique_list)
 
 
 # ================================================
@@ -679,15 +672,13 @@ def game_combined_result():
     docs_path = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Docs")
     game_path = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Game")
     combined_return = [check_xse_plugins(), check_crashgen_settings(), check_log_errors(docs_path), check_log_errors(game_path), scan_wryecheck(), scan_mod_inis()]
-    combined_result = "".join(combined_return)
-    return combined_result
+    return "".join(combined_return)
 
 
 def mods_combined_result():  # KEEP THESE SEPARATE SO THEY ARE NOT INCLUDED IN AUTOSCAN REPORTS
     CMain.vrmode_check()
     combined_return = [scan_mods_unpacked(), scan_mods_archived()]
-    combined_result = "".join(combined_return)
-    return combined_result
+    return "".join(combined_return)
 
 
 def write_combined_results():
