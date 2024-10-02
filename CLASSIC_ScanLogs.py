@@ -754,25 +754,25 @@ if __name__ == "__main__":
 
     # Default output value for an argparse.BooleanOptionalAction is None, and so fails the isinstance check.
     # So it will respect current INI values if not specified on the command line.
-    if isinstance(args.fcx_mode, bool) and not args.fcx_mode == CMain.classic_settings("FCX Mode"):
+    if isinstance(args.fcx_mode, bool) and args.fcx_mode != CMain.classic_settings("FCX Mode"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.FCX Mode", args.fcx_mode)
 
-    if isinstance(args.show_fid_vaues, bool) and not args.imi_mode == CMain.classic_settings("Show FormID Values"):
+    if isinstance(args.show_fid_vaues, bool) and args.imi_mode != CMain.classic_settings("Show FormID Values"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.IMI Mode", args.imi_mode)
 
-    if isinstance(args.move_unsolved, bool) and not args.move_unsolved == CMain.classic_settings("Move Unsolved Logs"):
+    if isinstance(args.move_unsolved, bool) and args.move_unsolved != CMain.classic_settings("Move Unsolved Logs"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.Move Unsolved", args.args.move_unsolved)
 
-    if isinstance(ini_path, Path) and ini_path.resolve().is_dir() and not str(ini_path) == CMain.classic_settings("INI Folder Path"):
+    if isinstance(ini_path, Path) and ini_path.resolve().is_dir() and str(ini_path) != CMain.classic_settings("INI Folder Path"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.INI Folder Path", str(Path(ini_path).resolve()))
 
-    if isinstance(scan_path, Path) and scan_path.resolve().is_dir() and not str(scan_path) == CMain.classic_settings("SCAN Custom Path"):
+    if isinstance(scan_path, Path) and scan_path.resolve().is_dir() and str(scan_path) != CMain.classic_settings("SCAN Custom Path"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.SCAN Custom Path", str(Path(scan_path).resolve()))
 
-    if isinstance(mods_folder_path, Path) and mods_folder_path.resolve().is_dir() and not str(mods_folder_path) == CMain.classic_settings("MODS Folder Path"):
+    if isinstance(mods_folder_path, Path) and mods_folder_path.resolve().is_dir() and str(mods_folder_path) != CMain.classic_settings("MODS Folder Path"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.MODS Folder Path", str(Path(mods_folder_path).resolve()))
 
-    if isinstance(args.simplify_logs, bool) and not args.simplify_logs == CMain.classic_settings("Simplify Logs"):
+    if isinstance(args.simplify_logs, bool) and args.simplify_logs != CMain.classic_settings("Simplify Logs"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.Simplify Logs", args.simplify_logs)
 
     crashlogs_scan()
