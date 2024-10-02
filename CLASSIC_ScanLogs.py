@@ -19,9 +19,8 @@ CMain.configure_logging()
 # ASSORTED FUNCTIONS
 # ================================================
 def pastebin_fetch(url):
-    if urlparse(url).netloc == "pastebin.com":
-        if "/raw" not in url.path:
-            url = url.replace("pastebin.com", "pastebin.com/raw")
+    if urlparse(url).netloc == "pastebin.com" and "/raw" not in url.path:
+        url = url.replace("pastebin.com", "pastebin.com/raw")
     response = requests.get(url)
     if response.status_code in requests.codes.ok:
         if not os.path.exists("CLASSIC Pastebin"):
@@ -41,8 +40,7 @@ def get_entry(formid, plugin) -> str | None:
             c = conn.cursor()
             c.execute(f'''SELECT entry FROM {CMain.game} WHERE formid=? AND plugin=? COLLATE nocase''', (formid, plugin))
             entry = c.fetchone()
-            if entry:
-                if query_cache.get((formid, plugin)) is None:
+            if entry and query_cache.get((formid, plugin)) is None:
                     query_cache[(formid, plugin)] = entry[0]
     return query_cache.get((formid, plugin))
 
@@ -64,9 +62,8 @@ def crashlogs_get_files():  # Get paths of all available crash logs.
                     shutil.copy2(crash_file, destination_file)
 
     crash_files = list(CLASSIC_folder.glob("crash-*.log"))
-    if CUSTOM_folder:
-        if Path(CUSTOM_folder).exists():
-            crash_files.extend(Path(CUSTOM_folder).glob("crash-*.log"))
+    if CUSTOM_folder and Path(CUSTOM_folder).exists():
+        crash_files.extend(Path(CUSTOM_folder).glob("crash-*.log"))
 
     return crash_files
 
