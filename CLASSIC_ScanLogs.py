@@ -410,9 +410,8 @@ def crashlogs_scan():
                     elif item_split[0] == "NOT":
                         if item_split[1] in segment_callstack_intact:
                             break
-                else:
-                    if item in segment_callstack_intact:
-                        stack_found = True
+                elif item in segment_callstack_intact:
+                    stack_found = True
 
             # print(f"TEST: {error_req_found} | {error_opt_found} | {stack_found}")
             if has_required_item:
@@ -420,11 +419,10 @@ def crashlogs_scan():
                     key_split[1] = key_split[1].ljust(max_warn_length, ".")
                     autoscan_report.append(f"# Checking for {key_split[1]} SUSPECT FOUND! > Severity : {key_split[0]} # \n-----\n")
                     trigger_suspect_found = True
-            else:
-                if error_opt_found or stack_found:
-                    key_split[1] = key_split[1].ljust(max_warn_length, ".")
-                    autoscan_report.append(f"# Checking for {key_split[1]} SUSPECT FOUND! > Severity : {key_split[0]} # \n-----\n")
-                    trigger_suspect_found = True
+            elif error_opt_found or stack_found:
+                key_split[1] = key_split[1].ljust(max_warn_length, ".")
+                autoscan_report.append(f"# Checking for {key_split[1]} SUSPECT FOUND! > Severity : {key_split[0]} # \n-----\n")
+                trigger_suspect_found = True
 
         if trigger_suspect_found:
             autoscan_report.extend(["* FOR DETAILED DESCRIPTIONS AND POSSIBLE SOLUTIONS TO ANY ABOVE DETECTED CRASH SUSPECTS *\n",
