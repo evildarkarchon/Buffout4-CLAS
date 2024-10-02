@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 from bs4 import BeautifulSoup
 from urllib3.exceptions import InsecureRequestWarning
+import contextlib
 
 if platform.system() == "Windows":
     import winreg
@@ -603,10 +604,8 @@ def docs_check_ini(ini_name) -> str:
                 if "Archive" not in INI_config.sections():
                     message_list.extend(["❌ WARNING : Archive Invalidation / Loose Files setting is not enabled. \n",
                                          "  CLASSIC will now enable this setting automatically in the game INI files. \n-----\n"])
-                    try:
+                    with contextlib.suppress(configparser.DuplicateSectionError):
                         INI_config.add_section("Archive")
-                    except configparser.DuplicateSectionError:
-                        pass
                 else:
                     message_list.append("✔️ Archive Invalidation / Loose Files setting is already enabled! \n-----\n")
 
