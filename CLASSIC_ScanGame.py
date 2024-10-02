@@ -260,10 +260,7 @@ def papyrus_logging():
             elif " error: " in line:
                 count_errors += 1
 
-        if count_dumps != 0:
-            ratio = count_dumps / count_stacks
-        else:
-            ratio = 0
+        ratio = 0 if count_dumps == 0 else count_dumps / count_stacks
 
         message_list.extend([f"NUMBER OF DUMPS     : {count_dumps} \n",
                              f"NUMBER OF STACKS     : {count_stacks} \n",
