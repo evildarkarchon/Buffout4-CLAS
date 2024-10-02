@@ -862,6 +862,6 @@ if __name__ == "__main__":
         window = MainWindow()
         window.show()
         sys.exit(app.exec())
-    except Exception as e:
+    except Exception as _:
         error_text = traceback.format_exc()
         show_exception_box(error_text)
