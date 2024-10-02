@@ -213,7 +213,7 @@ def insert_entries_to_db(db_path, entries, query=None):
         conn.commit()
 
 def create_formid_db():
-    with sqlite3.connect(f"CLASSIC Data/databases/{game} FormIDs.db") as conn, open(f"CLASSIC Data/databases/{game} FID Main.txt", encoding="utf-8", errors="ignore") as f:
+    with sqlite3.connect(f"CLASSIC Data/databases/{game} FormIDs.db") as conn:
         conn.execute(f'''CREATE TABLE IF NOT EXISTS {game}
             (id INTEGER PRIMARY KEY AUTOINCREMENT,
             plugin TEXT, formid TEXT, entry TEXT)''')
