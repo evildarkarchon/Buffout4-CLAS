@@ -325,9 +325,7 @@ def scan_wryecheck():
                                      "  SimpleESLify: https://www.nexusmods.com/skyrimspecialedition/mods/27568 \n  -----\n"])
 
             for warn_name, warn_desc in wrye_warnings.items():
-                if warn_name == title:
-                    message_list.append(warn_desc)
-                elif warn_name in title:
+                if warn_name in title:
                     message_list.append(warn_desc)
 
             if title not in {"ESL Capable", "Active Plugins:"}:
