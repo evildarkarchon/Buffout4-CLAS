@@ -534,7 +534,7 @@ def xse_check_hashes() -> str:
     xse_hashedscripts = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.XSE_HashedScripts")
     game_folder_scripts = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Game_Folder_Scripts")
 
-    xse_hashedscripts_local = {key: None for key in xse_hashedscripts.keys()}
+    xse_hashedscripts_local = dict.fromkeys(xse_hashedscripts)
     for key in xse_hashedscripts_local:
         script_path = Path(fr"{game_folder_scripts}\{str(key)}")
         if script_path.is_file():
