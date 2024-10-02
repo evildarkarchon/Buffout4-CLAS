@@ -135,7 +135,7 @@ def crashlogs_scan():
 
     game_mods_conf = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_CONF")
     game_mods_core = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_CORE")
-    games_mods_core_folon = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC Fallout4.yaml", "Mods_CORE_FOLON")
+    games_mods_core_folon = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Fallout4.yaml", "Mods_CORE_FOLON")
     game_mods_freq = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_FREQ")
     game_mods_opc2 = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_OPC2")
     game_mods_solu = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_SOLU")
@@ -548,7 +548,7 @@ def crashlogs_scan():
                                         "[Due to limitations, CLASSIC will show warnings for some mods even if fixes or patches are already installed.] \n",
                                         "[To hide these warnings, you can add their plugin names to the CLASSIC Ignore.yaml file. ONE PLUGIN PER LINE.] \n\n"])
             else:
-                autoscan_report.append(f"# FOUND NO PROBLEMATIC MODS WITH AVAILABLE SOLUTIONS AND COMMUNITY PATCHES # \n\n")
+                autoscan_report.append("# FOUND NO PROBLEMATIC MODS WITH AVAILABLE SOLUTIONS AND COMMUNITY PATCHES # \n\n")
         else:
             autoscan_report.append(warn_noplugins)
 

@@ -124,35 +124,35 @@ def check_crashgen_settings():
             mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", "False")
         elif mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager") and IsXCellPresent:
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but MemoryManager parameter is set to TRUE # \n",
-                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
+                                 "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", "False")
         else:
             message_list.append(f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
         if mod_toml_config(crashgen_toml_main, "Patches", "HavokMemorySystem") and IsXCellPresent:
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but HavokMemorySystem parameter is set to TRUE # \n",
-                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
+                                 "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "HavokMemorySystem", "False")
         else:
             message_list.append(f"✔️ HavokMemorySystem parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
         if mod_toml_config(crashgen_toml_main, "Patches", "BSTextireStreamerLocalHeap") and IsXCellPresent:
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but BSTextireStreamerLocalHeap parameter is set to TRUE # \n",
-                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
+                                 "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "BSTextireStreamerLocalHeap", "False")
         else:
             message_list.append(f"✔️ BSTextireStreamerLocalHeap parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
         if mod_toml_config(crashgen_toml_main, "Patches", "ScaleformAllocator") and IsXCellPresent:
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but ScaleformAllocator parameter is set to TRUE # \n",
-                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
+                                 "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "ScaleFormAllocator", "False")
         else:
             message_list.append(f"✔️ ScaleformAllocator parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
         if mod_toml_config(crashgen_toml_main, "Patches", "SmallBlockAllocator") and IsXCellPresent:
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but SmallBlockAllocator parameter is set to TRUE # \n",
-                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
+                                 "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "SmallBlockAllocator", "False")
         else:
             message_list.append(f"✔️ SmallBlockAllocator parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
@@ -160,7 +160,7 @@ def check_crashgen_settings():
 
         if mod_toml_config(crashgen_toml_main, "Compatibility", "F4EE") and any("f4ee" in file.lower() for file in xse_folder):
             message_list.extend(["# ❌ CAUTION : Looks Menu is installed, but F4EE parameter under [Compatibility] is set to FALSE # \n",
-                                 f"    Auto Scanner will change this parameter to TRUE to prevent bugs and crashes from Looks Menu. \n-----\n"])
+                                 "    Auto Scanner will change this parameter to TRUE to prevent bugs and crashes from Looks Menu. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Compatibility", "F4EE", "True")
         else:
             message_list.append(f"✔️ F4EE (Looks Menu) parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
