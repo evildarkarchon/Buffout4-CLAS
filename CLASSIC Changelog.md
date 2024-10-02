@@ -1,6 +1,12 @@
 =====================================================================================================
 # CLASSIC CHANGELOG #
 
+7.26.1 Unofficial
+*BUG FIXES*
+- Papyrus Monitor no longer launches a new instance of CLASSIC.
+- Fixed formatting errors in Papyrus Monitor that were hidden by the old display method.
+- Revert the initialization threading changes from the previous versions hotfixes.
+
 7.26 Unofficial
 *NEW UI*
 - Scans run off the main thread, so the window no longer freezes when scans are running.
