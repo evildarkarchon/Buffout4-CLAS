@@ -684,23 +684,20 @@ def crashlogs_scan() -> None:
                 line.replace(f"{user_folder.parent}\\{user_folder.name}", "******").replace(f"{user_folder.parent}/{user_folder.name}", "******")
 
         # WRITE AUTOSCAN REPORT TO FILE
-        autoscan_name = str(crashlog_file.with_name(crashlog_file.stem + "-AUTOSCAN.md"))
-        with open(autoscan_name, "w", encoding="utf-8", errors="ignore") as autoscan_file:
+        autoscan_path = crashlog_file.with_name(crashlog_file.stem + "-AUTOSCAN.md")
+        with autoscan_path.open("w", encoding="utf-8", errors="ignore") as autoscan_file:
             logging.debug(f"- - -> RUNNING CRASH LOG FILE SCAN >>> SCANNED {crashlog_file.name}")
             autoscan_output = "".join(autoscan_report)
             autoscan_file.write(autoscan_output)
 
         if trigger_scan_failed and CMain.classic_settings("Move Unsolved Logs"):
-            backup_path = "CLASSIC Backup/Unsolved Logs"
-            Path(backup_path).mkdir(parents=True, exist_ok=True)
-            autoscan_file = crashlog_file.with_name(crashlog_file.stem + "-AUTOSCAN.md")
-            crash_move = Path(backup_path, crashlog_file.name)
-            scan_move = Path(backup_path, autoscan_file.name)
+            backup_path = Path("CLASSIC Backup/Unsolved Logs")
+            backup_path.mkdir(parents=True, exist_ok=True)
 
-            if crashlog_file.exists():
-                shutil.copy2(crashlog_file, crash_move)
-            if autoscan_file.exists():
-                shutil.copy2(autoscan_file, scan_move)
+            if crashlog_file.is_file():
+                shutil.copy2(crashlog_file, backup_path / crashlog_file.name)
+            if autoscan_path.is_file():
+                shutil.copy2(autoscan_path, backup_path / autoscan_file.name)
 
     # CHECK FOR FAILED OR INVALID CRASH LOGS
     if scan_failed_list or scan_invalid_list:
