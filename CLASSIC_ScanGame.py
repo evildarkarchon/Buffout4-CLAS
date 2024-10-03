@@ -3,7 +3,6 @@ import struct
 import shutil
 import logging
 import tomlkit
-import tomlkit.items
 import subprocess
 import iniparse
 import functools
@@ -66,18 +65,18 @@ def mod_ini_config(ini_path: str, section: str, key: str, new_value: str | None 
     return value
 
 
-def mod_toml_config(toml_path: Path, section: tomlkit.items.Key, key: tomlkit.items.Key, new_value: str | None = None) -> Any | None:
+def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | None = None) -> Any | None:
     # Read the TOML file
     with CMain.open_file_with_encoding(toml_path) as toml_file:
         data = tomlkit.parse(toml_file.read())
 
     if section in data:
-        if key in data[section]:
-            current_value = data[section][key]
+        if key in data[section]: # type: ignore
+            current_value = data[section][key] # type: ignore
 
             # If a new value is provided, update the key
             if new_value is not None:
-                data[section][key] = new_value
+                data[section][key] = new_value # type: ignore
                 with open(toml_path, 'w') as toml_file:
                     toml_file.write(data.as_string())
 
