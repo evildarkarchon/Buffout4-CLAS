@@ -427,7 +427,9 @@ class MainWindow(QMainWindow):
         categories = ["XSE", "RESHADE", "VULKAN", "ENB"]
         for category in categories:
             layout.addWidget(self.create_separator())
-            layout.addWidget(QLabel(category, alignment=Qt.AlignmentFlag.AlignCenter))
+            category_label = QLabel(category)
+            category_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(category_label)
 
             button_layout = QHBoxLayout()
 
