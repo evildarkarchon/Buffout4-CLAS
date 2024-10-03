@@ -5,7 +5,6 @@ import shutil
 import random
 import logging
 import requests
-import ruamel.yaml
 import sqlite3
 import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
