@@ -19,13 +19,14 @@ CMain.configure_logging()
 # ASSORTED FUNCTIONS
 # ================================================
 def pastebin_fetch(url: str) -> None:
-    if urlparse(url).netloc == "pastebin.com" and "/raw" not in url.path:
+    if urlparse(url).netloc == "pastebin.com" and "/raw" not in url:
         url = url.replace("pastebin.com", "pastebin.com/raw")
     response = requests.get(url)
     if response.status_code in requests.codes.ok:
-        if not os.path.exists("CLASSIC Pastebin"):
-            Path("CLASSIC Pastebin").mkdir(parents=True, exist_ok=True)
-        outfile = Path(f"CLASSIC Pastebin/crash-{urlparse(url).path.split('/')[-1]}.log")
+        pastebin_path = Path("CLASSIC Pastebin")
+        if not pastebin_path.is_dir():
+            pastebin_path.mkdir(parents=True, exist_ok=True)
+        outfile = pastebin_path / f"crash-{urlparse(url).path.split("/")[-1]}.log"
         outfile.write_text(response.text, encoding="utf-8", errors="ignore")
     else:
         response.raise_for_status()
@@ -311,11 +312,12 @@ def crashlogs_scan() -> None:
         crashlog_GPUI = (not crashlog_GPUAMD and not crashlog_GPUNV)
 
         # IF LOADORDER FILE EXISTS, USE ITS PLUGINS
-        if os.path.exists("loadorder.txt"):
+        loadorder_path = Path("loadorder.txt")
+        if loadorder_path.exists():
             autoscan_report.extend(["* ✔️ LOADORDER.TXT FILE FOUND IN THE MAIN CLASSIC FOLDER! *\n",
                                     "CLASSIC will now ignore plugins in all crash logs and only detect plugins in this file.\n",
                                     "[ To disable this functionality, simply remove loadorder.txt from your CLASSIC folder. ]\n\n"])
-            with open("loadorder.txt", "r", encoding="utf-8", errors="ignore") as loadorder_file:
+            with loadorder_path.open(encoding="utf-8", errors="ignore") as loadorder_file:
                 loadorder_data = loadorder_file.readlines()
             for elem in loadorder_data[1:]:
                 if all(elem not in item for item in crashlog_plugins):
