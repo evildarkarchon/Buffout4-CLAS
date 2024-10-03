@@ -77,7 +77,7 @@ def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | No
             # If a new value is provided, update the key
             if new_value is not None:
                 data[section][key] = new_value # type: ignore
-                with open(toml_path, 'w') as toml_file:
+                with toml_path.open("w") as toml_file:
                     toml_file.write(data.as_string())
 
             return current_value
