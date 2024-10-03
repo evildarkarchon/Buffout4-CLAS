@@ -90,6 +90,7 @@ extend-select = [
 	"PERF",  # Performance Anti-Patterns
 	"PIE",   # Misc Lints
 	"PL",    # Pylint
+	"PTH",   # Prefer Pathlib
 	"RET",   # Return
 	"RSE",   # Raise
 	"RUF",   # Ruff
@@ -108,7 +109,6 @@ extend-select = [
 	# "FBT",   # Boolean Traps
 	# "G",     # Logging Formatting
 	# "N",     # PEP8 Naming Conventions
-	# "PTH",   # Prefer Pathlib
 	# "PYI",   # Stub Files
 	# "Q",     # Quotes
 	# "S",     # Security Testing
