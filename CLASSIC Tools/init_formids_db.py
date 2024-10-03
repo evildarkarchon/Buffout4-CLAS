@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from typing import Literal
 
 if os.path.exists("../CLASSIC Data/databases/Fallout4 FormIDs.db"):
     os.remove("../CLASSIC Data/databases/Fallout4 FormIDs.db")
@@ -37,7 +38,7 @@ if os.path.exists("../CLASSIC Data/databases/Starfield FID Main.txt"):
     if conn.in_transaction:
         conn.commit()
 
-def insert(lines, table="Fallout4"):
+def insert(lines: list[str], table: Literal["Fallout4", "Skyrim", "Starfield"] = "Fallout4") -> None:
     with sqlite3.connect(f"../CLASSIC Data/databases/{table} FormIDs.db") as conn:
         c = conn.cursor()
         if lines:

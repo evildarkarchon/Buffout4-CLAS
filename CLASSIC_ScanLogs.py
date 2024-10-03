@@ -18,7 +18,7 @@ CMain.configure_logging()
 # ================================================
 # ASSORTED FUNCTIONS
 # ================================================
-def pastebin_fetch(url):
+def pastebin_fetch(url: str) -> None:
     if urlparse(url).netloc == "pastebin.com" and "/raw" not in url.path:
         url = url.replace("pastebin.com", "pastebin.com/raw")
     response = requests.get(url)
@@ -32,7 +32,7 @@ def pastebin_fetch(url):
 
 query_cache = {}
 
-def get_entry(formid, plugin) -> str | None:
+def get_entry(formid: str, plugin: str) -> str | None:
     if (entry := query_cache.get((formid, plugin))) is not None:
         return entry
     if Path(f"CLASSIC Data/databases/{CMain.game} FormIDs.db").is_file():
@@ -47,11 +47,11 @@ def get_entry(formid, plugin) -> str | None:
 # ================================================
 # INITIAL REFORMAT FOR CRASH LOG FILES
 # ================================================
-def crashlogs_get_files():  # Get paths of all available crash logs.
+def crashlogs_get_files() -> list[Path]:  # Get paths of all available crash logs.
     logging.debug("- - - INITIATED CRASH LOG FILE LIST GENERATION")
     CLASSIC_folder = Path.cwd()
-    CUSTOM_folder = CMain.classic_settings("SCAN Custom Path")
-    XSE_folder = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Docs_Folder_XSE")
+    CUSTOM_folder: str = CMain.classic_settings("SCAN Custom Path") # type: ignore
+    XSE_folder: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Docs_Folder_XSE") # type: ignore
 
     if Path(XSE_folder).exists():
         xse_crash_files = list(Path(XSE_folder).glob("crash-*.log"))
@@ -68,11 +68,11 @@ def crashlogs_get_files():  # Get paths of all available crash logs.
     return crash_files
 
 
-def crashlogs_reformat():  # Reformat plugin lists in crash logs, so that old and new CRASHGEN formats match.
+def crashlogs_reformat() -> None:  # Reformat plugin lists in crash logs, so that old and new CRASHGEN formats match.
     CMain.vrmode_check()  # Only place where needed since crashlogs_reformat() runs first in crashlogs_scan()
     logging.debug("- - - INITIATED CRASH LOG FILE REFORMAT")
-    xse_acronym = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_Acronym")
-    remove_list = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_records")
+    xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_Acronym") # type: ignore
+    remove_list: list[str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_records") # type: ignore
     simple_logs = CMain.classic_settings("Simplify Logs")
 
     crash_files = crashlogs_get_files()
@@ -97,7 +97,7 @@ def crashlogs_reformat():  # Reformat plugin lists in crash logs, so that old an
 # ================================================
 # CRASH LOG SCAN START
 # ================================================
-def crashlogs_scan():
+def crashlogs_scan() -> None:
     pluginsearch = re.compile(r"\s*\[(FE:([0-9A-F]{3})?|[0-9A-F]{2})\]\s*([\w\s-]+\.es[pml])", flags=re.IGNORECASE)
     # is_ng_log = re.compile(r"\s*\[([0-9A-F]{2})\]([^\s]+.*)", flags=re.IGNORECASE)
     print("REFORMATTING CRASH LOGS, PLEASE WAIT...\n")
@@ -107,35 +107,35 @@ def crashlogs_scan():
     scan_start_time = time.perf_counter()
     # ================================================
     # Grabbing YAML values is time expensive, so keep these out of the main file loop.
-    classic_game_hints = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Game_Hints")
-    classic_records_list = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "catch_log_records")
-    classic_version = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.version")
-    classic_version_date = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.version_date")
+    classic_game_hints: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Game_Hints")  # type: ignore
+    classic_records_list: list[str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "catch_log_records")  # type: ignore
+    classic_version: str = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.version")  # type: ignore
+    classic_version_date: str = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.version_date")  # type: ignore
 
-    crashgen_name = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Game_Info.CRASHGEN_LogName")
-    crashgen_latest_og = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Game_Info.CRASHGEN_LatestVer")
-    crashgen_latest_vr = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "GameVR_Info.CRASHGEN_LatestVer")
-    crashgen_ignore = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.CRASHGEN_Ignore")
+    crashgen_name: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Game_Info.CRASHGEN_LogName")  # type: ignore
+    crashgen_latest_og: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Game_Info.CRASHGEN_LatestVer")  # type: ignore
+    crashgen_latest_vr: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "GameVR_Info.CRASHGEN_LatestVer")  # type: ignore
+    crashgen_ignore: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.CRASHGEN_Ignore")  # type: ignore
 
-    warn_noplugins = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Warnings_CRASHGEN.Warn_NOPlugins")
-    warn_outdated = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Warnings_CRASHGEN.Warn_Outdated")
-    xse_acronym = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Game_Info.XSE_Acronym")
+    warn_noplugins: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Warnings_CRASHGEN.Warn_NOPlugins")  # type: ignore
+    warn_outdated: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Warnings_CRASHGEN.Warn_Outdated")  # type: ignore
+    xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Game_Info.XSE_Acronym")  # type: ignore
 
-    game_ignore_plugins = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Plugins_Exclude")
-    game_ignore_records = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Records_Exclude")
-    suspects_error_list = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Error_Check")
-    suspects_stack_list = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Stack_Check")
+    game_ignore_plugins: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Plugins_Exclude")  # type: ignore
+    game_ignore_records: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Records_Exclude")  # type: ignore
+    suspects_error_list: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Error_Check")  # type: ignore
+    suspects_stack_list: dict[str, list[str]] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Stack_Check")  # type: ignore
 
-    autoscan_text = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.autoscan_text_{CMain.game}")
-    remove_list = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_records")
-    ignore_list = CMain.yaml_settings("CLASSIC Ignore.yaml", f"CLASSIC_Ignore_{CMain.game}")
+    autoscan_text: str = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.autoscan_text_{CMain.game}")  # type: ignore
+    remove_list: list[str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_records")  # type: ignore
+    ignore_list: list[str] = CMain.yaml_settings("CLASSIC Ignore.yaml", f"CLASSIC_Ignore_{CMain.game}")  # type: ignore
 
-    game_mods_conf = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_CONF")
-    game_mods_core = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_CORE")
-    games_mods_core_folon = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Fallout4.yaml", "Mods_CORE_FOLON")
-    game_mods_freq = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_FREQ")
-    game_mods_opc2 = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_OPC2")
-    game_mods_solu = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_SOLU")
+    game_mods_conf: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_CONF")  # type: ignore
+    game_mods_core: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_CORE")  # type: ignore
+    games_mods_core_folon: dict[str, str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Fallout4.yaml", "Mods_CORE_FOLON")  # type: ignore
+    game_mods_freq: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_FREQ")  # type: ignore
+    game_mods_opc2: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_OPC2")  # type: ignore
+    game_mods_solu: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_SOLU")  # type: ignore
 
     # ================================================
     if CMain.classic_settings("FCX Mode"):
@@ -146,7 +146,7 @@ def crashlogs_scan():
         game_files_check = ""
 
     # DETECT ONE WHOLE KEY (1 MOD) PER LOOP IN YAML DICT
-    def detect_mods_single(yaml_dict):
+    def detect_mods_single(yaml_dict: dict[str, str]) -> bool:
         trigger_mod_found = False
         for mod_name in yaml_dict:
             mod_warn = yaml_dict.get(mod_name)
@@ -158,7 +158,7 @@ def crashlogs_scan():
         return trigger_mod_found
 
     # DETECT ONE SPLIT KEY (2 MODS) PER LOOP IN YAML DICT
-    def detect_mods_double(yaml_dict):
+    def detect_mods_double(yaml_dict: dict[str, str]) -> bool:
         trigger_mod_found = False
         for mod_name in yaml_dict:
             mod_warn = yaml_dict.get(mod_name)
@@ -177,7 +177,7 @@ def crashlogs_scan():
         return trigger_mod_found
 
     # DETECT ONE IMPORTANT CORE AND GPU SPECIFIC MOD PER LOOP IN YAML DICT
-    def detect_mods_important(yaml_dict):
+    def detect_mods_important(yaml_dict: dict[str, str]) -> None:
         gpu_rival = "nvidia" if (crashlog_GPUAMD or crashlog_GPUI) else "amd" if crashlog_GPUNV else None
         for mod_name in yaml_dict:
             mod_warn = yaml_dict.get(mod_name)
@@ -229,7 +229,7 @@ def crashlogs_scan():
         except StopIteration:
             index_mainerror = 3
 
-        def crashlog_generate_segment(segment_start, segment_end):
+        def crashlog_generate_segment(segment_start: str, segment_end: str) -> list[str]:
             try:
                 index_start = next(index for index, item in enumerate(crash_data) if segment_start.lower() in item.lower()) + 1
             except StopIteration:
@@ -289,7 +289,7 @@ def crashlogs_scan():
             ignore_plugins_list = False
 
         crashlog_GPUAMD = crashlog_GPUNV = False
-        crashlog_plugins = {}
+        crashlog_plugins: dict[str, str] = {}
         if CMain.game == "Fallout4":
             if any("Fallout4.esm" in elem for elem in segment_plugins):
                 trigger_plugins_loaded = True
@@ -577,7 +577,7 @@ def crashlogs_scan():
                                 "====================================================\n"])
 
         if trigger_plugin_limit:
-            warn_plugin_limit = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Plugin_Limit")
+            warn_plugin_limit: str = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Plugin_Limit") # type: ignore
             autoscan_report.append(warn_plugin_limit)
 
         # ================================================
