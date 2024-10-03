@@ -614,7 +614,7 @@ def crashlogs_scan() -> None:
                 for plugin, plugin_id in crashlog_plugins.items():
                     if len(formid_split) >= 2 and str(plugin_id) == str(formid_split[1][:2]):
                         if CMain.classic_settings("Show FormID Values"):
-                            if Path(f"CLASSIC Data/databases/{CMain.game} FormIDs.db").is_file():
+                            if Path(f"CLASSIC Data/databases/{CMain.game} FormIDs.db").exists():
                                 report = get_entry(formid_split[1][2:], plugin)
                                 if report:
                                     autoscan_report.append(f"- {formid_full} | [{plugin}] | {report} | {count}\n")
@@ -697,9 +697,9 @@ def crashlogs_scan() -> None:
             backup_path = Path("CLASSIC Backup/Unsolved Logs")
             backup_path.mkdir(parents=True, exist_ok=True)
 
-            if crashlog_file.is_file():
+            if crashlog_file.exists():
                 shutil.copy2(crashlog_file, backup_path / crashlog_file.name)
-            if autoscan_path.is_file():
+            if autoscan_path.exists():
                 shutil.copy2(autoscan_path, backup_path / autoscan_file.name)
 
     # CHECK FOR FAILED OR INVALID CRASH LOGS
