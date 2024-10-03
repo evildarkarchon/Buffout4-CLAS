@@ -283,7 +283,7 @@ def papyrus_logging() -> tuple[str, int]:
 # ================================================
 def scan_wryecheck() -> str:
     message_list: list[str] = []
-    wrye_missinghtml: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Warnings_MODS.Warn_WRYE_MissingHTML") # type: ignore
+    wrye_missinghtml: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Warnings_MODS.Warn_WRYE_MissingHTML") # type: ignore
     wrye_plugincheck: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Docs_File_WryeBashPC") # type: ignore
     wrye_warnings: dict[str, str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Warnings_WRYE") # type: ignore
 
@@ -422,7 +422,7 @@ def scan_mods_unpacked() -> str:
 
     backup_path = "CLASSIC Backup/Cleaned Files"
     Path(backup_path).mkdir(parents=True, exist_ok=True)
-    mod_path = CMain.classic_settings("MODS Folder Path")
+    mod_path: str | None = CMain.classic_settings("MODS Folder Path")  # type: ignore
     if mod_path:
         if Path(mod_path).exists():
             filter_names = ["readme", "changes", "changelog", "change log"]
@@ -493,12 +493,12 @@ def scan_mods_unpacked() -> str:
                         shutil.move(readme_file_path, new_file_path)
 
             print("✔️ CLEANUP COMPLETE! NOW ANALYZING ALL UNPACKED/LOOSE MOD FILES...")
-            message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Reminders"))
+            message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Reminders")) # type: ignore
             message_list.append("========= RESULTS FROM UNPACKED / LOOSE FILES =========\n")
         else:
-            message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Invalid"))
+            message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Invalid")) # type: ignore
     else:
-        message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Missing"))
+        message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Missing")) # type: ignore
 
     modscan_unique_list = sorted(set(modscan_list))
     return "".join(message_list) + "".join(cleanup_list) + "".join(modscan_unique_list)
@@ -516,7 +516,7 @@ def scan_mods_archived() -> str:
     CLASSIC_folder = Path.cwd()
     bsarch_path = r"CLASSIC Data\BSArch.exe"
     bsarch_path_full = fr"{CLASSIC_folder}\{bsarch_path}"
-    mod_path = CMain.classic_settings("MODS Folder Path")
+    mod_path: str | None = CMain.classic_settings("MODS Folder Path")  # type: ignore
     if mod_path:
         if Path(mod_path).exists():
             if Path(bsarch_path).exists():
@@ -585,11 +585,11 @@ def scan_mods_archived() -> str:
                                 error_message = archived_list.stderr
                                 print("BSArch command failed with the following error:\n", error_message)
             else:
-                message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_BSArch_Missing"))
+                message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_BSArch_Missing")) # type: ignore
         else:
-            message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Invalid"))
+            message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Invalid")) # type: ignore
     else:
-        message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Missing"))
+        message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Missing")) # type: ignore
 
     modscan_unique_list = sorted(set(modscan_list))
     return "".join(message_list) + "".join(modscan_unique_list)
