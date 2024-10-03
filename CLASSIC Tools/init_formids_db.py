@@ -1,18 +1,21 @@
 import os
 import sqlite3
+from pathlib import Path
 from typing import Literal
+base_path = Path("../CLASSIC Data/databases")
 
-if os.path.exists("../CLASSIC Data/databases/Fallout4 FormIDs.db"):
-    os.remove("../CLASSIC Data/databases/Fallout4 FormIDs.db")
+path_fallout4_formids_db = base_path / "Fallout4 FormIDs.db"
+path_fallout4_formids_db.unlink(missing_ok=True)
 
-if os.path.exists("../CLASSIC Data/databases/Skyrim FormIDs.db"):
-    os.remove("../CLASSIC Data/databases/Skyrim FormIDs.db")
+path_skyrim_formids_db = base_path / "Skyrim FormIDs.db"
+path_skyrim_formids_db.unlink(missing_ok=True)
 
-if os.path.exists("../CLASSIC Data/databases/Starfield FormIDs.db"):
-    os.remove("../CLASSIC Data/databases/Starfield FormIDs.db")
+path_starfield_formids_db = base_path / "Starfield FormIDs.db"
+path_starfield_formids_db.unlink(missing_ok=True)
 
-if os.path.exists("../CLASSIC Data/databases/Fallout4 FID Main.txt"):
-    with sqlite3.connect("../CLASSIC Data/databases/Fallout4 FormIDs.db") as conn:
+path_fallout4_fid_main = base_path / "Fallout4 FID Main.txt"
+if path_fallout4_fid_main.exists():
+    with sqlite3.connect(path_fallout4_formids_db) as conn:
         conn.execute('''CREATE TABLE IF NOT EXISTS Fallout4
               (id INTEGER PRIMARY KEY AUTOINCREMENT,
                plugin TEXT, formid TEXT, entry TEXT)''')
@@ -20,8 +23,9 @@ if os.path.exists("../CLASSIC Data/databases/Fallout4 FID Main.txt"):
         if conn.in_transaction:
             conn.commit()
 
-if os.path.exists("../CLASSIC Data/databases/Skyrim FID Main.txt"):
-    with sqlite3.connect("../CLASSIC Data/databases/Skyrim FormIDs.db") as conn:
+path_skyrim_fid_main = base_path / "Skyrim FID Main.txt"
+if path_skyrim_fid_main.exists():
+    with sqlite3.connect(path_skyrim_formids_db) as conn:
         conn.execute('''CREATE TABLE IF NOT EXISTS Skyrim
                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
                  plugin TEXT, formid TEXT, entry TEXT)''')
@@ -29,8 +33,9 @@ if os.path.exists("../CLASSIC Data/databases/Skyrim FID Main.txt"):
         if conn.in_transaction:
             conn.commit()
 
-if os.path.exists("../CLASSIC Data/databases/Starfield FID Main.txt"):
-    with sqlite3.connect("../CLASSIC Data/databases/Starfield FormIDs.db") as conn:
+path_starfield_fid_main = base_path / "Starfield FID Main.txt"
+if path_starfield_fid_main.exists():
+    with sqlite3.connect(path_starfield_formids_db) as conn:
         conn.execute('''CREATE TABLE IF NOT EXISTS Starfield
                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
                  plugin TEXT, formid TEXT, entry TEXT)''')
@@ -51,31 +56,34 @@ def insert(lines: list[str], table: Literal["Fallout4", "Skyrim", "Starfield"] =
             if conn.in_transaction:
                 conn.commit()
 
-if os.path.exists("../CLASSIC Data/databases/Fallout4 FID Main.txt"):
+path_fallout4_fid_mods = base_path / "Fallout4 FID Mods.txt"
+if path_fallout4_fid_main.exists():
     print("Inserting Fallout 4 Main FormIDs...")
-    with open("../CLASSIC Data/databases/Fallout4 FID Main.txt", encoding="utf-8", errors="ignore") as f:
+    with path_fallout4_fid_main.open(encoding="utf-8", errors="ignore") as f:
         insert(f.readlines())
-if os.path.exists("../CLASSIC Data/databases/Fallout4 FID Mods.txt"):
+if path_fallout4_fid_mods.exists():
     print("Inserting Fallout 4 Mod FormIDs...")
-    with open("../CLASSIC Data/databases/Fallout4 FID Mods.txt", encoding="utf-8", errors="ignore") as f:
+    with path_fallout4_fid_mods.open(encoding="utf-8", errors="ignore") as f:
         insert(f.readlines())
 
-if os.path.exists("../CLASSIC Data/databases/Skyrim FID Main.txt"):
+path_skyrim_fid_mods = base_path / "Skyrim FID Mods.txt"
+if path_skyrim_fid_main.exists():
     print("Inserting Skyrim Main FormIDs...")
-    with open("../CLASSIC Data/databases/Skyrim FID Main.txt", encoding="utf-8", errors="ignore") as f:
+    with path_skyrim_fid_main.open(encoding="utf-8", errors="ignore") as f:
         insert(f.readlines(), "Skyrim")
 
-if os.path.exists("../CLASSIC Data/databases/Skyrim FID Mods.txt"):
+if path_skyrim_fid_mods.exists():
     print("Inserting Skyrim Mod FormIDs...")
-    with open("../CLASSIC Data/databases/Skyrim FID Mods.txt", encoding="utf-8", errors="ignore") as f:
+    with path_skyrim_fid_mods.open(encoding="utf-8", errors="ignore") as f:
         insert(f.readlines(), "Skyrim")
 
-if os.path.exists("../CLASSIC Data/databases/Starfield FID Main.txt"):
+path_starfield_fid_mods = base_path / "Starfield FID Mods.txt"
+if path_starfield_fid_main.exists():
     print("Inserting Starfield Main FormIDs...")
-    with open("../CLASSIC Data/databases/Starfield FID Main.txt", encoding="utf-8", errors="ignore") as f:
+    with path_starfield_fid_main.open(encoding="utf-8", errors="ignore") as f:
         insert(f.readlines(), "Starfield")
 
-if os.path.exists("../CLASSIC Data/databases/Starfield FID Mods.txt"):
+if path_starfield_fid_mods.exists():
     print("Inserting Starfield Mod FormIDs...")
-    with open("../CLASSIC Data/databases/Starfield FID Mods.txt", encoding="utf-8", errors="ignore") as f:
+    with path_starfield_fid_mods.open(encoding="utf-8", errors="ignore") as f:
         insert(f.readlines(), "Starfield")
