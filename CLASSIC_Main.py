@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 from bs4 import BeautifulSoup
 from urllib3.exceptions import InsecureRequestWarning
+import contextlib
 
 if platform.system() == "Windows":
     import winreg
@@ -131,16 +132,16 @@ class YamlSettingsCache:
             # Update the cache
             self.cache[yaml_path] = data
             return new_value
-        else:
-            # Traverse YAML structure to get value
-            for key in keys:
-                if key in value:
-                    value = value[key]
-                else:
-                    return None  # Key not found
-            if value is None and "Path" not in key_path:  # Error me if I mistype or screw up the value grab.
-                print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'")
-            return value
+
+        # Traverse YAML structure to get value
+        for key in keys:
+            if key in value:
+                value = value[key]
+            else:
+                return None  # Key not found
+        if value is None and "Path" not in key_path:  # Error me if I mistype or screw up the value grab.
+            print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'")
+        return value
 
 # Instantiate a global cache object
 yaml_cache = YamlSettingsCache()
@@ -213,7 +214,7 @@ def insert_entries_to_db(db_path, entries, query=None):
         conn.commit()
 
 def create_formid_db():
-    with sqlite3.connect(f"CLASSIC Data/databases/{game} FormIDs.db") as conn, open(f"CLASSIC Data/databases/{game} FID Main.txt", encoding="utf-8", errors="ignore") as f:
+    with sqlite3.connect(f"CLASSIC Data/databases/{game} FormIDs.db") as conn:
         conn.execute(f'''CREATE TABLE IF NOT EXISTS {game}
             (id INTEGER PRIMARY KEY AUTOINCREMENT,
             plugin TEXT, formid TEXT, entry TEXT)''')
@@ -235,8 +236,7 @@ def classic_data_extract():
 
         if datafile := tuple(Path(exedir).rglob("CLASSIC Data.zip", case_sensitive=False)):
             return zipfile.ZipFile(str(datafile[0]), "r")
-        else:
-            raise FileNotFoundError
+        raise FileNotFoundError
     try:
         if not os.path.exists("CLASSIC Data/databases/CLASSIC Main.yaml"):
             with open_zip() as zip_data:
@@ -296,22 +296,21 @@ async def classic_update_check(quiet=False, gui_request=True):
                             print("✔️ You have the latest version of CLASSIC! \n")
                             sys.stdout.flush()
                         return True
-                    else:
-                        if not quiet:
-                            print(yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.update_warning_{game}"))
-                            sys.stdout.flush()
+
+                    if not quiet:
+                        print(yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.update_warning_{game}"))
+                        sys.stdout.flush()
             except (ValueError, OSError, aiohttp.ClientError) as err:
                 if not quiet:
                     print(err)
                     sys.stdout.flush()
                     print(yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.update_unable_{game}"))
                     sys.stdout.flush()
-    else:
-        if not quiet:
-            print("\n❌ NOTICE: UPDATE CHECK IS DISABLED IN CLASSIC Settings.yaml \n")
-            sys.stdout.flush()
-            print("===============================================================================")
-            sys.stdout.flush()
+    elif not quiet:
+        print("\n❌ NOTICE: UPDATE CHECK IS DISABLED IN CLASSIC Settings.yaml \n")
+        sys.stdout.flush()
+        print("===============================================================================")
+        sys.stdout.flush()
     return False
 
 
@@ -327,7 +326,7 @@ def docs_path_find():
         try:
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders") as key: # type: ignore
                 documents_path = winreg.QueryValueEx(key, "Personal")[0] # type: ignore
-        except WindowsError:
+        except OSError:
             # Fallback to a default path if registry key is not found
             documents_path = os.path.join(os.path.expanduser("~"), "Documents")
 
@@ -363,8 +362,8 @@ def docs_path_find():
                 manual_docs = Path(path_input.strip())
                 yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs", manual_docs)
                 break
-            else:
-                print(f"'{path_input}' is not a valid or existing directory path. Please try again.")
+
+            print(f"'{path_input}' is not a valid or existing directory path. Please try again.")
 
     # =========== CHECK IF GAME DOCUMENTS FOLDER PATH WAS GENERATED AND FOUND ===========
     docs_path = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs")
@@ -385,7 +384,7 @@ def docs_path_find():
 def docs_generate_paths():
     logging.debug("- - - INITIATED DOCS PATH GENERATION")
     xse_acronym = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.XSE_Acronym")
-    xse_acronym_base = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game_Info.XSE_Acronym")
+    xse_acronym_base = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Game_Info.XSE_Acronym")
     docs_path = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs")
 
     yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Docs_Folder_XSE", fr"{docs_path}\{xse_acronym_base}")
@@ -427,7 +426,7 @@ def game_generate_paths():
 
     game_path = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Game")
     xse_acronym = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.XSE_Acronym")
-    xse_acronym_base = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game_Info.XSE_Acronym")
+    xse_acronym_base = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Game_Info.XSE_Acronym")
 
     yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Game_Folder_Data", fr"{game_path}Data")
     yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Game_Folder_Scripts", fr"{game_path}Data\Scripts")
@@ -473,8 +472,7 @@ def game_check_integrity() -> str:
             root_warn = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Warnings_GAME.warn_root_path")
             message_list.append(root_warn)
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # =========== CHECK GAME XSE SCRIPTS -> GET PATH AND HASHES ===========
@@ -493,7 +491,7 @@ def xse_check_integrity() -> str:  # RESERVED | NEED VR HASH/FILE CHECK
     match adlib_file:
         case str() | Path():
             if Path(adlib_file).exists():
-                message_list.append(f"✔️ REQUIRED: *Address Library* for Script Extender is installed! \n-----\n")
+                message_list.append("✔️ REQUIRED: *Address Library* for Script Extender is installed! \n-----\n")
             else:
                 message_list.append(yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Warnings_MODS.Warn_ADLIB_Missing"))
         case _:
@@ -524,8 +522,7 @@ def xse_check_integrity() -> str:  # RESERVED | NEED VR HASH/FILE CHECK
         case _:
             message_list.append(f"❌ Value for {xse_acronym.lower()}.log is invalid or missing from CLASSIC {game} Local.yaml!\n-----\n")
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 def xse_check_hashes() -> str:
@@ -536,7 +533,7 @@ def xse_check_hashes() -> str:
     xse_hashedscripts = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.XSE_HashedScripts")
     game_folder_scripts = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Game_Folder_Scripts")
 
-    xse_hashedscripts_local = {key: None for key in xse_hashedscripts.keys()}
+    xse_hashedscripts_local = dict.fromkeys(xse_hashedscripts)
     for key in xse_hashedscripts_local:
         script_path = Path(fr"{game_folder_scripts}\{str(key)}")
         if script_path.is_file():
@@ -566,8 +563,7 @@ def xse_check_hashes() -> str:
     if not xse_script_missing and not xse_script_mismatch:
         message_list.append("✔️ All Script Extender files have been found and accounted for! \n-----\n")
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # ================================================
@@ -579,8 +575,7 @@ def docs_check_folder():
     if "onedrive" in docs_name.lower():
         docs_warn = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Warnings_GAME.warn_docs_path")
         message_list.append(docs_warn)
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # =========== CHECK DOCS MAIN INI -> CHECK EXISTENCE & CORRUPTION ===========
@@ -605,10 +600,8 @@ def docs_check_ini(ini_name) -> str:
                 if "Archive" not in INI_config.sections():
                     message_list.extend(["❌ WARNING : Archive Invalidation / Loose Files setting is not enabled. \n",
                                          "  CLASSIC will now enable this setting automatically in the game INI files. \n-----\n"])
-                    try:
+                    with contextlib.suppress(configparser.DuplicateSectionError):
                         INI_config.add_section("Archive")
-                    except configparser.DuplicateSectionError:
-                        pass
                 else:
                     message_list.append("✔️ Archive Invalidation / Loose Files setting is already enabled! \n-----\n")
 
@@ -643,8 +636,7 @@ def docs_check_ini(ini_name) -> str:
                 customini_config = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Default_CustomINI")
                 ini_file.write(customini_config)
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # =========== GENERATE FILE BACKUPS ===========
@@ -711,8 +703,7 @@ def main_combined_result():
     vrmode_check()
     combined_return = [game_check_integrity(), xse_check_integrity(), xse_check_hashes(), docs_check_folder(),
                        docs_check_ini(f"{game}.ini"), docs_check_ini(f"{game}Custom.ini"), docs_check_ini(f"{game}Prefs.ini")]
-    combined_result = "".join(combined_return)
-    return combined_result
+    return "".join(combined_return)
 
 
 def main_generate_required():

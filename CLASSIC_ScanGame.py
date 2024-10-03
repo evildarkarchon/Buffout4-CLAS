@@ -26,7 +26,7 @@ def handle_ini_exceptions(func):
             logging.error(f"ERROR: File not found - {e}")
         except KeyError as e:
             logging.error(f"ERROR: Invalid section or key - {e}")
-        except IOError as e:
+        except OSError as e:
             logging.error(f"ERROR: Unable to read or write the file - {e}")
         except UnicodeError as e:
             logging.error(f"ERROR: Unable to read the file due to encoding issues - {e}")
@@ -57,7 +57,7 @@ def mod_ini_config(ini_path, section, key, new_value=None):
         return new_value
 
     value = config.get(section, key)
-    if value.lower() in ("1", "true", "0", "false"):
+    if value.lower() in {"1", "true", "0", "false"}:
         return config.getboolean(section, key)
 
     return value
@@ -79,10 +79,8 @@ def mod_toml_config(toml_path, section, key, new_value=None):
                     toml_file.write(data.as_string())
 
             return current_value
-        else:
-            return None  # Key not found in the section.
-    else:
-        return None  # Section not found in the TOML.
+        return None  # Key not found in the section.
+    return None  # Section not found in the TOML.
 
 
 # ================================================
@@ -124,35 +122,35 @@ def check_crashgen_settings():
             mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", "False")
         elif mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager") and IsXCellPresent:
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but MemoryManager parameter is set to TRUE # \n",
-                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
+                                 "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", "False")
         else:
             message_list.append(f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
         if mod_toml_config(crashgen_toml_main, "Patches", "HavokMemorySystem") and IsXCellPresent:
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but HavokMemorySystem parameter is set to TRUE # \n",
-                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
+                                 "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "HavokMemorySystem", "False")
         else:
             message_list.append(f"✔️ HavokMemorySystem parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
         if mod_toml_config(crashgen_toml_main, "Patches", "BSTextireStreamerLocalHeap") and IsXCellPresent:
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but BSTextireStreamerLocalHeap parameter is set to TRUE # \n",
-                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
+                                 "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "BSTextireStreamerLocalHeap", "False")
         else:
             message_list.append(f"✔️ BSTextireStreamerLocalHeap parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
         if mod_toml_config(crashgen_toml_main, "Patches", "ScaleformAllocator") and IsXCellPresent:
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but ScaleformAllocator parameter is set to TRUE # \n",
-                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
+                                 "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "ScaleFormAllocator", "False")
         else:
             message_list.append(f"✔️ ScaleformAllocator parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
         if mod_toml_config(crashgen_toml_main, "Patches", "SmallBlockAllocator") and IsXCellPresent:
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but SmallBlockAllocator parameter is set to TRUE # \n",
-                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
+                                 "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "SmallBlockAllocator", "False")
         else:
             message_list.append(f"✔️ SmallBlockAllocator parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
@@ -160,7 +158,7 @@ def check_crashgen_settings():
 
         if mod_toml_config(crashgen_toml_main, "Compatibility", "F4EE") and any("f4ee" in file.lower() for file in xse_folder):
             message_list.extend(["# ❌ CAUTION : Looks Menu is installed, but F4EE parameter under [Compatibility] is set to FALSE # \n",
-                                 f"    Auto Scanner will change this parameter to TRUE to prevent bugs and crashes from Looks Menu. \n-----\n"])
+                                 "    Auto Scanner will change this parameter to TRUE to prevent bugs and crashes from Looks Menu. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Compatibility", "F4EE", "True")
         else:
             message_list.append(f"✔️ F4EE (Looks Menu) parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
@@ -169,8 +167,7 @@ def check_crashgen_settings():
                              f"  To ensure this check doesn't get skipped, {crashgen_name} has to be installed manually. \n",
                              "  [ If you are using Mod Organizer 2, you need to run CLASSIC through a shortcut in MO2. ] \n-----\n"])
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # ================================================
@@ -198,8 +195,7 @@ def check_log_errors(folder_path):
                     message_list.extend(["[!] CAUTION : THE FOLLOWING LOG FILE REPORTS ONE OR MORE ERRORS! \n",
                                          "[ Errors do not necessarily mean that the mod is not working. ] \n",
                                          f"\nLOG PATH > {file} \n"])
-                    for elem in errors_list:
-                        message_list.append(elem)
+                    message_list.extend(errors_list)
 
                     message_list.append(f"\n* TOTAL NUMBER OF DETECTED LOG ERRORS * : {len(errors_list)} \n")
 
@@ -208,8 +204,7 @@ def check_log_errors(folder_path):
                 logging.warning(f"> ! > DETECT LOG ERRORS > UNABLE TO SCAN : {file}")
                 continue
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # ================================================
@@ -241,8 +236,7 @@ def check_xse_plugins():  # RESERVED | Might be expanded upon in the future.
                              "  Please ensure that Address Libray is installed and that you have the latest version. \n",
                              f"  Link: {selected_version[2]} \n-----\n"])
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # ================================================
@@ -266,10 +260,7 @@ def papyrus_logging():
             elif " error: " in line:
                 count_errors += 1
 
-        if count_dumps != 0:
-            ratio = count_dumps / count_stacks
-        else:
-            ratio = 0
+        ratio = 0 if count_dumps == 0 else count_dumps / count_stacks
 
         message_list.extend([f"NUMBER OF DUMPS     : {count_dumps} \n",
                              f"NUMBER OF STACKS     : {count_stacks} \n",
@@ -331,12 +322,10 @@ def scan_wryecheck():
                                      "  SimpleESLify: https://www.nexusmods.com/skyrimspecialedition/mods/27568 \n  -----\n"])
 
             for warn_name, warn_desc in wrye_warnings.items():
-                if warn_name == title:
-                    message_list.append(warn_desc)
-                elif warn_name in title:
+                if warn_name in title:
                     message_list.append(warn_desc)
 
-            if title != "ESL Capable" and title != "Active Plugins:":
+            if title not in {"ESL Capable", "Active Plugins:"}:
                 for elem in plugin_list:
                     message_list.append(f"    > {elem} \n")
 
@@ -348,8 +337,7 @@ def scan_wryecheck():
     else:
         message_list.append(wrye_missinghtml)
 
-    message_output = "".join(message_list)
-    return message_output
+    return "".join(message_list)
 
 
 # ================================================
@@ -415,8 +403,7 @@ def scan_mod_inis():  # Mod INI files check.
 
     if vsync_list:
         message_list.append("* NOTICE : VSYNC IS CURRENTLY ENABLED IN THE FOLLOWING FILES * \n")
-    message_output = "".join(message_list) + "".join(vsync_list)
-    return message_output
+    return "".join(message_list) + "".join(vsync_list)
 
 
 # ================================================
@@ -469,12 +456,12 @@ def scan_mods_unpacked():
                                 modscan_list.append(f"[!] CAUTION (DDS-DIMS) : {dds_file_path} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n")
                     # ================================================
                     # DETECT INVALID TEXTURE FILE FORMATS
-                    elif (".tga" or ".png") in filename.lower():
+                    elif any(ext in filename.lower() for ext in (".tga", ".png")):
                         inv_file_path = os.path.join(root, filename)
                         modscan_list.append(f"[-] NOTICE (-FORMAT-) : {inv_file_path} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n")
                     # ================================================
                     # DETECT INVALID SOUND FILE FORMATS
-                    elif (".mp3" or ".m4a") in filename.lower():
+                    elif any(ext in filename.lower() for ext in (".mp3", ".m4a")):
                         root_main = main_path.split(os.path.sep)[1]
                         modscan_list.append(f"[-] NOTICE (-FORMAT-) : {root_main} > {filename} > HAS THE WRONG SOUND FORMAT, SHOULD BE XWM OR WAV \n")
                     # ================================================
@@ -486,7 +473,7 @@ def scan_mods_unpacked():
                             modscan_list.append(f"[!] CAUTION (XSE-COPY) : {root_main} > CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES \n")
                     # ================================================
                     # DETECT MODS WITH PRECOMBINE / PREVIS FILES
-                    elif (".uvd" or "_oc.nif") in filename.lower():
+                    elif any(ext in filename.lower() for ext in (".uvd", "_oc.nif")):
                         root_main = main_path.split(os.path.sep)[1]
                         modscan_list.append(f"[!] CAUTION (-PREVIS-) : {root_main} > CONTAINS LOOSE PRECOMBINE / PREVIS FILES \n")
                     # ================================================
@@ -509,9 +496,8 @@ def scan_mods_unpacked():
     else:
         message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Missing"))
 
-    modscan_unique_list = list(sorted(set(modscan_list)))
-    message_output = "".join(message_list) + "".join(cleanup_list) + "".join(modscan_unique_list)
-    return message_output
+    modscan_unique_list = sorted(set(modscan_list))
+    return "".join(message_list) + "".join(cleanup_list) + "".join(modscan_unique_list)
 
 
 # ================================================
@@ -539,7 +525,7 @@ def scan_mods_archived():
                             ba2_file_path = os.path.join(root, filename)
                             command_dump = f'"{bsarch_path_full}" "{ba2_file_path}" -dump'
 
-                            archived_dump = subprocess.run(command_dump, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                            archived_dump = subprocess.run(command_dump, shell=True, capture_output=True, text=True)
                             if archived_dump.returncode == 0:
                                 archived_output = archived_dump.stdout
                                 # ================================================
@@ -552,13 +538,12 @@ def scan_mods_archived():
                                         dds_meta_split = dds_meta.split(":")
                                         width = dds_meta_split[1].replace("  Height", "").strip()
                                         height = dds_meta_split[2].replace("  CubeMap", "").strip()
-                                        if width.isdecimal() and height.isdecimal():
-                                            if int(width) % 2 != 0 or int(height) % 2 != 0:
-                                                root_main = main_path.split(os.path.sep)[1]
-                                                modscan_list.append(f"[!] CAUTION (DDS-DIMS) : ({root_main}) {line} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n")
+                                        if (width.isdecimal() and int(width) % 2 != 0) or (height.isdecimal() and int(height) % 2 != 0):
+                                            root_main = main_path.split(os.path.sep)[1]
+                                            modscan_list.append(f"[!] CAUTION (DDS-DIMS) : ({root_main}) {line} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n")
                                     # ================================================
                                     # DETECT INVALID TEXTURE FILE FORMATS
-                                    elif (".tga" or ".png") in line.lower():
+                                    elif any(ext in line.lower() for ext in (".tga", ".png")):
                                         root_main = main_path.split(os.path.sep)[1]
                                         modscan_list.append(f"[-] NOTICE (-FORMAT-) : ({root_main}) {line} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n")
                             else:
@@ -569,12 +554,12 @@ def scan_mods_archived():
                             main_path = root.replace(mod_path, "")
                             ba2_file_path = os.path.join(root, filename)
                             command_list = f'"{bsarch_path_full}" "{ba2_file_path}" -list'
-                            archived_list = subprocess.run(command_list, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                            archived_list = subprocess.run(command_list, shell=True, capture_output=True, text=True)
                             if archived_list.returncode == 0:
                                 archived_output = archived_list.stdout
                                 # ================================================
                                 # DETECT INVALID SOUND FILE FORMATS
-                                if (".mp3" or ".m4a") in archived_output.lower():
+                                if any(ext in archived_output.lower() for ext in (".mp3", ".m4a")):
                                     root_main = main_path.split(os.path.sep)[1]
                                     modscan_list.append(f"[-] NOTICE (-FORMAT-) : {root_main} > BA2 ARCHIVE CONTAINS SOUND FILES IN THE WRONG FORMAT \n")
                                 # ================================================
@@ -589,7 +574,7 @@ def scan_mods_archived():
                                     modscan_list.append(f"[!] CAUTION (XSE-COPY) : {root_main} > BA2 ARCHIVE CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES \n")
                                 # ================================================
                                 # DETECT MODS WITH PRECOMBINE / PREVIS FILES
-                                if (".uvd" or "_oc.nif") in archived_output.lower() and "previs repair pack" not in root.lower():
+                                if any(ext in archived_output.lower()for ext in (".uvd", "_oc.nif")) and "previs repair pack" not in root.lower():
                                     root_main = main_path.split(os.path.sep)[1]
                                     modscan_list.append(f"[-] NOTICE (-PREVIS-) : {root_main} > BA2 ARCHIVE CONTAINS CUSTOM PRECOMBINE / PREVIS FILES \n")
                             else:
@@ -602,9 +587,8 @@ def scan_mods_archived():
     else:
         message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Missing"))
 
-    modscan_unique_list = list(sorted(set(modscan_list)))
-    message_output = "".join(message_list) + "".join(modscan_unique_list)
-    return message_output
+    modscan_unique_list = sorted(set(modscan_list))
+    return "".join(message_list) + "".join(modscan_unique_list)
 
 
 # ================================================
@@ -682,15 +666,13 @@ def game_combined_result():
     docs_path = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Docs")
     game_path = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Game")
     combined_return = [check_xse_plugins(), check_crashgen_settings(), check_log_errors(docs_path), check_log_errors(game_path), scan_wryecheck(), scan_mod_inis()]
-    combined_result = "".join(combined_return)
-    return combined_result
+    return "".join(combined_return)
 
 
 def mods_combined_result():  # KEEP THESE SEPARATE SO THEY ARE NOT INCLUDED IN AUTOSCAN REPORTS
     CMain.vrmode_check()
     combined_return = [scan_mods_unpacked(), scan_mods_archived()]
-    combined_result = "".join(combined_return)
-    return combined_result
+    return "".join(combined_return)
 
 
 def write_combined_results():

@@ -19,9 +19,8 @@ CMain.configure_logging()
 # ASSORTED FUNCTIONS
 # ================================================
 def pastebin_fetch(url):
-    if urlparse(url).netloc == "pastebin.com":
-        if "/raw" not in url.path:
-            url = url.replace("pastebin.com", "pastebin.com/raw")
+    if urlparse(url).netloc == "pastebin.com" and "/raw" not in url.path:
+        url = url.replace("pastebin.com", "pastebin.com/raw")
     response = requests.get(url)
     if response.status_code in requests.codes.ok:
         if not os.path.exists("CLASSIC Pastebin"):
@@ -41,8 +40,7 @@ def get_entry(formid, plugin) -> str | None:
             c = conn.cursor()
             c.execute(f'''SELECT entry FROM {CMain.game} WHERE formid=? AND plugin=? COLLATE nocase''', (formid, plugin))
             entry = c.fetchone()
-            if entry:
-                if query_cache.get((formid, plugin)) is None:
+            if entry and query_cache.get((formid, plugin)) is None:
                     query_cache[(formid, plugin)] = entry[0]
     return query_cache.get((formid, plugin))
 
@@ -64,9 +62,8 @@ def crashlogs_get_files():  # Get paths of all available crash logs.
                     shutil.copy2(crash_file, destination_file)
 
     crash_files = list(CLASSIC_folder.glob("crash-*.log"))
-    if CUSTOM_folder:
-        if Path(CUSTOM_folder).exists():
-            crash_files.extend(Path(CUSTOM_folder).glob("crash-*.log"))
+    if CUSTOM_folder and Path(CUSTOM_folder).exists():
+        crash_files.extend(Path(CUSTOM_folder).glob("crash-*.log"))
 
     return crash_files
 
@@ -135,7 +132,7 @@ def crashlogs_scan():
 
     game_mods_conf = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_CONF")
     game_mods_core = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_CORE")
-    games_mods_core_folon = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC Fallout4.yaml", "Mods_CORE_FOLON")
+    games_mods_core_folon = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Fallout4.yaml", "Mods_CORE_FOLON")
     game_mods_freq = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_FREQ")
     game_mods_opc2 = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_OPC2")
     game_mods_solu = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_SOLU")
@@ -196,9 +193,8 @@ def crashlogs_scan():
                                             "IF THIS IS CORRECT, COMPLETELY UNINSTALL THIS MOD TO AVOID ANY PROBLEMS! \n\n"])
                 else:
                     autoscan_report.extend([f"✔️ {mod_split[1]} is installed!\n\n"])
-            else:
-                if gpu_rival not in mod_warn.lower():
-                    autoscan_report.extend([f"❌ {mod_split[1]} is not installed!\n", mod_warn, "\n"])
+            elif gpu_rival not in mod_warn.lower():
+                autoscan_report.extend([f"❌ {mod_split[1]} is not installed!\n", mod_warn, "\n"])
 
     crashlog_list = crashlogs_get_files()
     scan_failed_list = []
@@ -310,9 +306,9 @@ def crashlogs_scan():
         # ================================================
 
         # CHECK GPU TYPE FOR CRASH LOG
-        crashlog_GPUAMD = True if any("GPU #1" in elem and "AMD" in elem for elem in segment_system) else False
-        crashlog_GPUNV = True if any("GPU #1" in elem and "Nvidia" in elem for elem in segment_system) else False
-        crashlog_GPUI = True if not crashlog_GPUAMD and not crashlog_GPUNV else False
+        crashlog_GPUAMD = any("GPU #1" in elem and "AMD" in elem for elem in segment_system)
+        crashlog_GPUNV = any("GPU #1" in elem and "Nvidia" in elem for elem in segment_system)
+        crashlog_GPUI = (not crashlog_GPUAMD and not crashlog_GPUNV)
 
         # IF LOADORDER FILE EXISTS, USE ITS PLUGINS
         if os.path.exists("loadorder.txt"):
@@ -411,9 +407,8 @@ def crashlogs_scan():
                     elif item_split[0] == "NOT":
                         if item_split[1] in segment_callstack_intact:
                             break
-                else:
-                    if item in segment_callstack_intact:
-                        stack_found = True
+                elif item in segment_callstack_intact:
+                    stack_found = True
 
             # print(f"TEST: {error_req_found} | {error_opt_found} | {stack_found}")
             if has_required_item:
@@ -421,11 +416,10 @@ def crashlogs_scan():
                     key_split[1] = key_split[1].ljust(max_warn_length, ".")
                     autoscan_report.append(f"# Checking for {key_split[1]} SUSPECT FOUND! > Severity : {key_split[0]} # \n-----\n")
                     trigger_suspect_found = True
-            else:
-                if error_opt_found or stack_found:
-                    key_split[1] = key_split[1].ljust(max_warn_length, ".")
-                    autoscan_report.append(f"# Checking for {key_split[1]} SUSPECT FOUND! > Severity : {key_split[0]} # \n-----\n")
-                    trigger_suspect_found = True
+            elif error_opt_found or stack_found:
+                key_split[1] = key_split[1].ljust(max_warn_length, ".")
+                autoscan_report.append(f"# Checking for {key_split[1]} SUSPECT FOUND! > Severity : {key_split[0]} # \n-----\n")
+                trigger_suspect_found = True
 
         if trigger_suspect_found:
             autoscan_report.extend(["* FOR DETAILED DESCRIPTIONS AND POSSIBLE SOLUTIONS TO ANY ABOVE DETECTED CRASH SUSPECTS *\n",
@@ -452,7 +446,7 @@ def crashlogs_scan():
                     autoscan_report.append(f"* NOTICE : {line_split[0].strip()} is disabled in your {crashgen_name} settings, is this intentional? * \n-----\n")
 
                 if "achievements:" in line.lower():
-                    if "true" in line.lower() and any(("achievements.dll" or "unlimitedsurvivalmode.dll") in elem.lower() for elem in segment_xsemodules):
+                    if "true" in line.lower() and any(any(dll in elem.lower() for dll in ("achievements.dll", "unlimitedsurvivalmode.dll")) for elem in segment_xsemodules):
                         autoscan_report.extend(["# ❌ CAUTION : The Achievements Mod and/or Unlimited Survival Mode is installed, but Achievements is set to TRUE # \n",
                                                 f" FIX: Open {crashgen_name}'s TOML file and change Achievements to FALSE, this prevents conflicts with {crashgen_name}.\n-----\n"])
                     else:
@@ -470,28 +464,28 @@ def crashlogs_scan():
                     else:
                         autoscan_report.append(f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
-                if "bstexturestreamerlocalheap:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
+                if "bstexturestreamerlocalheap:" in line.lower() and "true" in line.lower() and Is_XCellPresent:
                         autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE # \n",
                                                 f" FIX: Open {crashgen_name}'s TOML file and change BSTextureStreamerLocalHeap to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
-                elif "bstexturestreamerlocalheap:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True:
+                elif "bstexturestreamerlocalheap:" in line.lower() and "false" in line.lower() and Is_XCellPresent:
                     autoscan_report.append(f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n")
 
-                if "havokmemorysystem:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
+                if "havokmemorysystem:" in line.lower() and "true" in line.lower() and Is_XCellPresent:
                     autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but HavokMemorySystem parameter is set to TRUE # \n",
                                             f" FIX: Open {crashgen_name}'s TOML file and change HavokMemorySystem to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
-                elif "havokmemorysystem:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True:
+                elif "havokmemorysystem:" in line.lower() and "false" in line.lower() and Is_XCellPresent:
                     autoscan_report.append(f"✔️ HavokMemorySystem parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n")
 
-                if "scaleformallocator:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
+                if "scaleformallocator:" in line.lower() and "true" in line.lower() and Is_XCellPresent:
                     autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but ScaleformAllocator parameter is set to TRUE # \n",
                                             f" FIX: Open {crashgen_name}'s TOML file and change ScaleformAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
-                elif "scaleformallocator:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True:
+                elif "scaleformallocator:" in line.lower() and "false" in line.lower() and Is_XCellPresent:
                     autoscan_report.extend([f"✔️ ScaleformAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"])
 
-                if "smallblockallocator:" in line.lower() and "true" in line.lower() and Is_XCellPresent == True:
+                if "smallblockallocator:" in line.lower() and "true" in line.lower() and Is_XCellPresent:
                     autoscan_report.extend(["# ❌ CAUTION : X-Cell is installed, but SmallBlockAllocator parameter is set to TRUE # \n",
                                             f" FIX: Open {crashgen_name}'s TOML file and change SmallBlockAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n"])
-                elif "smallblockallocator:" in line.lower() and "false" in line.lower() and Is_XCellPresent == True:
+                elif "smallblockallocator:" in line.lower() and "false" in line.lower() and Is_XCellPresent:
                     autoscan_report.extend([f"✔️ SmallBlockAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"])
 
                 if "f4ee:" in line.lower():
@@ -514,7 +508,7 @@ def crashlogs_scan():
                                 "CHECKING FOR MODS THAT CAN CAUSE FREQUENT CRASHES...\n",
                                 "====================================================\n"])
 
-        if trigger_plugins_loaded == True:
+        if trigger_plugins_loaded:
             if detect_mods_single(game_mods_freq):
                 autoscan_report.extend(["# [!] CAUTION : ANY ABOVE DETECTED MODS HAVE A MUCH HIGHER CHANCE TO CRASH YOUR GAME! #\n",
                                         "* YOU CAN DISABLE ANY / ALL OF THEM TEMPORARILY TO CONFIRM THEY CAUSED THIS CRASH. * \n\n"])
@@ -529,7 +523,7 @@ def crashlogs_scan():
                                 "CHECKING FOR MODS THAT CONFLICT WITH OTHER MODS...\n",
                                 "====================================================\n"])
 
-        if trigger_plugins_loaded == True:
+        if trigger_plugins_loaded:
             if detect_mods_double(game_mods_conf):
                 autoscan_report.extend(["# [!] CAUTION : FOUND MODS THAT ARE INCOMPATIBLE OR CONFLICT WITH YOUR OTHER MODS # \n",
                                         "* YOU SHOULD CHOOSE WHICH MOD TO KEEP AND DISABLE OR COMPLETELY REMOVE THE OTHER MOD * \n\n"])
@@ -542,13 +536,13 @@ def crashlogs_scan():
                                 "CHECKING FOR MODS WITH SOLUTIONS & COMMUNITY PATCHES\n",
                                 "====================================================\n"])
 
-        if trigger_plugins_loaded == True:
+        if trigger_plugins_loaded:
             if detect_mods_single(game_mods_solu):
                 autoscan_report.extend(["# [!] CAUTION : FOUND PROBLEMATIC MODS WITH SOLUTIONS AND COMMUNITY PATCHES # \n",
                                         "[Due to limitations, CLASSIC will show warnings for some mods even if fixes or patches are already installed.] \n",
                                         "[To hide these warnings, you can add their plugin names to the CLASSIC Ignore.yaml file. ONE PLUGIN PER LINE.] \n\n"])
             else:
-                autoscan_report.append(f"# FOUND NO PROBLEMATIC MODS WITH AVAILABLE SOLUTIONS AND COMMUNITY PATCHES # \n\n")
+                autoscan_report.append("# FOUND NO PROBLEMATIC MODS WITH AVAILABLE SOLUTIONS AND COMMUNITY PATCHES # \n\n")
         else:
             autoscan_report.append(warn_noplugins)
 
@@ -557,7 +551,7 @@ def crashlogs_scan():
                                     "CHECKING FOR MODS PATCHED THROUGH OPC INSTALLER...\n",
                                     "====================================================\n"])
 
-            if trigger_plugins_loaded == True:
+            if trigger_plugins_loaded:
                 if detect_mods_single(game_mods_opc2):
                     autoscan_report.extend(["\n* FOR PATCH REPOSITORY THAT PREVENTS CRASHES AND FIXES PROBLEMS IN THESE AND OTHER MODS,* \n",
                                             "* VISIT OPTIMIZATION PATCHES COLLECTION: https://www.nexusmods.com/fallout4/mods/54872 * \n\n"])
@@ -570,7 +564,7 @@ def crashlogs_scan():
                                 "CHECKING IF IMPORTANT PATCHES & FIXES ARE INSTALLED\n",
                                 "====================================================\n"])
 
-        if trigger_plugins_loaded == True:
+        if trigger_plugins_loaded:
             if any("londonworldspace" in plugin.lower() for plugin in crashlog_plugins):
                 detect_mods_important(games_mods_core_folon)
             else:
@@ -760,25 +754,25 @@ if __name__ == "__main__":
 
     # Default output value for an argparse.BooleanOptionalAction is None, and so fails the isinstance check.
     # So it will respect current INI values if not specified on the command line.
-    if isinstance(args.fcx_mode, bool) and not args.fcx_mode == CMain.classic_settings("FCX Mode"):
+    if isinstance(args.fcx_mode, bool) and args.fcx_mode != CMain.classic_settings("FCX Mode"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.FCX Mode", args.fcx_mode)
 
-    if isinstance(args.show_fid_vaues, bool) and not args.imi_mode == CMain.classic_settings("Show FormID Values"):
+    if isinstance(args.show_fid_vaues, bool) and args.imi_mode != CMain.classic_settings("Show FormID Values"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.IMI Mode", args.imi_mode)
 
-    if isinstance(args.move_unsolved, bool) and not args.move_unsolved == CMain.classic_settings("Move Unsolved Logs"):
+    if isinstance(args.move_unsolved, bool) and args.move_unsolved != CMain.classic_settings("Move Unsolved Logs"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.Move Unsolved", args.args.move_unsolved)
 
-    if isinstance(ini_path, Path) and ini_path.resolve().is_dir() and not str(ini_path) == CMain.classic_settings("INI Folder Path"):
+    if isinstance(ini_path, Path) and ini_path.resolve().is_dir() and str(ini_path) != CMain.classic_settings("INI Folder Path"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.INI Folder Path", str(Path(ini_path).resolve()))
 
-    if isinstance(scan_path, Path) and scan_path.resolve().is_dir() and not str(scan_path) == CMain.classic_settings("SCAN Custom Path"):
+    if isinstance(scan_path, Path) and scan_path.resolve().is_dir() and str(scan_path) != CMain.classic_settings("SCAN Custom Path"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.SCAN Custom Path", str(Path(scan_path).resolve()))
 
-    if isinstance(mods_folder_path, Path) and mods_folder_path.resolve().is_dir() and not str(mods_folder_path) == CMain.classic_settings("MODS Folder Path"):
+    if isinstance(mods_folder_path, Path) and mods_folder_path.resolve().is_dir() and str(mods_folder_path) != CMain.classic_settings("MODS Folder Path"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.MODS Folder Path", str(Path(mods_folder_path).resolve()))
 
-    if isinstance(args.simplify_logs, bool) and not args.simplify_logs == CMain.classic_settings("Simplify Logs"):
+    if isinstance(args.simplify_logs, bool) and args.simplify_logs != CMain.classic_settings("Simplify Logs"):
         CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.Simplify Logs", args.simplify_logs)
 
     crashlogs_scan()
