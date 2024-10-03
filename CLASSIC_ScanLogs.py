@@ -5,7 +5,6 @@ import shutil
 import random
 import logging
 import requests
-import ruamel.yaml
 import sqlite3
 import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
@@ -51,7 +50,7 @@ def get_entry(formid: str, plugin: str) -> str | None:
 def crashlogs_get_files() -> list[Path]:  # Get paths of all available crash logs.
     logging.debug("- - - INITIATED CRASH LOG FILE LIST GENERATION")
     CLASSIC_folder = Path.cwd()
-    CUSTOM_folder = CMain.classic_settings("SCAN Custom Path")
+    CUSTOM_folder: str = CMain.classic_settings("SCAN Custom Path") # type: ignore
     XSE_folder: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Docs_Folder_XSE") # type: ignore
 
     if Path(XSE_folder).exists():
@@ -147,7 +146,7 @@ def crashlogs_scan() -> None:
         game_files_check = ""
 
     # DETECT ONE WHOLE KEY (1 MOD) PER LOOP IN YAML DICT
-    def detect_mods_single(yaml_dict: ruamel.yaml.CommentedMap) -> bool:
+    def detect_mods_single(yaml_dict: dict[str, str]) -> bool:
         trigger_mod_found = False
         for mod_name in yaml_dict:
             mod_warn = yaml_dict.get(mod_name)
@@ -159,7 +158,7 @@ def crashlogs_scan() -> None:
         return trigger_mod_found
 
     # DETECT ONE SPLIT KEY (2 MODS) PER LOOP IN YAML DICT
-    def detect_mods_double(yaml_dict: ruamel.yaml.CommentedMap) -> bool:
+    def detect_mods_double(yaml_dict: dict[str, str]) -> bool:
         trigger_mod_found = False
         for mod_name in yaml_dict:
             mod_warn = yaml_dict.get(mod_name)
@@ -178,7 +177,7 @@ def crashlogs_scan() -> None:
         return trigger_mod_found
 
     # DETECT ONE IMPORTANT CORE AND GPU SPECIFIC MOD PER LOOP IN YAML DICT
-    def detect_mods_important(yaml_dict: ruamel.yaml.CommentedMap) -> None:
+    def detect_mods_important(yaml_dict: dict[str, str]) -> None:
         gpu_rival = "nvidia" if (crashlog_GPUAMD or crashlog_GPUI) else "amd" if crashlog_GPUNV else None
         for mod_name in yaml_dict:
             mod_warn = yaml_dict.get(mod_name)

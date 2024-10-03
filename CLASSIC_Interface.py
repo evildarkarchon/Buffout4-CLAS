@@ -687,10 +687,10 @@ class MainWindow(QMainWindow):
     @staticmethod
     def create_checkbox(label_text: str, setting: str) -> QCheckBox:
         checkbox = QCheckBox(label_text)
-        checkbox.setChecked(CMain.classic_settings(setting))
+        checkbox.setChecked(CMain.classic_settings(setting)) # type: ignore
         checkbox.stateChanged.connect(
             lambda state: CMain.yaml_settings(
-                "CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}", bool(state)
+                "CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}", bool(state) # type: ignore
             )
         )
 
@@ -1016,8 +1016,8 @@ class MainWindow(QMainWindow):
             )
 
     def initialize_folder_paths(self) -> None:
-        scan_folder = CMain.classic_settings("SCAN Custom Path")
-        mods_folder = CMain.classic_settings("MODS Folder Path")
+        scan_folder: str = CMain.classic_settings("SCAN Custom Path") # type: ignore
+        mods_folder: str = CMain.classic_settings("MODS Folder Path") # type: ignore
 
         if scan_folder:
             self.scan_folder_edit.setText(scan_folder)

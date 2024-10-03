@@ -114,7 +114,7 @@ class YamlSettingsCache:
 
         return self.cache.get(yaml_path, {})
 
-    def get_setting(self, yaml_path: str, key_path: str, new_value: str | None = None) -> YAMLValue | None:
+    def get_setting(self, yaml_path: str, key_path: str, new_value: str | bool | None = None) -> YAMLValue | None:
         data = self.load_yaml(yaml_path)
         keys = key_path.split('.') if isinstance(key_path, str) else key_path
         value = data
@@ -133,7 +133,7 @@ class YamlSettingsCache:
                 yaml.dump(data, yaml_file)
 
             # Update the cache
-            self.cache[yaml_path] = data
+            self.cache[yaml_path] = data # type: ignore
             return new_value
 
         # Traverse YAML structure to get value
@@ -150,7 +150,7 @@ class YamlSettingsCache:
 yaml_cache = YamlSettingsCache()
 
 # Function compatible with the old interface
-def yaml_settings(yaml_path: str, key_path: str, new_value: str | None = None) -> YAMLValue | None:
+def yaml_settings(yaml_path: str, key_path: str, new_value: str | bool | None = None) -> YAMLValue | None:
     return yaml_cache.get_setting(yaml_path, key_path, new_value)
 
 
@@ -190,7 +190,7 @@ def classic_logging() -> None:
 
 def batch_insert_entries_from_file(file_path: str, db_path: str) -> None:
     batch_size = 1000  # Define the batch size for inserts
-    entries: list[tuple[str]] = []
+    entries: list[tuple[str, ...]] = []
 
     with open(file_path, 'r', encoding='utf-8') as file:
         for line in file:
@@ -208,7 +208,7 @@ def batch_insert_entries_from_file(file_path: str, db_path: str) -> None:
         if entries:
             insert_entries_to_db(db_path, entries)
 
-def insert_entries_to_db(db_path: str, entries: list[tuple[str]], query: str | None = None) -> None:
+def insert_entries_to_db(db_path: str, entries: list[tuple[str, ...]], query: str | None = None) -> None:
     with sqlite3.connect(db_path) as conn:
         if not query:
             conn.executemany(f'''INSERT INTO {game} (plugin, formid, entry) VALUES (?, ?, ?)''', entries)
@@ -261,13 +261,13 @@ def classic_data_extract() -> None:
     if os.path.exists(f"CLASSIC Data/databases/{game} FID Main.txt") and not os.path.exists(f"CLASSIC Data/databases/{game} FormIDs.db"):
         create_formid_db()
 
-def classic_settings(setting: str | None = None) -> YAMLValue | None:
+def classic_settings(setting: str | None = None) -> str | bool | None:
     if not os.path.exists("CLASSIC Settings.yaml"):
         default_settings: str = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.default_settings")  # type: ignore
         with open('CLASSIC Settings.yaml', 'w', encoding='utf-8') as file:
             file.write(default_settings)
     if setting:
-        get_setting: str = yaml_settings("CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}")  # type: ignore
+        get_setting: str | bool | None = yaml_settings("CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}") # type: ignore
         if get_setting is None and "Path" not in setting:  # Error me if I make a stupid mistype.
             print(f"❌ ERROR (classic_settings) : Trying to grab a None value for : '{setting}'")
         return get_setting
@@ -363,7 +363,7 @@ def docs_path_find() -> None:
             if os.path.exists(path_input) and os.path.isdir(path_input):
                 print(f"You entered: '{path_input}' | This path will be automatically added to CLASSIC Settings.yaml")
                 manual_docs = Path(path_input.strip())
-                yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs", manual_docs)
+                yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs", str(manual_docs))
                 break
 
             print(f"'{path_input}' is not a valid or existing directory path. Please try again.")
