@@ -68,16 +68,13 @@ def configure_logging() -> None:
 def remove_readonly(file_path: Path) -> None:
     try:
         # Get current file permissions.
-        if platform.system() == "Windows":
-            permissions = os.stat(file_path).st_mode
-        else:
-            permissions = os.stat(file_path).st_mode & 0o777
+        permissions = file_path.stat().st_mode if platform.system() == "Windows" else file_path.stat().st_mode & 0o777
         # Remove file permissions if needed.
         if permissions & (os.O_RDONLY | os.O_WRONLY):
             if platform.system() == "Windows":
-                os.chmod(file_path, permissions & ~0o400)
+                file_path.chmod(permissions & ~0o400)
             else:
-                os.chmod(file_path, permissions | 0o200)
+                file_path.chmod(permissions | 0o200)
 
             logging.debug(f"- - - '{file_path}' is no longer Read-Only.")
         else:
@@ -409,9 +406,9 @@ def game_path_find() -> None:
             Path_Check = LOG_Check.readlines()
             for logline in Path_Check:
                 if "plugin directory" in logline:
-                    logline = logline[19:].replace(f"\\Data\\{xse_acronym_base}\\Plugins", "")
-                    game_path = logline.replace("\n", "")
-                    if not game_path or not Path(game_path).exists():
+                    logline = logline[19:].replace(f"\\Data\\{xse_acronym_base}\\Plugins", "").replace("\n", "")
+                    game_path = Path(logline)
+                    if not logline or not game_path.exists():
                         print(f"> > PLEASE ENTER THE FULL DIRECTORY PATH WHERE YOUR {game_name} IS LOCATED < <")
                         path_input = input(fr"(EXAMPLE: C:\Steam\steamapps\common\{game_name} | Press ENTER to confirm.)\n> ")
                         print(f"You entered: {path_input} | This path will be automatically added to CLASSIC Settings.yaml")
