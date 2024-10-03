@@ -344,9 +344,9 @@ class MainWindow(QMainWindow):
                 self,
                 "CLASSIC UPDATE",
                 update_popup_text,
-                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
-            if result == QMessageBox.Yes:
+            if result == QMessageBox.StandardButton.Yes:
                 QDesktopServices.openUrl(
                     QUrl(
                         "https://github.com/evildarkarchon/CLASSIC-Fallout4/releases/latest"
@@ -427,7 +427,7 @@ class MainWindow(QMainWindow):
         categories = ["XSE", "RESHADE", "VULKAN", "ENB"]
         for category in categories:
             layout.addWidget(self.create_separator())
-            layout.addWidget(QLabel(category, alignment=Qt.AlignCenter))
+            layout.addWidget(QLabel(category, alignment=Qt.AlignmentFlag.AlignCenter))
 
             button_layout = QHBoxLayout()
 
@@ -487,7 +487,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.create_separator())
 
         title_label = QLabel(title)
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setStyleSheet("color: white; font-weight: bold; font-size: 14px;")
         layout.addWidget(title_label)
 
@@ -579,7 +579,7 @@ class MainWindow(QMainWindow):
         """
         )  # Have to use alternate font here because the default font doesn't support some characters.
 
-        self.output_text_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.output_text_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.output_text_box.setMinimumHeight(150)
         layout.addWidget(self.output_text_box)
 
@@ -641,8 +641,8 @@ class MainWindow(QMainWindow):
     @staticmethod
     def create_separator() -> QFrame:
         separator = QFrame()
-        separator.setFrameShape(QFrame.HLine)
-        separator.setFrameShadow(QFrame.Sunken)
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setFrameShadow(QFrame.Shadow.Sunken)
         return separator
 
     def setup_checkboxes(self, layout: QBoxLayout) -> None:
@@ -650,7 +650,7 @@ class MainWindow(QMainWindow):
 
         # Title for the checkbox section
         title_label = QLabel("CLASSIC SETTINGS")
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         checkbox_layout.addWidget(title_label)
 
@@ -672,7 +672,7 @@ class MainWindow(QMainWindow):
             checkbox = self.create_checkbox(label, setting)
             row = index // 3
             col = index % 3
-            grid_layout.addWidget(checkbox, row, col, Qt.AlignLeft)
+            grid_layout.addWidget(checkbox, row, col, Qt.AlignmentFlag.AlignLeft)
 
         checkbox_layout.addLayout(grid_layout)
 
@@ -722,7 +722,7 @@ class MainWindow(QMainWindow):
         section_layout.setSpacing(5)
 
         label = QLabel(title)
-        label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         label.setFixedWidth(180)
         section_layout.addWidget(label)
 
@@ -771,7 +771,7 @@ class MainWindow(QMainWindow):
     def setup_articles_section(layout: QBoxLayout) -> None:
         # Title for the articles section
         title_label = QLabel("ARTICLES / WEBSITES / NEXUS LINKS")
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         layout.addWidget(title_label)
 
@@ -844,7 +844,7 @@ class MainWindow(QMainWindow):
             )
             row = i // 3
             col = i % 3
-            grid_layout.addWidget(button, row, col, Qt.AlignCenter)
+            grid_layout.addWidget(button, row, col, Qt.AlignmentFlag.AlignCenter)
 
         layout.addLayout(grid_layout)
 
@@ -892,7 +892,7 @@ class MainWindow(QMainWindow):
         # PAPYRUS MONITORING button
         self.papyrus_button = QPushButton("START PAPYRUS MONITORING")
         self.papyrus_button.setFixedHeight(30)
-        self.papyrus_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.papyrus_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.papyrus_button.clicked.connect(self.toggle_papyrus_worker)
         self.papyrus_button.setStyleSheet(
             """
@@ -954,7 +954,7 @@ class MainWindow(QMainWindow):
     @staticmethod
     def add_main_button(layout: QLayout, text: str, callback: Callable[[], None], tooltip: str = "") -> QPushButton:
         button = QPushButton(text)
-        button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         button.setStyleSheet(
             """
             QPushButton {
@@ -982,7 +982,7 @@ class MainWindow(QMainWindow):
     @staticmethod
     def add_bottom_button(layout: QLayout, text: str, callback: Callable[[], None], tooltip: str = "") -> None:
         button = QPushButton(text)
-        button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         button.setStyleSheet(
             """
             color: white;
