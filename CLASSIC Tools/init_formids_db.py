@@ -1,89 +1,50 @@
-import os
 import sqlite3
 from pathlib import Path
-from typing import Literal
+
 base_path = Path("../CLASSIC Data/databases")
 
-path_fallout4_formids_db = base_path / "Fallout4 FormIDs.db"
-path_fallout4_formids_db.unlink(missing_ok=True)
 
-path_skyrim_formids_db = base_path / "Skyrim FormIDs.db"
-path_skyrim_formids_db.unlink(missing_ok=True)
-
-path_starfield_formids_db = base_path / "Starfield FormIDs.db"
-path_starfield_formids_db.unlink(missing_ok=True)
-
-path_fallout4_fid_main = base_path / "Fallout4 FID Main.txt"
-if path_fallout4_fid_main.exists():
-    with sqlite3.connect(path_fallout4_formids_db) as conn:
-        conn.execute('''CREATE TABLE IF NOT EXISTS Fallout4
-              (id INTEGER PRIMARY KEY AUTOINCREMENT,
-               plugin TEXT, formid TEXT, entry TEXT)''')
-        conn.execute("CREATE INDEX IF NOT EXISTS Fallout4_index ON Fallout4(formid, plugin COLLATE nocase);")
-        if conn.in_transaction:
-            conn.commit()
-
-path_skyrim_fid_main = base_path / "Skyrim FID Main.txt"
-if path_skyrim_fid_main.exists():
-    with sqlite3.connect(path_skyrim_formids_db) as conn:
-        conn.execute('''CREATE TABLE IF NOT EXISTS Skyrim
-                (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                 plugin TEXT, formid TEXT, entry TEXT)''')
-        conn.execute("CREATE INDEX IF NOT EXISTS Skyrim_index ON Skyrim (formid, plugin COLLATE nocase);")
-        if conn.in_transaction:
-            conn.commit()
-
-path_starfield_fid_main = base_path / "Starfield FID Main.txt"
-if path_starfield_fid_main.exists():
-    with sqlite3.connect(path_starfield_formids_db) as conn:
-        conn.execute('''CREATE TABLE IF NOT EXISTS Starfield
-                (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                 plugin TEXT, formid TEXT, entry TEXT)''')
-        conn.execute("CREATE INDEX IF NOT EXISTS Starfield_index ON Starfield (formid, plugin COLLATE nocase);")
-    if conn.in_transaction:
-        conn.commit()
-
-def insert(lines: list[str], table: Literal["Fallout4", "Skyrim", "Starfield"] = "Fallout4") -> None:
-    with sqlite3.connect(f"../CLASSIC Data/databases/{table} FormIDs.db") as conn:
+def insert(lines: list[str], game: str, path_db: Path) -> None:
+    with sqlite3.connect(path_db) as conn:
         c = conn.cursor()
-        if lines:
-            for line in lines:
-                line = line.strip()
-                if "|" in line and len(line.split(" | ")) >= 3:
-                    plugin, formid, entry, *extra = line.split(" | ")  # the *extra is for any extraneous data that might be in the line (Python thinks there are more than 3 items in the list for some reason)
-                    c.execute(f'''INSERT INTO {table} (plugin, formid, entry)
-                          VALUES (?, ?, ?)''', (plugin, formid, entry))
+        for line in lines:
+            line = line.strip()
+            parts = line.split(" | ", maxsplit=3)
+            if len(parts) >= 3:
+                # the _ catches any extraneous data that might be in the line
+                plugin, formid, entry, _ = parts
+                c.execute(
+                    """INSERT INTO ? (plugin, formid, entry)
+                        VALUES (?, ?, ?)""",
+                    (game, plugin, formid, entry),
+                )
+        if conn.in_transaction:
+            conn.commit()
+
+
+for game in ("Fallout4", "Skyrim", "Starfield"):
+    path_db = base_path / f"{game} FormIDs.db"
+    path_main = base_path / f"{game} FID Main.txt"
+    path_mods = base_path / f"{game} FID Mods.txt"
+    path_db.unlink(missing_ok=True)
+
+    if path_main.exists():
+        with sqlite3.connect(path_db) as conn:
+            conn.execute(
+                """CREATE TABLE IF NOT EXISTS ?
+                (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                plugin TEXT, formid TEXT, entry TEXT)""",
+                (game,),
+            )
+            conn.execute("CREATE INDEX IF NOT EXISTS ?_index ON ? (formid, plugin COLLATE nocase);", (game, game))
             if conn.in_transaction:
                 conn.commit()
 
-path_fallout4_fid_mods = base_path / "Fallout4 FID Mods.txt"
-if path_fallout4_fid_main.exists():
-    print("Inserting Fallout 4 Main FormIDs...")
-    with path_fallout4_fid_main.open(encoding="utf-8", errors="ignore") as f:
-        insert(f.readlines())
-if path_fallout4_fid_mods.exists():
-    print("Inserting Fallout 4 Mod FormIDs...")
-    with path_fallout4_fid_mods.open(encoding="utf-8", errors="ignore") as f:
-        insert(f.readlines())
+        print(f"Inserting {game} Main FormIDs...")
+        with path_main.open(encoding="utf-8", errors="ignore") as f:
+            insert(f.readlines(), game, path_db)
 
-path_skyrim_fid_mods = base_path / "Skyrim FID Mods.txt"
-if path_skyrim_fid_main.exists():
-    print("Inserting Skyrim Main FormIDs...")
-    with path_skyrim_fid_main.open(encoding="utf-8", errors="ignore") as f:
-        insert(f.readlines(), "Skyrim")
-
-if path_skyrim_fid_mods.exists():
-    print("Inserting Skyrim Mod FormIDs...")
-    with path_skyrim_fid_mods.open(encoding="utf-8", errors="ignore") as f:
-        insert(f.readlines(), "Skyrim")
-
-path_starfield_fid_mods = base_path / "Starfield FID Mods.txt"
-if path_starfield_fid_main.exists():
-    print("Inserting Starfield Main FormIDs...")
-    with path_starfield_fid_main.open(encoding="utf-8", errors="ignore") as f:
-        insert(f.readlines(), "Starfield")
-
-if path_starfield_fid_mods.exists():
-    print("Inserting Starfield Mod FormIDs...")
-    with path_starfield_fid_mods.open(encoding="utf-8", errors="ignore") as f:
-        insert(f.readlines(), "Starfield")
+    if path_mods.exists():
+        print(f"Inserting {game} Mod FormIDs...")
+        with path_mods.open(encoding="utf-8", errors="ignore") as f:
+            insert(f.readlines(), game, path_db)
