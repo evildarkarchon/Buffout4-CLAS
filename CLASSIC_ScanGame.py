@@ -91,9 +91,9 @@ def mod_toml_config(toml_path: Path, section: tomlkit.items.Key, key: tomlkit.it
 # ================================================
 def check_crashgen_settings() -> str:
     message_list: list[str] = []
-    plugins_path = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Game_Folder_Plugins")
-    crashgen_name = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.CRASHGEN_LogName")
-    xse_folder = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Docs_Folder_XSE")
+    plugins_path: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Game_Folder_Plugins")  # type: ignore
+    crashgen_name: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.CRASHGEN_LogName")  # type: ignore
+    xse_folder: list[str] = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Docs_Folder_XSE")  # type: ignore
 
     crashgen_toml_og = Path(plugins_path).joinpath("Buffout4\\config.toml")
     crashgen_toml_vr = Path(plugins_path).joinpath("Buffout4.toml")
@@ -179,9 +179,9 @@ def check_crashgen_settings() -> str:
 def check_log_errors(folder_path: str) -> str:
     message_list: list[str] = []
     errors_list: list[str] = []
-    catch_errors = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "catch_log_errors")
-    ignore_logs_list = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_files")
-    ignore_logs_errors = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_errors")
+    catch_errors: list[str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "catch_log_errors")  # type: ignore
+    ignore_logs_list: list[str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_files")  # type: ignore
+    ignore_logs_errors: list[str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_errors")  # type: ignore
 
     valid_log_files = [file for file in Path(folder_path).glob("*.log") if "crash-" not in file.name]
     for file in valid_log_files:
@@ -215,7 +215,7 @@ def check_log_errors(folder_path: str) -> str:
 # ================================================
 def check_xse_plugins() -> str:  # RESERVED | Might be expanded upon in the future.
     message_list: list[str] = []
-    plugins_folder = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Game_Folder_Plugins")
+    plugins_folder: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Game_Folder_Plugins") # type: ignore
     adlib_versions = {"VR Mode": ("version-1-2-72-0.csv", "Virtual Reality (VR) version", "https://www.nexusmods.com/fallout4/mods/64879?tab=files"),
                       "Non-VR Mode": ("version-1-10-163-0.bin", "Non-VR (Regular) version", "https://www.nexusmods.com/fallout4/mods/47327?tab=files")}
 
@@ -247,7 +247,7 @@ def check_xse_plugins() -> str:  # RESERVED | Might be expanded upon in the futu
 # ================================================
 def papyrus_logging() -> tuple[str, int]:
     message_list: list[str] = []
-    papyrus_path = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Docs_File_PapyrusLog")
+    papyrus_path: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Docs_File_PapyrusLog") # type: ignore
 
     count_dumps = count_stacks = count_warnings = count_errors = 0
     if Path(papyrus_path).exists():
@@ -351,6 +351,8 @@ def scan_mod_inis() -> str:  # Mod INI files check.
     vsync_list: list[str] = []
     game_root = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Game")
 
+    dirs: list[str]
+    files: list[str]
     for root, dirs, files in os.walk(game_root):
         for file in files:
             ini_path = os.path.join(root, file)
@@ -416,8 +418,8 @@ def scan_mods_unpacked() -> str:
     message_list: list[str] = []
     cleanup_list: list[str] = []
     modscan_list: list[str] = []
-    xse_acronym = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_Acronym")
-    xse_scriptfiles = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_HashedScripts")
+    xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_Acronym") # type: ignore
+    xse_scriptfiles: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_HashedScripts") # type: ignore
 
     backup_path = "CLASSIC Backup/Cleaned Files"
     Path(backup_path).mkdir(parents=True, exist_ok=True)
@@ -509,8 +511,8 @@ def scan_mods_unpacked() -> str:
 def scan_mods_archived() -> str:
     message_list: list[str] = []
     modscan_list: list[str] = []
-    xse_acronym = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_Acronym")
-    xse_scriptfiles = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_HashedScripts")
+    xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_Acronym") # type: ignore
+    xse_scriptfiles: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_HashedScripts") # type: ignore
 
     CLASSIC_folder = Path.cwd()
     bsarch_path = r"CLASSIC Data\BSArch.exe"
@@ -598,8 +600,8 @@ def scan_mods_archived() -> str:
 # BACKUP / RESTORE / REMOVE
 # ================================================
 def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REMOVE"] = "BACKUP") -> None:
-    manage_list = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"{classic_list}")
-    game_path = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Game")
+    manage_list: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"{classic_list}") # type: ignore
+    game_path: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Game") # type: ignore
 
     backup_path = f"CLASSIC Backup/Game Files/{classic_list}"
     Path(backup_path).mkdir(parents=True, exist_ok=True)
@@ -666,8 +668,8 @@ def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REM
 # ================================================
 def game_combined_result() -> str:
     CMain.vrmode_check()
-    docs_path = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Docs")
-    game_path = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Game")
+    docs_path: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Docs") # type: ignore
+    game_path: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Game") # type: ignore
     combined_return = [check_xse_plugins(), check_crashgen_settings(), check_log_errors(docs_path), check_log_errors(game_path), scan_wryecheck(), scan_mod_inis()]
     return "".join(combined_return)
 
