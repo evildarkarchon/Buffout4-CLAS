@@ -336,10 +336,10 @@ class MainWindow(QMainWindow):
                 self, "CLASSIC UPDATE", "You have the latest version of CLASSIC!"
             )
         else:
-            update_popup_text = CMain.yaml_settings(
+            update_popup_text: str = CMain.yaml_settings(
                 "CLASSIC Data/databases/CLASSIC Main.yaml",
                 "CLASSIC_Interface.update_popup_text",
-            )
+            ) # type: ignore
             result = QMessageBox.question(
                 self,
                 "CLASSIC UPDATE",
@@ -483,7 +483,7 @@ class MainWindow(QMainWindow):
                     """
                     )
 
-    def add_backup_section(self, layout: QLayout, title: str, backup_type: Literal["XSE", "RESHADE", "VULKAN", "ENB"]) -> None:
+    def add_backup_section(self, layout: QBoxLayout, title: str, backup_type: Literal["XSE", "RESHADE", "VULKAN", "ENB"]) -> None:
         layout.addWidget(self.create_separator())
 
         title_label = QLabel(title)
@@ -552,10 +552,10 @@ class MainWindow(QMainWindow):
             )
 
     def help_popup_backup(self) -> None:
-        help_popup_text = CMain.yaml_settings(
+        help_popup_text: str = CMain.yaml_settings(
             "CLASSIC Data/databases/CLASSIC Main.yaml",
             "CLASSIC_Interface.help_popup_backup",
-        )
+        ) # type: ignore
         QMessageBox.information(self, "NEED HELP?", help_popup_text)
 
     @staticmethod
@@ -645,7 +645,7 @@ class MainWindow(QMainWindow):
         separator.setFrameShadow(QFrame.Sunken)
         return separator
 
-    def setup_checkboxes(self, layout: QLayout) -> None:
+    def setup_checkboxes(self, layout: QBoxLayout) -> None:
         checkbox_layout = QVBoxLayout()
 
         # Title for the checkbox section
@@ -716,7 +716,7 @@ class MainWindow(QMainWindow):
         return checkbox
 
     @staticmethod
-    def setup_folder_section(layout: QLayout, title: str, box_name: str, browse_callback: Callable[[], None], tooltip: str = "") -> QLineEdit:
+    def setup_folder_section(layout: QBoxLayout, title: str, box_name: str, browse_callback: Callable[[], None], tooltip: str = "") -> QLineEdit:
         section_layout = QHBoxLayout()
         section_layout.setContentsMargins(0, 0, 0, 0)
         section_layout.setSpacing(5)
@@ -739,7 +739,7 @@ class MainWindow(QMainWindow):
         layout.addLayout(section_layout)
         return line_edit  # Return the created QLineEdit
 
-    def setup_main_buttons(self, layout: QLayout) -> None:
+    def setup_main_buttons(self, layout: QBoxLayout) -> None:
         # Main action buttons
         main_buttons_layout = QHBoxLayout()
         main_buttons_layout.setSpacing(10)
@@ -945,10 +945,10 @@ class MainWindow(QMainWindow):
         QMessageBox.about(self, "About CLASSIC", about_text)
 
     def help_popup_main(self) -> None:
-        help_popup_text = CMain.yaml_settings(
+        help_popup_text: str = CMain.yaml_settings(
             "CLASSIC Data/databases/CLASSIC Main.yaml",
             "CLASSIC_Interface.help_popup_main",
-        )
+        ) # type: ignore
         QMessageBox.information(self, "NEED HELP?", help_popup_text)
 
     @staticmethod

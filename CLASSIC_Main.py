@@ -40,7 +40,7 @@ game = "Fallout4"  # Set game managed by CLASSIC.
 
 type YAMLValue = dict[str, YAMLValue] | list[str] | str | int
 
-def open_file_with_encoding(file_path: Path) -> TextIOWrapper:  # Read only file open with encoding detection. Only for text files.
+def open_file_with_encoding(file_path: Path | str) -> TextIOWrapper:  # Read only file open with encoding detection. Only for text files.
     with open(file_path, "rb") as f:
         raw_data = f.read()
         encoding = chardet.detect(raw_data)["encoding"]
@@ -263,11 +263,11 @@ def classic_data_extract() -> None:
 
 def classic_settings(setting: str | None = None) -> YAMLValue | None:
     if not os.path.exists("CLASSIC Settings.yaml"):
-        default_settings = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.default_settings")
+        default_settings: str = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.default_settings")  # type: ignore
         with open('CLASSIC Settings.yaml', 'w', encoding='utf-8') as file:
             file.write(default_settings)
     if setting:
-        get_setting = yaml_settings("CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}")
+        get_setting: str = yaml_settings("CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}")  # type: ignore
         if get_setting is None and "Path" not in setting:  # Error me if I make a stupid mistype.
             print(f"❌ ERROR (classic_settings) : Trying to grab a None value for : '{setting}'")
         return get_setting
@@ -276,7 +276,7 @@ def classic_settings(setting: str | None = None) -> YAMLValue | None:
 async def classic_update_check(quiet: bool = False, gui_request: bool = True) -> bool:
     logging.debug("- - - INITIATED UPDATE CHECK")
     if classic_settings("Update Check") or gui_request:
-        classic_local = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.version")
+        classic_local: str = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.version")  # type: ignore
         if not quiet:
             print("❓ (Needs internet connection) CHECKING FOR NEW CLASSIC VERSIONS...")
             sys.stdout.flush()
@@ -323,7 +323,7 @@ async def classic_update_check(quiet: bool = False, gui_request: bool = True) ->
 # =========== CHECK DOCUMENTS FOLDER PATH -> GET GAME DOCUMENTS FOLDER ===========
 def docs_path_find() -> None:
     logging.debug("- - - INITIATED DOCS PATH CHECK")
-    docs_name = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.Main_Docs_Name")
+    docs_name: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.Main_Docs_Name")  # type: ignore
 
     def get_windows_docs_path() -> str:
         try:
@@ -342,7 +342,7 @@ def docs_path_find() -> None:
         return win_docs
 
     def get_linux_docs_path() -> None:
-        game_sid = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.Main_SteamID")
+        game_sid: int = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.Main_SteamID")  # type: ignore
         libraryfolders_path = Path.home().joinpath(".local", "share", "Steam", "steamapps", "common", "libraryfolders.vdf")
         if libraryfolders_path.is_file():
             library_path = Path()
@@ -369,14 +369,14 @@ def docs_path_find() -> None:
             print(f"'{path_input}' is not a valid or existing directory path. Please try again.")
 
     # =========== CHECK IF GAME DOCUMENTS FOLDER PATH WAS GENERATED AND FOUND ===========
-    docs_path = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs")
+    docs_path: str = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs")  # type: ignore
     if docs_path is None:
         if platform.system() == "Windows":
             get_windows_docs_path()
         else:
             get_linux_docs_path()
 
-    docs_path = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs")
+    docs_path: str = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs")  # type: ignore
     try:  # In case .exists() complains about checking a None value.
         if not Path(docs_path).exists():
             get_manual_docs_path()
@@ -386,9 +386,9 @@ def docs_path_find() -> None:
 
 def docs_generate_paths() -> None:
     logging.debug("- - - INITIATED DOCS PATH GENERATION")
-    xse_acronym = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.XSE_Acronym")
-    xse_acronym_base = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Game_Info.XSE_Acronym")
-    docs_path = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs")
+    xse_acronym: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.XSE_Acronym")  # type: ignore
+    xse_acronym_base: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Game_Info.XSE_Acronym")  # type: ignore
+    docs_path: str = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs")  # type: ignore
 
     yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Docs_Folder_XSE", fr"{docs_path}\{xse_acronym_base}")
     yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Docs_File_PapyrusLog", fr"{docs_path}\Logs\Script\Papyrus.0.log")
@@ -399,10 +399,10 @@ def docs_generate_paths() -> None:
 # =========== CHECK DOCUMENTS XSE FILE -> GET GAME ROOT FOLDER PATH ===========
 def game_path_find() -> None:
     logging.debug("- - - INITIATED GAME PATH CHECK")
-    xse_file = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Docs_File_XSE")
-    xse_acronym = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.XSE_Acronym")
-    xse_acronym_base = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Game_Info.XSE_Acronym")
-    game_name = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.Main_Root_Name")
+    xse_file: str = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Docs_File_XSE")  # type: ignore
+    xse_acronym: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.XSE_Acronym")  # type: ignore
+    xse_acronym_base: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Game_Info.XSE_Acronym")  # type: ignore
+    game_name: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.Main_Root_Name")  # type: ignore
 
     if Path(xse_file).is_file():
         with open_file_with_encoding(xse_file) as LOG_Check:
@@ -427,9 +427,9 @@ def game_path_find() -> None:
 def game_generate_paths() -> None:
     logging.debug("- - - INITIATED GAME PATH GENERATION")
 
-    game_path = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Game")
-    xse_acronym = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.XSE_Acronym")
-    xse_acronym_base = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Game_Info.XSE_Acronym")
+    game_path: str = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Game")  # type: ignore
+    xse_acronym: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.XSE_Acronym")  # type: ignore
+    xse_acronym_base: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Game_Info.XSE_Acronym")  # type: ignore
 
     yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Game_Folder_Data", fr"{game_path}Data")
     yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Game_Folder_Scripts", fr"{game_path}Data\Scripts")
@@ -448,11 +448,11 @@ def game_check_integrity() -> str:
     message_list = []
     logging.debug("- - - INITIATED GAME INTEGRITY CHECK")
 
-    steam_ini_local = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Game_File_SteamINI")
-    exe_hash_old = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.EXE_HashedOLD")
-    # exe_hash_new = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.EXE_HashedNEW") | RESERVED FOR 2023 UPDATE
-    game_exe_local = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Game_File_EXE")
-    root_name = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.Main_Root_Name")
+    steam_ini_local: str = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Game_File_SteamINI")  # type: ignore
+    exe_hash_old: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.EXE_HashedOLD")  # type: ignore
+    # exe_hash_new: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.EXE_HashedNEW")  # type: ignore  | RESERVED FOR 2023 UPDATE
+    game_exe_local: str = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Game_File_EXE")  # type: ignore
+    root_name: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.Main_Root_Name")  # type: ignore
 
     game_exe_path = Path(game_exe_local)
     steam_ini_path = Path(steam_ini_local)
@@ -472,7 +472,7 @@ def game_check_integrity() -> str:
         if "Program Files" not in str(game_exe_path):
             message_list.append(f"✔️ Your {root_name} game files are installed outside of the Program Files folder! \n-----\n")
         else:
-            root_warn = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Warnings_GAME.warn_root_path")
+            root_warn: str = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Warnings_GAME.warn_root_path")  # type: ignore
             message_list.append(root_warn)
 
     return "".join(message_list)
@@ -574,9 +574,9 @@ def xse_check_hashes() -> str:
 # ================================================
 def docs_check_folder() -> str:
     message_list = []
-    docs_name = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.Main_Docs_Name")
+    docs_name: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.Main_Docs_Name")  # type: ignore
     if "onedrive" in docs_name.lower():
-        docs_warn = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Warnings_GAME.warn_docs_path")
+        docs_warn: str = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Warnings_GAME.warn_docs_path")  # type: ignore
         message_list.append(docs_warn)
     return "".join(message_list)
 
@@ -585,8 +585,8 @@ def docs_check_folder() -> str:
 def docs_check_ini(ini_name: str) -> str:
     message_list: list[str] = []
     logging.info(f"- - - INITIATED {ini_name} CHECK")
-    folder_docs = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs")
-    docs_name = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.Main_Docs_Name")
+    folder_docs: str = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Docs")  # type: ignore
+    docs_name: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", f"Game{vr}_Info.Main_Docs_Name")  # type: ignore
 
     ini_file_list = list(Path(folder_docs).glob("*.ini"))
     ini_path = Path(folder_docs).joinpath(ini_name)
@@ -636,7 +636,7 @@ def docs_check_ini(ini_name: str) -> str:
             with open(ini_path, "a", encoding="utf-8", errors="ignore") as ini_file:
                 message_list.extend(["❌ WARNING : Archive Invalidation / Loose Files setting is not enabled. \n",
                                      "  CLASSIC will now enable this setting automatically in the game INI files. \n-----\n"])
-                customini_config = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Default_CustomINI")
+                customini_config: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Default_CustomINI")  # type: ignore
                 ini_file.write(customini_config)
 
     return "".join(message_list)
@@ -714,15 +714,15 @@ def main_generate_required() -> None:
     classic_logging()
     classic_data_extract()
     classic_generate_files()
-    classic_ver = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.version")
-    game_name = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Game_Info.Main_Root_Name")
+    classic_ver: str = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.version")  # type: ignore
+    game_name: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {game}.yaml", "Game_Info.Main_Root_Name")  # type: ignore
     print(f"Hello World! | Crash Log Auto Scanner & Setup Integrity Checker | {classic_ver} | {game_name}")
     print("REMINDER: COMPATIBLE CRASH LOGS MUST START WITH 'crash-' AND MUST HAVE .log EXTENSION \n")
     print("❓ PLEASE WAIT WHILE CLASSIC CHECKS YOUR SETTINGS AND GAME SETUP...")
     logging.debug(f"> > > STARTED {classic_ver}")
 
     vrmode_check()
-    game_path = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Game")
+    game_path: str = yaml_settings(f"CLASSIC Data/CLASSIC {game} Local.yaml", f"Game{vr}_Info.Root_Folder_Game")  # type: ignore
 
     if not game_path:
         docs_path_find()

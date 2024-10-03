@@ -283,9 +283,9 @@ def papyrus_logging() -> tuple[str, int]:
 # ================================================
 def scan_wryecheck() -> str:
     message_list: list[str] = []
-    wrye_missinghtml = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Warnings_MODS.Warn_WRYE_MissingHTML")
-    wrye_plugincheck = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Docs_File_WryeBashPC")
-    wrye_warnings = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Warnings_WRYE")
+    wrye_missinghtml: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Warnings_MODS.Warn_WRYE_MissingHTML") # type: ignore
+    wrye_plugincheck: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Docs_File_WryeBashPC") # type: ignore
+    wrye_warnings: dict[str, str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Warnings_WRYE") # type: ignore
 
     if Path(wrye_plugincheck).is_file():
         message_list.extend(["\n✔️ WRYE BASH PLUGIN CHECKER REPORT WAS FOUND! ANALYZING CONTENTS... \n",
@@ -348,7 +348,7 @@ def scan_wryecheck() -> str:
 def scan_mod_inis() -> str:  # Mod INI files check.
     message_list: list[str] = []
     vsync_list: list[str] = []
-    game_root = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Game")
+    game_root: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Game") # type: ignore
 
     dirs: list[str]
     files: list[str]
