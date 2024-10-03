@@ -503,7 +503,7 @@ class MainWindow(QMainWindow):
         ]:
             button.clicked.connect(
                 lambda _, b=backup_type, a=action: self.classic_files_manage(
-                    f"Backup {b}", a
+                    f"Backup {b}", a  # type: ignore
                 )
             )
             button.setStyleSheet(
