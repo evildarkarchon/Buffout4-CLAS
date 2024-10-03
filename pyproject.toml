@@ -1,0 +1,112 @@
+[project]
+name = "classic-fallout4"
+version = "7.30"
+requires-python = ">=3.12"
+
+[tool.poetry]
+name = "classic-fallout4"
+version = "7.30"
+description = "Crash Log Auto-Scanner for Buffout 4."
+authors = ["Poet", "evildarkarchon"]
+readme = "CLASSIC - Readme.pdf"
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+beautifulsoup4 = ">=4.12.3"
+numpy = ">=2.1.1"
+requests = ">=2.32.3"
+ruamel-yaml = ">=0.18.6"
+sounddevice = ">=0.5.0"
+soundfile = ">=0.12.1"
+tomlkit = ">=0.13.2"
+urllib3 = ">=2.2.3"
+chardet = "^5.2.0"
+aiohttp = "^3.10.8"
+regex = "^2024.9.11"
+iniparse = "^0.5"
+pyside6 = "^6.7.3"
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.11.2"
+types-beautifulsoup4 = "^4.12.0.20240907"
+types-regex = "^2024.9.11.20240912"
+types-requests = "^2.32.0.20240914"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pyright]
+typeCheckingMode = "standard"
+reportUnusedImport = false    # Redundant with Ruff F401
+
+[tool.ruff]
+indent-width = 4
+line-length = 120
+
+[tool.ruff.format]
+preview = true
+indent-style = "space"
+line-ending = "auto"
+quote-style = "double"
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint]
+ignore = [
+	"ANN101",  # Deprecated
+	"ANN401",  # Allow use of typing.Any
+	"E501",    # Duplicate of B950 line-too-long
+	"E722",    # Duplicate of B001 bare-except
+	"PLR0904", # too-many-public-methods
+	"PLR0912", # too-many-branches
+	"PLR0914", # too-many-local-variables
+	"PLR0915", # too-many-statements
+	"PLR1702", # too-many-nested-blocks
+	"TRY003",  # Allow custom exception messages
+	"TRY400",  # Use `logging.exception` instead of `logging.error`
+	"UP027",   # Deprecated
+	"PLR2004", # Allow magic values in comparisons
+	"PLW2901", # Allow overwriting loop variables
+]
+
+extend-select = [
+	"A",     # Builtin Shadowing
+	"ANN",   # Type Annotations
+	"ASYNC", # Async Suggestions
+	"ARG",   # Unused Arguments
+	"B",     # Bugs/Design Problems
+	"BLE",   # Blind Except
+	"C4",    # Comprehensions
+	"FA",    # Future Annotations
+	"FLY",   # F-Strings
+	"FURB",  # Modernization
+	"I",     # Import Sorting
+	"ICN",   # Import Naming Conventions
+	"ISC",   # Implicit String Concatenation
+	"LOG",   # Logging
+	"PERF",  # Performance Anti-Patterns
+	"PIE",   # Misc Lints
+	"PL",    # Pylint
+	"RET",   # Return
+	"RSE",   # Raise
+	"RUF",   # Ruff
+	"SIM",   # Simplify
+	"SLF",   # Self
+	"TCH",   # Type Checking
+	"TID",   # Tidy Imports
+	"TRY",   # Exception Anti-Patterns
+	"UP",    # pyupgrade (New Syntax Suggestions)
+
+	# "D",     # pydocstyle
+	# "C901",  # Complex Structures
+	# "COM",   # Commas
+	# "DTZ",   # Unsafe/Naive Datetimes
+	# "EM",    # Exception Messages
+	# "FBT",   # Boolean Traps
+	# "G",     # Logging Formatting
+	# "N",     # PEP8 Naming Conventions
+	# "PTH",   # Prefer Pathlib
+	# "PYI",   # Stub Files
+	# "Q",     # Quotes
+	# "S",     # Security Testing
+]
