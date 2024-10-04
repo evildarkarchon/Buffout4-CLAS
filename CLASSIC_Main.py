@@ -709,7 +709,7 @@ def main_generate_required() -> None:
     print("❓ PLEASE WAIT WHILE CLASSIC CHECKS YOUR SETTINGS AND GAME SETUP...")
     logging.debug(f"> > > STARTED {classic_ver}")
 
-    game_path: YAMLValue = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Game")  # type: ignore
+    game_path: YAMLValue | None = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Game")  # type: ignore
 
     if not game_path:
         docs_path_find()
