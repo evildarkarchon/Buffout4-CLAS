@@ -31,6 +31,8 @@ mypy = "^1.11.2"
 types-beautifulsoup4 = "^4.12.0.20240907"
 types-regex = "^2024.9.11.20240912"
 types-requests = "^2.32.0.20240914"
+pyinstaller = "^6.10.0"
+poetry-plugin-up = "^0.7.2"
 
 [build-system]
 requires = ["poetry-core"]
