@@ -1,16 +1,18 @@
-import os
-import regex as re
-import time
-import shutil
-import random
 import logging
-import requests
+import os
+import random
+import shutil
 import sqlite3
-import CLASSIC_Main as CMain
-import CLASSIC_ScanGame as CGame
-from urllib.parse import urlparse
+import time
 from collections import Counter
 from pathlib import Path
+from urllib.parse import urlparse
+
+import regex as re
+import requests
+
+import CLASSIC_Main as CMain
+import CLASSIC_ScanGame as CGame
 
 CMain.configure_logging()
 
@@ -31,15 +33,16 @@ def pastebin_fetch(url: str) -> None:
     else:
         response.raise_for_status()
 
-query_cache = {}
+query_cache: dict[tuple[str, str], str] = {}
 
 def get_entry(formid: str, plugin: str) -> str | None:
     if (entry := query_cache.get((formid, plugin))) is not None:
         return entry
-    if Path(f"CLASSIC Data/databases/{CMain.game} FormIDs.db").is_file():
-        with sqlite3.connect(f"CLASSIC Data/databases/{CMain.game} FormIDs.db") as conn:
+    db_path = Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs.db")
+    if db_path.is_file():
+        with sqlite3.connect(db_path) as conn:
             c = conn.cursor()
-            c.execute(f'''SELECT entry FROM {CMain.game} WHERE formid=? AND plugin=? COLLATE nocase''', (formid, plugin))
+            c.execute("""SELECT entry FROM ? WHERE formid=? AND plugin=? COLLATE nocase""", (CMain.gamevars["game"], formid, plugin))
             entry = c.fetchone()
             if entry and query_cache.get((formid, plugin)) is None:
                     query_cache[(formid, plugin)] = entry[0]
@@ -52,10 +55,11 @@ def crashlogs_get_files() -> list[Path]:  # Get paths of all available crash log
     logging.debug("- - - INITIATED CRASH LOG FILE LIST GENERATION")
     CLASSIC_folder = Path.cwd()
     CUSTOM_folder: str = CMain.classic_settings("SCAN Custom Path") # type: ignore
-    XSE_folder: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Docs_Folder_XSE") # type: ignore
+    XSE_folder: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", "Game_Info.Docs_Folder_XSE") # type: ignore
 
-    if Path(XSE_folder).exists():
-        xse_crash_files = list(Path(XSE_folder).glob("crash-*.log"))
+    XSE_path: Path | None = Path(XSE_folder) if XSE_folder else None
+    if XSE_path and XSE_path.exists():
+        xse_crash_files = list(XSE_path.glob("crash-*.log"))
         if xse_crash_files:
             for crash_file in xse_crash_files:
                 destination_file = fr"{CLASSIC_folder}/{crash_file.name}"
@@ -70,9 +74,8 @@ def crashlogs_get_files() -> list[Path]:  # Get paths of all available crash log
 
 
 def crashlogs_reformat() -> None:  # Reformat plugin lists in crash logs, so that old and new CRASHGEN formats match.
-    CMain.vrmode_check()  # Only place where needed since crashlogs_reformat() runs first in crashlogs_scan()
     logging.debug("- - - INITIATED CRASH LOG FILE REFORMAT")
-    xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_Acronym") # type: ignore
+    xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym") # type: ignore
     remove_list: list[str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_records") # type: ignore
     simple_logs = CMain.classic_settings("Simplify Logs")
 
@@ -108,35 +111,35 @@ def crashlogs_scan() -> None:
     scan_start_time = time.perf_counter()
     # ================================================
     # Grabbing YAML values is time expensive, so keep these out of the main file loop.
-    classic_game_hints: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Game_Hints")  # type: ignore
+    classic_game_hints: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Game_Hints")  # type: ignore
     classic_records_list: list[str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "catch_log_records")  # type: ignore
     classic_version: str = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.version")  # type: ignore
     classic_version_date: str = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.version_date")  # type: ignore
 
-    crashgen_name: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Game_Info.CRASHGEN_LogName")  # type: ignore
-    crashgen_latest_og: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Game_Info.CRASHGEN_LatestVer")  # type: ignore
-    crashgen_latest_vr: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "GameVR_Info.CRASHGEN_LatestVer")  # type: ignore
-    crashgen_ignore: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.CRASHGEN_Ignore")  # type: ignore
+    crashgen_name: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Game_Info.CRASHGEN_LogName")  # type: ignore
+    crashgen_latest_og: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Game_Info.CRASHGEN_LatestVer")  # type: ignore
+    crashgen_latest_vr: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "GameVR_Info.CRASHGEN_LatestVer")  # type: ignore
+    crashgen_ignore: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.CRASHGEN_Ignore")  # type: ignore
 
-    warn_noplugins: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Warnings_CRASHGEN.Warn_NOPlugins")  # type: ignore
-    warn_outdated: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Warnings_CRASHGEN.Warn_Outdated")  # type: ignore
-    xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Game_Info.XSE_Acronym")  # type: ignore
+    warn_noplugins: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Warnings_CRASHGEN.Warn_NOPlugins")  # type: ignore
+    warn_outdated: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Warnings_CRASHGEN.Warn_Outdated")  # type: ignore
+    xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Game_Info.XSE_Acronym")  # type: ignore
 
-    game_ignore_plugins: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Plugins_Exclude")  # type: ignore
-    game_ignore_records: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Records_Exclude")  # type: ignore
-    suspects_error_list: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Error_Check")  # type: ignore
-    suspects_stack_list: dict[str, list[str]] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Crashlog_Stack_Check")  # type: ignore
+    game_ignore_plugins: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Crashlog_Plugins_Exclude")  # type: ignore
+    game_ignore_records: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Crashlog_Records_Exclude")  # type: ignore
+    suspects_error_list: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Crashlog_Error_Check")  # type: ignore
+    suspects_stack_list: dict[str, list[str]] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Crashlog_Stack_Check")  # type: ignore
 
-    autoscan_text: str = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.autoscan_text_{CMain.game}")  # type: ignore
+    autoscan_text: str = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", f"CLASSIC_Interface.autoscan_text_{CMain.gamevars["game"]}")  # type: ignore
     remove_list: list[str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_records")  # type: ignore
-    ignore_list: list[str] = CMain.yaml_settings("CLASSIC Ignore.yaml", f"CLASSIC_Ignore_{CMain.game}")  # type: ignore
+    ignore_list: list[str] = CMain.yaml_settings("CLASSIC Ignore.yaml", f"CLASSIC_Ignore_{CMain.gamevars["game"]}")  # type: ignore
 
-    game_mods_conf: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_CONF")  # type: ignore
-    game_mods_core: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_CORE")  # type: ignore
+    game_mods_conf: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Mods_CONF")  # type: ignore
+    game_mods_core: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Mods_CORE")  # type: ignore
     games_mods_core_folon: dict[str, str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Fallout4.yaml", "Mods_CORE_FOLON")  # type: ignore
-    game_mods_freq: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_FREQ")  # type: ignore
-    game_mods_opc2: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_OPC2")  # type: ignore
-    game_mods_solu: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Mods_SOLU")  # type: ignore
+    game_mods_freq: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Mods_FREQ")  # type: ignore
+    game_mods_opc2: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Mods_OPC2")  # type: ignore
+    game_mods_solu: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Mods_SOLU")  # type: ignore
 
     # ================================================
     if CMain.classic_settings("FCX Mode"):
@@ -153,7 +156,10 @@ def crashlogs_scan() -> None:
             mod_warn = yaml_dict.get(mod_name)
             for plugin_name, plugin_fid in crashlog_plugins.items():
                 if mod_name.lower() in plugin_name.lower():
-                    autoscan_report.extend([f"[!] FOUND : [{plugin_fid}] ", mod_warn])
+                    if mod_warn:
+                        autoscan_report.extend([f"[!] FOUND : [{plugin_fid}] ", mod_warn])
+                    else:
+                        raise ValueError(f"ERROR: {mod_name} has no warning in the database!")
                     trigger_mod_found = True
                     break
         return trigger_mod_found
@@ -166,14 +172,17 @@ def crashlogs_scan() -> None:
             mod_split = mod_name.split(' | ', 1)
             mod1_found = mod2_found = False
             for plugin_name in crashlog_plugins:
-                if mod_split[0].lower() in plugin_name.lower():
+                if not mod1_found and mod_split[0].lower() in plugin_name.lower():
                     mod1_found = True
                     continue
-                if mod_split[1].lower() in plugin_name.lower():
+                if not mod2_found and mod_split[1].lower() in plugin_name.lower():
                     mod2_found = True
                     continue
             if mod1_found and mod2_found:
-                autoscan_report.extend(["[!] CAUTION : ", mod_warn])
+                if mod_warn:
+                    autoscan_report.extend(["[!] CAUTION : ", mod_warn])
+                else:
+                    raise ValueError(f"ERROR: {mod_name} has no warning in the database!")
                 trigger_mod_found = True
         return trigger_mod_found
 
@@ -189,13 +198,29 @@ def crashlogs_scan() -> None:
                     mod_found = True
                     continue
             if mod_found:
-                if gpu_rival and gpu_rival in mod_warn.lower():
+                if gpu_rival and gpu_rival in mod_warn.lower(): # type: ignore
                     autoscan_report.extend([f"❓ {mod_split[1]} is installed, BUT IT SEEMS YOU DON'T HAVE AN {gpu_rival.upper()} GPU?\n",
                                             "IF THIS IS CORRECT, COMPLETELY UNINSTALL THIS MOD TO AVOID ANY PROBLEMS! \n\n"])
                 else:
                     autoscan_report.extend([f"✔️ {mod_split[1]} is installed!\n\n"])
-            elif gpu_rival not in mod_warn.lower():
+            elif gpu_rival not in mod_warn.lower() and mod_warn: # type: ignore
                 autoscan_report.extend([f"❌ {mod_split[1]} is not installed!\n", mod_warn, "\n"])
+
+    def crashlog_generate_segment(segment_start: str, segment_end: str, crash_data: list[str]) -> list[str]:
+            try:
+                index_start: int = next(index for index, item in enumerate(crash_data) if segment_start.lower() in item.lower()) + 1
+            except StopIteration:
+                index_start = 0
+            try:
+                index_end: int = next(index for index, item in enumerate(crash_data) if segment_end.lower() in item.lower() and xse_acronym.lower() not in item.lower()) - 1
+            except StopIteration:
+                index_end = len(crash_data)
+
+            if index_start <= index_end:
+                segment_output: list[str] = [s_line.strip() for s_line in crash_data[index_start:index_end] if all(item.lower() not in s_line.lower() for item in remove_list)]
+            else:
+                segment_output = []
+            return segment_output
 
     crashlog_list = crashlogs_get_files()
     scan_failed_list = []
@@ -230,31 +255,15 @@ def crashlogs_scan() -> None:
         except StopIteration:
             index_mainerror = 3
 
-        def crashlog_generate_segment(segment_start: str, segment_end: str) -> list[str]:
-            try:
-                index_start = next(index for index, item in enumerate(crash_data) if segment_start.lower() in item.lower()) + 1
-            except StopIteration:
-                index_start = 0
-            try:
-                index_end = next(index for index, item in enumerate(crash_data) if segment_end.lower() in item.lower() and xse_acronym.lower() not in item.lower()) - 1
-            except StopIteration:
-                index_end: int = len(crash_data)
-
-            if index_start <= index_end:
-                segment_output = [s_line.strip() for s_line in crash_data[index_start:index_end] if all(item.lower() not in s_line.lower() for item in remove_list)]
-            else:
-                segment_output = []
-            return segment_output
-
         # ================================================
         # 2) GENERATE REQUIRED SEGMENTS FROM THE CRASH LOG
         # ================================================
-        segment_allmodules = crashlog_generate_segment("modules:", f"{xse_acronym.lower()} plugins:")  # type: ignore
-        segment_xsemodules = crashlog_generate_segment(f"{xse_acronym.lower()} plugins:", "plugins:")  # type: ignore
-        segment_callstack = crashlog_generate_segment("probable call stack:", "modules:")
-        segment_crashgen = crashlog_generate_segment("[compatibility]", "system specs:")
-        segment_system = crashlog_generate_segment("system specs:", "probable call stack:")
-        segment_plugins = crashlog_generate_segment("plugins:", "???????")  # Non-existent value makes it go to last line.
+        segment_allmodules = crashlog_generate_segment("modules:", f"{xse_acronym.lower()} plugins:", crash_data)
+        segment_xsemodules = crashlog_generate_segment(f"{xse_acronym.lower()} plugins:", "plugins:", crash_data)
+        segment_callstack = crashlog_generate_segment("probable call stack:", "modules:", crash_data)
+        segment_crashgen = crashlog_generate_segment("[compatibility]", "system specs:", crash_data)
+        segment_system = crashlog_generate_segment("system specs:", "probable call stack:", crash_data)
+        segment_plugins = crashlog_generate_segment("plugins:", "???????", crash_data)  # Non-existent value makes it go to last line.
         segment_callstack_intact = "".join(segment_callstack)
         if not segment_plugins:
             stats_crashlog_incomplete += 1
@@ -278,25 +287,22 @@ def crashlogs_scan() -> None:
         # =============== CRASHGEN VERSION ===============
         crashlog_crashgen = crash_data[index_crashgenver].strip()
         autoscan_report.append(f"Detected {crashgen_name} Version: {crashlog_crashgen} \n")
-        if crashgen_latest_og == crashlog_crashgen or crashgen_latest_vr == crashlog_crashgen:
+        if crashlog_crashgen in (crashgen_latest_og, crashgen_latest_vr):
             autoscan_report.append(f"* You have the latest version of {crashgen_name}! *\n\n")
         else:
             autoscan_report.append(f"{warn_outdated} \n")
 
         # ======= REQUIRED LISTS, DICTS AND CHECKS =======
-        if ignore_list:
-            ignore_plugins_list = [item.lower() for item in ignore_list]
-        else:
-            ignore_plugins_list = False
+        ignore_plugins_list = [item.lower() for item in ignore_list] if ignore_list else []
 
         crashlog_GPUAMD = crashlog_GPUNV = False
         crashlog_plugins: dict[str, str] = {}
-        if CMain.game == "Fallout4":
+        if CMain.gamevars["game"] == "Fallout4":
             if any("Fallout4.esm" in elem for elem in segment_plugins):
                 trigger_plugins_loaded = True
             else:
                 stats_crashlog_incomplete += 1
-        elif CMain.game == "SkyrimSE":
+        elif CMain.gamevars["game"] == "SkyrimSE":
             if any("Skyrim.esm" in elem for elem in segment_plugins):
                 trigger_plugins_loaded = True
             else:
@@ -393,8 +399,8 @@ def crashlogs_scan() -> None:
             key_split = key.split(" | ", 1)
             error_req_found = error_opt_found = stack_found = False
             item_list = suspects_stack_list.get(key)
-            has_required_item = any("ME-REQ|" in elem for elem in item_list)
-            for item in item_list:
+            has_required_item = any("ME-REQ|" in elem for elem in item_list) # type: ignore
+            for item in item_list: # type: ignore
                 if "|" in item:
                     item_split = item.split("|", 1)
                     if item_split[0] == "ME-REQ":
@@ -406,9 +412,8 @@ def crashlogs_scan() -> None:
                     elif item_split[0].isdecimal():
                         if segment_callstack_intact.count(item_split[1]) >= int(item_split[0]):
                             stack_found = True
-                    elif item_split[0] == "NOT":
-                        if item_split[1] in segment_callstack_intact:
-                            break
+                    elif item_split[0] == "NOT" and item_split[1] in segment_callstack_intact:
+                        break
                 elif item in segment_callstack_intact:
                     stack_found = True
 
@@ -548,7 +553,7 @@ def crashlogs_scan() -> None:
         else:
             autoscan_report.append(warn_noplugins)
 
-        if CMain.game == "Fallout4":
+        if CMain.gamevars["game"] == "Fallout4":
             autoscan_report.extend(["====================================================\n",
                                     "CHECKING FOR MODS PATCHED THROUGH OPC INSTALLER...\n",
                                     "====================================================\n"])
@@ -588,9 +593,8 @@ def crashlogs_scan() -> None:
         plugins_matches = []
         for line in segment_callstack:
             for plugin in crashlog_plugins:
-                if plugin.lower() in line.lower() and "modified by:" not in line.lower():
-                    if all(ignore.lower() not in plugin.lower() for ignore in game_ignore_plugins):
-                        plugins_matches.append(plugin)
+                if plugin.lower() in line.lower() and "modified by:" not in line.lower() and all(ignore.lower() not in plugin.lower() for ignore in game_ignore_plugins):
+                    plugins_matches.append(plugin)  # noqa: PERF401
 
         if len(plugins_matches) >= 1:
             plugins_found = dict(Counter(plugins_matches))
@@ -614,7 +618,7 @@ def crashlogs_scan() -> None:
                 for plugin, plugin_id in crashlog_plugins.items():
                     if len(formid_split) >= 2 and str(plugin_id) == str(formid_split[1][:2]):
                         if CMain.classic_settings("Show FormID Values"):
-                            if Path(f"CLASSIC Data/databases/{CMain.game} FormIDs.db").exists():
+                            if Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs.db").exists():
                                 report = get_entry(formid_split[1][2:], plugin)
                                 if report:
                                     autoscan_report.append(f"- {formid_full} | [{plugin}] | {report} | {count}\n")
@@ -622,8 +626,8 @@ def crashlogs_scan() -> None:
                                     autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
                                     break
                             else:
-                                fid_main_path = Path(f"CLASSIC Data/databases/{CMain.game} FID Main.txt")
-                                fid_mods_path = Path(f"CLASSIC Data/databases/{CMain.game} FID Mods.txt")
+                                fid_main_path = Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FID Main.txt")
+                                fid_mods_path = Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FID Mods.txt")
                                 with fid_main_path.open(encoding="utf-8", errors="ignore") as fid_main, fid_mods_path.open(encoding="utf-8", errors="ignore") as fid_mods:
                                     line_match_main = next((line for line in fid_main if str(formid_split[1][2:]) in line and plugin.lower() in line.lower()), None)
                                     line_match_mods = next((line for line in fid_mods if str(formid_split[1][2:]) in line and plugin.lower() in line.lower()), None)
@@ -653,13 +657,12 @@ def crashlogs_scan() -> None:
         autoscan_report.append("# LIST OF DETECTED (NAMED) RECORDS #\n")
         records_matches = []
         for line in segment_callstack:
-            if any(item.lower() in line.lower() for item in classic_records_list):
-                if all(record.lower() not in line.lower() for record in game_ignore_records):
-                    if "[RSP+" in line:
-                        line = line[30:].strip()
-                        records_matches.append(line)
-                    else:
-                        records_matches.append(line.strip())
+            if any(item.lower() in line.lower() for item in classic_records_list) and all(record.lower() not in line.lower() for record in game_ignore_records):
+                if "[RSP+" in line:
+                    line = line[30:].strip()
+                    records_matches.append(line)
+                else:
+                    records_matches.append(line.strip())
         if records_matches:
             records_found = dict(Counter(sorted(records_matches)))
             for record, count in records_found.items():
@@ -672,7 +675,7 @@ def crashlogs_scan() -> None:
             autoscan_report.append("* COULDN'T FIND ANY NAMED RECORDS *\n\n")
 
         # ============== AUTOSCAN REPORT END ==============
-        if CMain.game == "Fallout4":
+        if CMain.gamevars["game"] == "Fallout4":
             autoscan_report.append(autoscan_text)
         autoscan_report.append(f"{classic_version} | {classic_version_date} | END OF AUTOSCAN \n")
 
@@ -696,11 +699,14 @@ def crashlogs_scan() -> None:
         if trigger_scan_failed and CMain.classic_settings("Move Unsolved Logs"):
             backup_path = Path("CLASSIC Backup/Unsolved Logs")
             backup_path.mkdir(parents=True, exist_ok=True)
+            autoscan_filepath = crashlog_file.with_name(crashlog_file.stem + "-AUTOSCAN.md")
+            crash_move = backup_path / crashlog_file.name
+            scan_move = backup_path / autoscan_file.name
 
             if crashlog_file.exists():
-                shutil.copy2(crashlog_file, backup_path / crashlog_file.name)
-            if autoscan_path.exists():
-                shutil.copy2(autoscan_path, backup_path / autoscan_file.name)
+                shutil.copy2(crashlog_file, crash_move)
+            if autoscan_filepath.exists():
+                shutil.copy2(autoscan_filepath, scan_move)
 
     # CHECK FOR FAILED OR INVALID CRASH LOGS
     if scan_failed_list or scan_invalid_list:
@@ -724,7 +730,7 @@ def crashlogs_scan() -> None:
     print(f"Number of Scanned Logs (No Autoscan Errors): {stats_crashlog_scanned}")
     print(f"Number of Incomplete Logs (No Plugins List): {stats_crashlog_incomplete}")
     print(f"Number of Failed Logs (Autoscan Can't Scan): {stats_crashlog_failed}\n-----")
-    if CMain.game == "Fallout4":
+    if CMain.gamevars["game"] == "Fallout4":
         print(autoscan_text)
     if stats_crashlog_scanned == 0 and stats_crashlog_incomplete == 0:
         print("\n❌ CLAS found no crash logs to scan or the scan failed.")
