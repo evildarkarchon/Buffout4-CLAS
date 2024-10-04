@@ -1,19 +1,18 @@
 import asyncio
-from collections.abc import Callable
 import multiprocessing
 import multiprocessing.synchronize
 import os
+import queue
 import sys
 import time
 import traceback
-import queue
-import logging
+from collections.abc import Callable
 from types import TracebackType
-from typing import Literal
+from typing import Any, Literal
 
 try:  # soundfile (specically its Numpy dependency) seem to cause virus alerts from some AV programs, including Windows Defender.
-    import sounddevice as sdev
-    import soundfile as sfile
+    import sounddevice as sdev  # type: ignore
+    import soundfile as sfile  # type: ignore
 
     has_soundfile = True
 except ImportError:
@@ -107,7 +106,7 @@ def show_exception_box(error_text: str) -> None:
     dialog.exec()
 
 
-def custom_excepthook(exc_type: type[BaseException], exc_value: BaseException, exc_traceback: TracebackType) -> None:
+def custom_excepthook(exc_type: type[BaseException], exc_value: BaseException, exc_traceback: TracebackType | None) -> Any:
     error_text = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
     print(error_text)  # Still print to console
     show_exception_box(error_text)
@@ -265,14 +264,14 @@ class MainWindow(QMainWindow):
         self.is_update_check_running = False
 
         # Set up Papyrus monitoring
-        self.result_queue = multiprocessing.Queue()
+        self.result_queue: multiprocessing.Queue = multiprocessing.Queue()
         self.worker_stop_event = multiprocessing.Event()
         self.worker_process = None
         self.is_worker_running = False
 
         # Initialize thread attributes
-        self.crash_logs_thread = None
-        self.game_files_thread = None
+        self.crash_logs_thread: QThread | None = None
+        self.game_files_thread: QThread | None = None
 
         # Set up the QTimer for periodic updates
         self.timer = QTimer()
@@ -312,7 +311,7 @@ class MainWindow(QMainWindow):
         try:
             is_up_to_date = await CMain.classic_update_check(quiet=True)
             self.show_update_result(is_up_to_date)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.show_update_error(str(e))
         finally:
             self.is_update_check_running = False
@@ -324,7 +323,7 @@ class MainWindow(QMainWindow):
                 quiet=True, gui_request=True
             )
             self.show_update_result(is_up_to_date)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.show_update_error(str(e))
         finally:
             self.is_update_check_running = False
@@ -590,10 +589,7 @@ class MainWindow(QMainWindow):
     def update_output_text_box(self, text: str | bytes) -> None:
         try:
             # If the incoming text is bytes, decode it
-            if isinstance(text, bytes):
-                text = text.decode("utf-8", errors="replace")
-            else:
-                text = str(text)
+            text = text.decode("utf-8", errors="replace") if isinstance(text, bytes) else str(text)
 
             # Append the incoming text to the buffer
             self.output_buffer += text
@@ -621,7 +617,7 @@ class MainWindow(QMainWindow):
             # Keep the last incomplete line in the buffer if it's not complete
             self.output_buffer = lines[-1] if not ends_with_newline else ""
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Error in update_output_text_box: {e}")
 
     def process_lines(self, lines: list[str]) -> None:
@@ -1099,10 +1095,10 @@ class MainWindow(QMainWindow):
             # Start the worker process for papyrus logs
             self.worker_stop_event = multiprocessing.Event()
             self.worker_process = multiprocessing.Process(
-                target=papyrus_worker, args=(self.result_queue, self.worker_stop_event)
+                target=papyrus_worker, args=(self.result_queue, self.worker_stop_event) # type: ignore
             )
-            self.worker_process.daemon = True
-            self.worker_process.start()
+            self.worker_process.daemon = True # type: ignore
+            self.worker_process.start() # type: ignore
 
             # Start the timer for periodic updates
             self.timer.start(5000)  # Update every 5 seconds
@@ -1211,7 +1207,7 @@ class MainWindow(QMainWindow):
                         )
                     else:
                         updated_lines = (
-                            current_lines
+                            current_lines  # noqa: RUF005
                             + ["\n--- Papyrus Monitoring ---"]
                             + papyrus_data
                         )
@@ -1242,6 +1238,6 @@ if __name__ == "__main__":
         window = MainWindow()
         window.show()
         sys.exit(app.exec())
-    except Exception as _:
+    except Exception as _:  # noqa: BLE001
         error_text = traceback.format_exc()
         show_exception_box(error_text)

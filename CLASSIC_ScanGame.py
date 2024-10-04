@@ -1,17 +1,19 @@
-import os
-import struct
-import shutil
-import logging
-import tomlkit
-import subprocess
-import iniparse
 import functools
-import chardet
-import CLASSIC_Main as CMain
-from bs4 import BeautifulSoup
+import logging
+import os
+import shutil
+import struct
+import subprocess
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Literal
+
+import chardet
+import iniparse  # type: ignore
+import tomlkit
+from bs4 import BeautifulSoup
+
+import CLASSIC_Main as CMain
 
 CMain.configure_logging()
 
@@ -32,7 +34,7 @@ def handle_ini_exceptions(func: Callable) -> Callable:
             logging.error(f"ERROR: Unable to read or write the file - {e}")
         except UnicodeError as e:
             logging.error(f"ERROR: Unable to read the file due to encoding issues - {e}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logging.error(f"ERROR: An unexpected error occurred - {e}")
         return None
     return wrapper
@@ -43,7 +45,7 @@ def mod_ini_config(ini_path: str, section: str, key: str, new_value: str | None 
         ini_encoding = chardet.detect(config_file.read())['encoding']
 
     config = iniparse.ConfigParser()
-    with open(ini_path, 'r', encoding=ini_encoding) as config_file:
+    with open(ini_path, 'r', encoding=ini_encoding) as config_file:  # noqa: UP015
         config.readfp(config_file)
 
     if not config.has_section(section):
@@ -90,28 +92,28 @@ def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | No
 # ================================================
 def check_crashgen_settings() -> str:
     message_list: list[str] = []
-    plugins_path: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Game_Folder_Plugins")  # type: ignore
-    crashgen_name: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.CRASHGEN_LogName")  # type: ignore
-    xse_folder: list[str] = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Docs_Folder_XSE")  # type: ignore
+    plugins_path: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Game_Folder_Plugins")  # type: ignore
+    crashgen_name: str | None = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.CRASHGEN_LogName")  # type: ignore
+    xse_folder: list[str] | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Docs_Folder_XSE")  # type: ignore
 
-    crashgen_toml_og = Path(plugins_path).joinpath("Buffout4\\config.toml")
-    crashgen_toml_vr = Path(plugins_path).joinpath("Buffout4.toml")
-    if crashgen_toml_og.is_file():
+    crashgen_toml_og: Path | None = Path(plugins_path).joinpath("Buffout4\\config.toml") if plugins_path else None
+    crashgen_toml_vr: Path | None = Path(plugins_path).joinpath("Buffout4.toml") if plugins_path else None
+    if crashgen_toml_og and crashgen_toml_og.is_file():
         crashgen_toml_main = crashgen_toml_og
-    elif crashgen_toml_vr.is_file():
+    elif crashgen_toml_vr and crashgen_toml_vr.is_file():
         crashgen_toml_main = crashgen_toml_vr
     else:
-        crashgen_toml_main = ""
+        raise FileNotFoundError("Buffout4.toml not found in the plugins folder.")
 
-    if crashgen_toml_og.is_file() and crashgen_toml_vr.is_file():
-        message_list.extend([f"# ❌ CAUTION : BOTH VERSIONS OF {crashgen_name.upper()} TOML SETTINGS FILES WERE FOUND! #\n",
+    if (crashgen_toml_og and crashgen_toml_og.is_file()) and (crashgen_toml_vr and crashgen_toml_vr.is_file()):
+        message_list.extend([f"# ❌ CAUTION : BOTH VERSIONS OF {crashgen_name.upper()} TOML SETTINGS FILES WERE FOUND! #\n", # type: ignore
                              f"When editing {crashgen_name} toml settings, make sure you are editing the correct file. \n",
                              f"Please recheck your {crashgen_name} installation and delete any obsolete files. \n-----\n"])
 
-    IsXCellPresent = any("xcell" in file.lower() for file in xse_folder)
-    IsBakaScrapHeapPresent = any("bakascrapheap" in file.lower() for file in xse_folder)
+    IsXCellPresent = any("xcell" in file.lower() for file in xse_folder) if xse_folder else False
+    IsBakaScrapHeapPresent = any("bakascrapheap" in file.lower() for file in xse_folder) if xse_folder else False
     if crashgen_toml_main:
-        if mod_toml_config(crashgen_toml_main, "Patches", "Achievements") and any("achievements" in file.lower() for file in xse_folder):
+        if xse_folder and mod_toml_config(crashgen_toml_main, "Patches", "Achievements") and any("achievements" in file.lower() for file in xse_folder):
             message_list.extend(["# ❌ CAUTION : The Achievements Mod and/or Unlimited Survival Mode is installed, but Achievements is set to TRUE # \n",
                                  f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with {crashgen_name}. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "Achievements", "False")
@@ -158,7 +160,7 @@ def check_crashgen_settings() -> str:
             message_list.append(f"✔️ SmallBlockAllocator parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
 
-        if mod_toml_config(crashgen_toml_main, "Compatibility", "F4EE") and any("f4ee" in file.lower() for file in xse_folder):
+        if xse_folder and mod_toml_config(crashgen_toml_main, "Compatibility", "F4EE") and any("f4ee" in file.lower() for file in xse_folder):
             message_list.extend(["# ❌ CAUTION : Looks Menu is installed, but F4EE parameter under [Compatibility] is set to FALSE # \n",
                                  "    Auto Scanner will change this parameter to TRUE to prevent bugs and crashes from Looks Menu. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Compatibility", "F4EE", "True")
@@ -189,9 +191,8 @@ def check_log_errors(folder_path: str) -> str:
                 with CMain.open_file_with_encoding(file) as log_file:
                     log_data = log_file.readlines()
                 for line in log_data:
-                    if any(item.lower() in line.lower() for item in catch_errors):
-                        if all(elem.lower() not in line.lower() for elem in ignore_logs_errors):
-                            errors_list.append(f"ERROR > {line}")
+                    if any(item.lower() in line.lower() for item in catch_errors) and all(elem.lower() not in line.lower() for elem in ignore_logs_errors):
+                        errors_list.append(f"ERROR > {line}")  # noqa: PERF401
 
                 if errors_list:
                     message_list.extend(["[!] CAUTION : THE FOLLOWING LOG FILE REPORTS ONE OR MORE ERRORS! \n",
@@ -214,7 +215,7 @@ def check_log_errors(folder_path: str) -> str:
 # ================================================
 def check_xse_plugins() -> str:  # RESERVED | Might be expanded upon in the future.
     message_list: list[str] = []
-    plugins_folder: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Game_Folder_Plugins") # type: ignore
+    plugins_folder: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Game_Folder_Plugins") # type: ignore
     adlib_versions = {"VR Mode": ("version-1-2-72-0.csv", "Virtual Reality (VR) version", "https://www.nexusmods.com/fallout4/mods/64879?tab=files"),
                       "Non-VR Mode": ("version-1-10-163-0.bin", "Non-VR (Regular) version", "https://www.nexusmods.com/fallout4/mods/47327?tab=files")}
 
@@ -246,10 +247,10 @@ def check_xse_plugins() -> str:  # RESERVED | Might be expanded upon in the futu
 # ================================================
 def papyrus_logging() -> tuple[str, int]:
     message_list: list[str] = []
-    papyrus_path: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Docs_File_PapyrusLog") # type: ignore
+    papyrus_path: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Docs_File_PapyrusLog") # type: ignore
 
     count_dumps = count_stacks = count_warnings = count_errors = 0
-    if Path(papyrus_path).exists():
+    if papyrus_path and Path(papyrus_path).exists():
         with CMain.open_file_with_encoding(papyrus_path) as papyrus_log:
             papyrus_data = papyrus_log.readlines()
         for line in papyrus_data:
@@ -283,13 +284,13 @@ def papyrus_logging() -> tuple[str, int]:
 # ================================================
 def scan_wryecheck() -> str:
     message_list: list[str] = []
-    wrye_missinghtml: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", "Warnings_MODS.Warn_WRYE_MissingHTML") # type: ignore
-    wrye_plugincheck: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Docs_File_WryeBashPC") # type: ignore
+    wrye_missinghtml: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Warnings_MODS.Warn_WRYE_MissingHTML") # type: ignore
+    wrye_plugincheck: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Docs_File_WryeBashPC") # type: ignore
     wrye_warnings: dict[str, str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Warnings_WRYE") # type: ignore
 
-    if Path(wrye_plugincheck).is_file():
+    if wrye_plugincheck and Path(wrye_plugincheck).is_file():
         message_list.extend(["\n✔️ WRYE BASH PLUGIN CHECKER REPORT WAS FOUND! ANALYZING CONTENTS... \n",
-                             f"  [This report is located in your Documents/My Games/{CMain.game} folder.] \n",
+                             f"  [This report is located in your Documents/My Games/{CMain.gamevars["game"]} folder.] \n",
                              "  [To hide this report, remove *ModChecker.html* from the same folder.] \n"])
         with CMain.open_file_with_encoding(wrye_plugincheck) as WB_Check:
             WB_HTML = WB_Check.read()
@@ -329,7 +330,7 @@ def scan_wryecheck() -> str:
 
             if title not in {"ESL Capable", "Active Plugins:"}:
                 for elem in plugin_list:
-                    message_list.append(f"    > {elem} \n")
+                    message_list.append(f"    > {elem} \n")  # noqa: PERF401
 
         message_list.extend(["\n❔ For more info about the above detected problems, see the WB Advanced Readme \n",
                              "  For more details about solutions, read the Advanced Troubleshooting Article \n",
@@ -348,62 +349,63 @@ def scan_wryecheck() -> str:
 def scan_mod_inis() -> str:  # Mod INI files check.
     message_list: list[str] = []
     vsync_list: list[str] = []
-    game_root: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Game") # type: ignore
+    game_root: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game") # type: ignore
 
-    dirs: list[str]
+
     files: list[str]
-    for root, dirs, files in os.walk(game_root):
-        for file in files:
-            ini_path = os.path.join(root, file)
-            if ".ini" in file.lower():
-                with CMain.open_file_with_encoding(ini_path) as ini_file:
-                    ini_data = ini_file.read()
-                if "sstartingconsolecommand" in ini_data.lower():
-                    message_list.extend([f"[!] NOTICE: {ini_path} contains the *sStartingConsoleCommand* setting. \n",
-                                         "In rare cases, this setting can slow down the initial game startup time for some players. \n",
-                                         "You can test your initial startup time difference by removing this setting from the INI file. \n-----\n"])
-            match file.lower():
-                case "dxvk.conf":
-                    if mod_ini_config(ini_path, f"{CMain.game}.exe", "dxgi.syncInterval") is True:
-                        vsync_list.append(f"{ini_path} | SETTING: dxgi.syncInterval \n")
-                case "enblocal.ini":
-                    if mod_ini_config(ini_path, "ENGINE", "ForceVSync") is True:
-                        vsync_list.append(f"{ini_path} | SETTING: ForceVSync \n")
-                case "espexplorer.ini":
-                    if "; F10" in mod_ini_config(ini_path, "General", "HotKey"):
-                        mod_ini_config(ini_path, "General", "HotKey", "0x79")
-                        logging.info(f"> > > PERFORMED INI HOTKEY FIX FOR {file}")
-                        message_list.append(f"> Performed INI Hotkey Fix For : {file} \n")
-                case "epo.ini":
-                    if int(mod_ini_config(ini_path, "Particles", "iMaxDesired")) > 5000:
-                        mod_ini_config(ini_path, "Particles", "iMaxDesired", "5000")
-                        logging.info(f"> > > PERFORMED INI PARTICLE COUNT FIX FOR {file}")
-                        message_list.append(f"> Performed INI Particle Count Fix For : {file} \n")
-                case "f4ee.ini":
-                    if mod_ini_config(ini_path, "CharGen", "bUnlockHeadParts") == 0:
-                        mod_ini_config(ini_path, "CharGen", "bUnlockHeadParts", "1")
-                        logging.info(f"> > > PERFORMED INI HEAD PARTS UNLOCK FOR {file}")
-                        message_list.append(f"> Performed INI Head Parts Unlock For : {file} \n")
-                    if mod_ini_config(ini_path, "CharGen", "bUnlockTints") == 0:
-                        mod_ini_config(ini_path, "CharGen", "bUnlockTints", "1")
-                        logging.info(f"> > > PERFORMED INI FACE TINTS UNLOCK FOR {file}")
-                        message_list.append(f"> Performed INI Face Tints Unlock For : {file} \n")
-                case "fallout4_test.ini": # f-strings don't work in match-case statements as far as I can tell.
-                    if mod_ini_config(ini_path, "CreationKit", "VSyncRender") is True: # CREATION KIT
-                        vsync_list.append(f"{ini_path} | SETTING: VSyncRender \n")
-                case "highfpsphysicsfix.ini":
-                    if mod_ini_config(ini_path, "Main", "EnableVSync"):
-                        vsync_list.append(f"{ini_path} | SETTING: EnableVSync \n")
-                    if float(mod_ini_config(ini_path, "Limiter", "LoadingScreenFPS")) < 600.0:
-                        mod_ini_config(ini_path, "Limiter", "LoadingScreenFPS", "600.0")
-                        logging.info(f"> > > PERFORMED INI LOADING SCREEN FPS FIX FOR {file}")
-                        message_list.append(f"> Performed INI Loading Screen FPS Fix For : {file} \n")
-                case "longloadingtimesfix.ini":
-                    if mod_ini_config(ini_path, "Limiter", "EnableVSync") is True:
-                        vsync_list.append(f"{ini_path} | SETTING: EnableVSync \n")
-                case "reshade.ini":
-                    if mod_ini_config(ini_path, "APP", "ForceVsync") is True:
-                        vsync_list.append(f"{ini_path} | SETTING: ForceVsync \n")
+    if game_root:
+        for root, _, files in os.walk(game_root):
+            for file in files:
+                ini_path = os.path.join(root, file)
+                if ".ini" in file.lower():
+                    with CMain.open_file_with_encoding(ini_path) as ini_file:
+                        ini_data = ini_file.read()
+                    if "sstartingconsolecommand" in ini_data.lower():
+                        message_list.extend([f"[!] NOTICE: {ini_path} contains the *sStartingConsoleCommand* setting. \n",
+                                            "In rare cases, this setting can slow down the initial game startup time for some players. \n",
+                                            "You can test your initial startup time difference by removing this setting from the INI file. \n-----\n"])
+                match file.lower():
+                    case "dxvk.conf":
+                        if mod_ini_config(ini_path, f"{CMain.gamevars["game"]}.exe", "dxgi.syncInterval") is True:
+                            vsync_list.append(f"{ini_path} | SETTING: dxgi.syncInterval \n")
+                    case "enblocal.ini":
+                        if mod_ini_config(ini_path, "ENGINE", "ForceVSync") is True:
+                            vsync_list.append(f"{ini_path} | SETTING: ForceVSync \n")
+                    case "espexplorer.ini":
+                        if "; F10" in mod_ini_config(ini_path, "General", "HotKey"):
+                            mod_ini_config(ini_path, "General", "HotKey", "0x79")
+                            logging.info(f"> > > PERFORMED INI HOTKEY FIX FOR {file}")
+                            message_list.append(f"> Performed INI Hotkey Fix For : {file} \n")
+                    case "epo.ini":
+                        if int(mod_ini_config(ini_path, "Particles", "iMaxDesired")) > 5000:
+                            mod_ini_config(ini_path, "Particles", "iMaxDesired", "5000")
+                            logging.info(f"> > > PERFORMED INI PARTICLE COUNT FIX FOR {file}")
+                            message_list.append(f"> Performed INI Particle Count Fix For : {file} \n")
+                    case "f4ee.ini":
+                        if mod_ini_config(ini_path, "CharGen", "bUnlockHeadParts") == 0:
+                            mod_ini_config(ini_path, "CharGen", "bUnlockHeadParts", "1")
+                            logging.info(f"> > > PERFORMED INI HEAD PARTS UNLOCK FOR {file}")
+                            message_list.append(f"> Performed INI Head Parts Unlock For : {file} \n")
+                        if mod_ini_config(ini_path, "CharGen", "bUnlockTints") == 0:
+                            mod_ini_config(ini_path, "CharGen", "bUnlockTints", "1")
+                            logging.info(f"> > > PERFORMED INI FACE TINTS UNLOCK FOR {file}")
+                            message_list.append(f"> Performed INI Face Tints Unlock For : {file} \n")
+                    case "fallout4_test.ini": # f-strings don't work in match-case statements as far as I can tell.
+                        if mod_ini_config(ini_path, "CreationKit", "VSyncRender") is True: # CREATION KIT
+                            vsync_list.append(f"{ini_path} | SETTING: VSyncRender \n")
+                    case "highfpsphysicsfix.ini":
+                        if mod_ini_config(ini_path, "Main", "EnableVSync"):
+                            vsync_list.append(f"{ini_path} | SETTING: EnableVSync \n")
+                        if float(mod_ini_config(ini_path, "Limiter", "LoadingScreenFPS")) < 600.0:
+                            mod_ini_config(ini_path, "Limiter", "LoadingScreenFPS", "600.0")
+                            logging.info(f"> > > PERFORMED INI LOADING SCREEN FPS FIX FOR {file}")
+                            message_list.append(f"> Performed INI Loading Screen FPS Fix For : {file} \n")
+                    case "longloadingtimesfix.ini":
+                        if mod_ini_config(ini_path, "Limiter", "EnableVSync") is True:
+                            vsync_list.append(f"{ini_path} | SETTING: EnableVSync \n")
+                    case "reshade.ini":
+                        if mod_ini_config(ini_path, "APP", "ForceVsync") is True:
+                            vsync_list.append(f"{ini_path} | SETTING: ForceVsync \n")
 
     if vsync_list:
         message_list.append("* NOTICE : VSYNC IS CURRENTLY ENABLED IN THE FOLLOWING FILES * \n")
@@ -417,8 +419,8 @@ def scan_mods_unpacked() -> str:
     message_list: list[str] = []
     cleanup_list: list[str] = []
     modscan_list: list[str] = []
-    xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_Acronym") # type: ignore
-    xse_scriptfiles: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_HashedScripts") # type: ignore
+    xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym") # type: ignore
+    xse_scriptfiles: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.XSE_HashedScripts") # type: ignore
 
     backup_path = "CLASSIC Backup/Cleaned Files"
     Path(backup_path).mkdir(parents=True, exist_ok=True)
@@ -510,8 +512,8 @@ def scan_mods_unpacked() -> str:
 def scan_mods_archived() -> str:
     message_list: list[str] = []
     modscan_list: list[str] = []
-    xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_Acronym") # type: ignore
-    xse_scriptfiles: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"Game{CMain.vr}_Info.XSE_HashedScripts") # type: ignore
+    xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym") # type: ignore
+    xse_scriptfiles: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.XSE_HashedScripts") # type: ignore
 
     CLASSIC_folder = Path.cwd()
     bsarch_path = r"CLASSIC Data\BSArch.exe"
@@ -522,14 +524,14 @@ def scan_mods_archived() -> str:
             if Path(bsarch_path).exists():
                 print("✔️ ALL REQUIREMENTS SATISFIED! NOW ANALYZING ALL BA2 MOD ARCHIVES...")
                 message_list.append("\n========== RESULTS FROM ARCHIVED / BA2 FILES ==========\n")
-                for root, dirs, files in os.walk(mod_path, topdown=False):
+                for root, _, files in os.walk(mod_path, topdown=False):
                     for filename in files:
                         if "textures.ba2" in filename.lower():
                             main_path = root.replace(mod_path, "")
                             ba2_file_path = os.path.join(root, filename)
                             command_dump = f'"{bsarch_path_full}" "{ba2_file_path}" -dump'
 
-                            archived_dump = subprocess.run(command_dump, shell=True, capture_output=True, text=True)
+                            archived_dump = subprocess.run(command_dump, shell=True, capture_output=True, text=True, check=False)
                             if archived_dump.returncode == 0:
                                 archived_output = archived_dump.stdout
                                 # ================================================
@@ -558,7 +560,7 @@ def scan_mods_archived() -> str:
                             main_path = root.replace(mod_path, "")
                             ba2_file_path = os.path.join(root, filename)
                             command_list = f'"{bsarch_path_full}" "{ba2_file_path}" -list'
-                            archived_list = subprocess.run(command_list, shell=True, capture_output=True, text=True)
+                            archived_list = subprocess.run(command_list, shell=True, capture_output=True, text=True, check=False)
                             if archived_list.returncode == 0:
                                 archived_output = archived_list.stdout
                                 # ================================================
@@ -599,12 +601,12 @@ def scan_mods_archived() -> str:
 # BACKUP / RESTORE / REMOVE
 # ================================================
 def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REMOVE"] = "BACKUP") -> None:
-    manage_list: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.game}.yaml", f"{classic_list}") # type: ignore
-    game_path: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Game") # type: ignore
+    manage_list: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"{classic_list}") # type: ignore
+    game_path: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game") # type: ignore
 
     backup_path = f"CLASSIC Backup/Game Files/{classic_list}"
     Path(backup_path).mkdir(parents=True, exist_ok=True)
-    game_files = list(Path(game_path).glob("*"))
+    game_files = list(Path(game_path).glob("*")) if game_path else []
     list_name = classic_list.split(" ", 1)
 
     if mode == "BACKUP":
@@ -666,15 +668,15 @@ def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REM
 # COMBINED RESULTS
 # ================================================
 def game_combined_result() -> str:
-    CMain.vrmode_check()
-    docs_path: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Docs") # type: ignore
-    game_path: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.game} Local.yaml", f"Game{CMain.vr}_Info.Root_Folder_Game") # type: ignore
-    combined_return = [check_xse_plugins(), check_crashgen_settings(), check_log_errors(docs_path), check_log_errors(game_path), scan_wryecheck(), scan_mod_inis()]
-    return "".join(combined_return)
+    docs_path: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Docs") # type: ignore
+    game_path: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game") # type: ignore
+    if game_path and docs_path:
+        combined_return = [check_xse_plugins(), check_crashgen_settings(), check_log_errors(docs_path), check_log_errors(game_path), scan_wryecheck(), scan_mod_inis()]
+        return "".join(combined_return)
+    return ""
 
 
 def mods_combined_result() -> str:  # KEEP THESE SEPARATE SO THEY ARE NOT INCLUDED IN AUTOSCAN REPORTS
-    CMain.vrmode_check()
     combined_return = [scan_mods_unpacked(), scan_mods_archived()]
     return "".join(combined_return)
 
