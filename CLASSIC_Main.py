@@ -40,10 +40,10 @@ gamevars["game"] = "Fallout4"
 type YAMLValue = dict[str, YAMLValue] | list[str] | str | int
 
 def open_file_with_encoding(file_path: Path | str) -> TextIOWrapper:  # Read only file open with encoding detection. Only for text files.
-    with open(file_path, "rb") as f:
+    with open(file_path, "rb") as f:  # noqa: PTH123
         raw_data = f.read()
         encoding = chardet.detect(raw_data)["encoding"]
-        return open(file_path, "r", encoding=encoding, errors="ignore")  # noqa: SIM115, UP015
+        return open(file_path, "r", encoding=encoding, errors="ignore")  # noqa: PTH123, SIM115, UP015
 
 
 # Logging levels: debug | info | warning | error | critical
