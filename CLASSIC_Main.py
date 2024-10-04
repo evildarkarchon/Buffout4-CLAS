@@ -205,12 +205,7 @@ def classic_logging() -> None:
             try:
                 journal_path.unlink(missing_ok=True)  # We do this to trigger an auto update check every X days.
                 print("CLASSIC Journal.log has been deleted and regenerated due to being older than 7 days.")
-                logging.basicConfig(
-                    level=logging.INFO,
-                    filename=journal_path.name,
-                    filemode="a",
-                    format="%(asctime)s | %(levelname)s | %(message)s",
-                )
+                configure_logging()
             except (ValueError, OSError) as err:
                 print(f"An error occurred while deleting {journal_path.name}: {err}")
 
