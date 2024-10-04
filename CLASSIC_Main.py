@@ -159,20 +159,6 @@ def classic_settings(setting: str | None = None) -> str | bool | None:
 
 gamevars["vr"] = ""  if not classic_settings("VR Mode") else "VR"
 
-def classic_settings(setting: str | None = None) -> str | bool | None:
-    if not os.path.exists("CLASSIC Settings.yaml"):
-        default_settings: str = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.default_settings")  # type: ignore
-        with open('CLASSIC Settings.yaml', 'w', encoding='utf-8') as file:
-            file.write(default_settings)
-    if setting:
-        get_setting: str | bool | None = yaml_settings("CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}") # type: ignore
-        if get_setting is None and "Path" not in setting:  # Error me if I make a stupid mistype.
-            print(f"❌ ERROR (classic_settings) : Trying to grab a None value for : '{setting}'")
-        return get_setting
-    return None
-
-gamevars["vr"] = ""  if not classic_settings("VR Mode") else "VR"
-
 
 # ================================================
 # CREATE REQUIRED FILES, SETTINGS & UPDATE CHECK

@@ -1094,10 +1094,10 @@ class MainWindow(QMainWindow):
             # Start the worker process for papyrus logs
             self.worker_stop_event = multiprocessing.Event()
             self.worker_process = multiprocessing.Process(
-                target=papyrus_worker, args=(self.result_queue, self.worker_stop_event) # type: ignore
+                target=papyrus_worker, args=(self.result_queue, self.worker_stop_event)
             )
-            self.worker_process.daemon = True # type: ignore
-            self.worker_process.start() # type: ignore
+            self.worker_process.daemon = True
+            self.worker_process.start()
 
             # Start the timer for periodic updates
             self.timer.start(5000)  # Update every 5 seconds
