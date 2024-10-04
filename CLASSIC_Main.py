@@ -9,6 +9,7 @@ import shutil
 import sqlite3
 import sys
 import zipfile
+from collections.abc import Iterator
 from io import TextIOWrapper
 from pathlib import Path
 
@@ -39,11 +40,21 @@ gamevars["game"] = "Fallout4"
 
 type YAMLValue = dict[str, YAMLValue] | list[str] | str | int
 
-def open_file_with_encoding(file_path: Path | str) -> TextIOWrapper:  # Read only file open with encoding detection. Only for text files.
-    with open(file_path, "rb") as f:  # noqa: PTH123
+@contextlib.contextmanager
+def open_file_with_encoding(file_path: Path | str) -> Iterator[TextIOWrapper]:
+    """Read only file open with encoding detection. Only for text files."""
+
+    if isinstance(file_path, str):
+        file_path = Path(file_path)
+    with file_path.open("rb") as f:
         raw_data = f.read()
         encoding = chardet.detect(raw_data)["encoding"]
-        return open(file_path, "r", encoding=encoding, errors="ignore")  # noqa: PTH123, SIM115, UP015
+
+    file_handle = file_path.open(encoding=encoding, errors="ignore")
+    try:
+        yield file_handle
+    finally:
+        file_handle.close()
 
 
 # Logging levels: debug | info | warning | error | critical
