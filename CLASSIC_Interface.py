@@ -31,6 +31,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QGridLayout,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLayout,
     QLineEdit,
@@ -277,6 +278,9 @@ class MainWindow(QMainWindow):
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_output_text_box_papyrus_watcher)
 
+        CMain.manual_docs_gui.manual_docs_path_signal.connect(self.show_manual_docs_path_dialog)
+        CMain.manual_docs_gui.manual_docs_path_signal.emit()
+
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         """if event.type() == QEvent.KeyPress:
                 key_event = QKeyEvent(event)
@@ -284,6 +288,17 @@ class MainWindow(QMainWindow):
                     # Simulate an exception when F12 is pressed (for testing)
                     raise Exception("This is a test exception")"""
         return super().eventFilter(watched, event)
+
+    def show_manual_docs_path_dialog(self) -> None:
+        docs_name: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.Main_Docs_Name") # type: ignore
+        manual_path, ok = QInputDialog.getText(
+            self,
+            f"Enter {docs_name} INI Path",
+            f"Enter the path for the {CMain.gamevars["game"]} INI files directory:",
+            QLineEdit.Normal, # type: ignore
+        )
+        if ok and manual_path:
+            CMain.get_manual_docs_path_gui(manual_path)
 
     def update_popup(self) -> None:
         if not self.is_update_check_running:
