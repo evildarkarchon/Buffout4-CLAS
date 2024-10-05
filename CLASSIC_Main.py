@@ -66,6 +66,21 @@ class ManualDocsPath(QObject):
             print(f"'{path}' is not a valid or existing directory path. Please try again.")
             self.manual_docs_path_signal.emit()
 
+class GamePathEntry(QObject):
+    game_path_signal = Signal()
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_game_path_gui(self, path: str) -> None:
+        if os.path.isdir(path):
+            print(f"You entered: '{path}' | This path will be automatically added to CLASSIC Settings.yaml")
+            game_path = Path(path.strip())
+            yaml_settings(f"CLASSIC Data/CLASSIC {gamevars['game']} Local.yaml", f"Game{gamevars['vr']}_Info.Root_Folder_Game", str(game_path))
+        else:
+            print(f"'{path}' is not a valid or existing directory path. Please try again.")
+            self.game_path_signal.emit()
+
 @contextlib.contextmanager
 def open_file_with_encoding(file_path: Path | str | os.PathLike) -> Iterator[TextIOWrapper]:
     """Read only file open with encoding detection. Only for text files."""
@@ -434,10 +449,22 @@ def docs_path_find() -> None:
             get_manual_docs_path()
 
 def get_manual_docs_path_gui(path: str) -> None:
-    if os.path.isdir(path):
-        print(f"You entered: '{path}' | This path will be automatically added to CLASSIC Settings.yaml")
-        manual_docs = Path(path.strip())
-        yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs", str(manual_docs))
+    path = path.strip()
+    if Path(path).is_dir():
+        file_found: bool = False
+        for file in Path(path).rglob("*.ini"):
+            if f"{gamevars['game']}.ini" in file.name or (gamevars["game"] == "SkyrimSE" and "Skyrim.ini" in file.name):
+                print(f"You entered: '{path}' | This path will be automatically added to CLASSIC Settings.yaml")
+                manual_docs = Path(path)
+                yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs", str(manual_docs))
+                file_found = True
+                break
+        if not file_found:
+            if gamevars["game"] != "SkyrimSE":
+                print(f"❌ ERROR : NO {gamevars['game']}.ini FILE FOUND IN '{path}'! Please try again.")
+            elif gamevars["game"] == "SkyrimSE":
+                print(f"❌ ERROR : NO Skyrim.ini FILE FOUND IN '{path}'! Please try again.")
+            manual_docs_gui.manual_docs_path_signal.emit()
     else:
         print(f"'{path}' is not a valid or existing directory path. Please try again.")
         manual_docs_gui.manual_docs_path_signal.emit()
@@ -446,15 +473,16 @@ def docs_generate_paths() -> None:
     logging.debug("- - - INITIATED DOCS PATH GENERATION")
     xse_acronym: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.XSE_Acronym")  # type: ignore
     xse_acronym_base: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", "Game_Info.XSE_Acronym")  # type: ignore
-    docs_path: str | None = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs")  # type: ignore
+    docs_path: Path = Path(yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs"))  # type: ignore
 
-    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Docs_Folder_XSE", fr"{docs_path}\{xse_acronym_base}")
-    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Docs_File_PapyrusLog", fr"{docs_path}\Logs\Script\Papyrus.0.log")
-    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Docs_File_WryeBashPC", fr"{docs_path}\ModChecker.html")
-    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Docs_File_XSE", fr"{docs_path}\{xse_acronym_base}\{xse_acronym.lower()}.log")
+    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Docs_Folder_XSE", str(docs_path.joinpath(xse_acronym_base)))
+    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Docs_File_PapyrusLog", str(docs_path.joinpath("Logs/Script/Papyrus.0.log")))
+    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Docs_File_WryeBashPC", str(docs_path.joinpath("ModChecker.html")))
+    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Docs_File_XSE", str(docs_path.joinpath(xse_acronym_base, f"{xse_acronym.lower()}.log")))
 
 
 # =========== CHECK DOCUMENTS XSE FILE -> GET GAME ROOT FOLDER PATH ===========
+game_path_gui = GamePathEntry()
 def game_path_find() -> None:
     logging.debug("- - - INITIATED GAME PATH CHECK")
     xse_file: str | None = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Docs_File_XSE")  # type: ignore
@@ -470,12 +498,15 @@ def game_path_find() -> None:
                     logline = logline[19:].replace(f"\\Data\\{xse_acronym_base}\\Plugins", "").replace("\n", "")
                     game_path = Path(logline)
                     if not logline or not game_path.exists():
-                        print(f"> > PLEASE ENTER THE FULL DIRECTORY PATH WHERE YOUR {game_name} IS LOCATED < <")
-                        path_input = input(fr"(EXAMPLE: C:\Steam\steamapps\common\{game_name} | Press ENTER to confirm.)\n> ")
-                        print(f"You entered: {path_input} | This path will be automatically added to CLASSIC Settings.yaml")
-                        game_path = Path(path_input.strip())
+                        if "PySide6" in sys.modules:
+                            game_path_gui.game_path_signal.emit()
+                        else:
+                            print(f"> > PLEASE ENTER THE FULL DIRECTORY PATH WHERE YOUR {game_name} IS LOCATED < <")
+                            path_input = input(fr"(EXAMPLE: C:\Steam\steamapps\common\{game_name} | Press ENTER to confirm.)\n> ")
+                            print(f"You entered: {path_input} | This path will be automatically added to CLASSIC Settings.yaml")
+                            game_path = Path(path_input.strip())
 
-                    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Game", str(game_path))
+                            yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Game", str(game_path))
     else:
         print(f"❌ CAUTION : THE {xse_acronym.lower()}.log FILE IS MISSING FROM YOUR GAME DOCUMENTS FOLDER! \n")
         print(f"   You need to run the game at least once with {xse_acronym.lower()}_loader.exe \n")
