@@ -331,7 +331,7 @@ class MainWindow(QMainWindow):
         dialog = ManualPathDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             manual_path = dialog.get_path()
-            CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.manual_docs_path", manual_path)
+            CMain.get_manual_docs_path_gui(manual_path)
 
     def update_popup(self) -> None:
         if not self.is_update_check_running:
