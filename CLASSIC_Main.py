@@ -12,7 +12,7 @@ import zipfile
 from collections.abc import Iterator
 from io import TextIOWrapper
 from pathlib import Path
-from typing import Any, Literal, TypedDict
+from typing import Literal, TypedDict
 
 import aiohttp
 import chardet
@@ -70,7 +70,7 @@ class ManualDocsPath(QObject):
 def open_file_with_encoding(file_path: Path | str | os.PathLike) -> Iterator[TextIOWrapper]:
     """Read only file open with encoding detection. Only for text files."""
 
-    if isinstance(file_path, Path):
+    if not isinstance(file_path, Path):
         file_path = Path(file_path)
     with file_path.open("rb") as f:
         raw_data = f.read()
