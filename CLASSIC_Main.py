@@ -410,12 +410,20 @@ def docs_path_find() -> None:
 def get_manual_docs_path_gui(path: str) -> None:
     path = path.strip()
     if Path(path).is_dir():
+        file_found: bool = False
         for file in Path(path).rglob("*.ini"):
             if f"{gamevars['game']}.ini" in file.name or (gamevars["game"] == "SkyrimSE" and "Skyrim.ini" in file.name):
                 print(f"You entered: '{path}' | This path will be automatically added to CLASSIC Settings.yaml")
                 manual_docs = Path(path)
                 yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs", str(manual_docs))
+                file_found = True
                 break
+        if not file_found:
+            if gamevars["game"] != "SkyrimSE":
+                print(f"❌ ERROR : NO {gamevars['game']}.ini FILE FOUND IN '{path}'! Please try again.")
+            elif gamevars["game"] == "SkyrimSE":
+                print(f"❌ ERROR : NO Skyrim.ini FILE FOUND IN '{path}'! Please try again.")
+            manual_docs_gui.manual_docs_path_signal.emit()
     else:
         print(f"'{path}' is not a valid or existing directory path. Please try again.")
         manual_docs_gui.manual_docs_path_signal.emit()
