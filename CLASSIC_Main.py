@@ -12,6 +12,7 @@ import zipfile
 from collections.abc import Iterator
 from io import TextIOWrapper
 from pathlib import Path
+from typing import Any, Literal, TypedDict
 
 import aiohttp
 import chardet
@@ -20,6 +21,7 @@ import requests
 import ruamel.yaml
 import urllib3
 from bs4 import BeautifulSoup
+from PySide6.QtCore import QObject, Signal
 from urllib3.exceptions import InsecureRequestWarning
 
 if platform.system() == "Windows":
@@ -35,16 +37,40 @@ if platform.system() == "Windows":
     CO-AUTHOR NOTES (EvilDarkArchon):
     ❓ We're going to have to special-case (or disable) Starfield Script Extender update checks because it's on Nexus, not silverlock.org.
 """
-gamevars: dict[str, str] = {}
-gamevars["game"] = "Fallout4"
 
 type YAMLValue = dict[str, YAMLValue] | list[str] | str | int
+type YAMLValueOptional = YAMLValue | None
+type GameID = Literal["Fallout4", "Skyrim", "SkyrimSE", "Starfield"] # Entries must correspond to the game's My Games folder name.
+
+class GameVars(TypedDict):
+    game: GameID
+    vr: Literal["VR", ""]
+
+gamevars: GameVars = {
+    "game": "Fallout4",
+    "vr": ""
+}
+
+class ManualDocsPath(QObject):
+    manual_docs_path_signal = Signal()
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_manual_docs_path_gui(self, path: str) -> None:
+        if os.path.isdir(path):
+            print(f"You entered: '{path}' | This path will be automatically added to CLASSIC Settings.yaml")
+            manual_docs = Path(path.strip())
+            yaml_settings(f"CLASSIC Data/CLASSIC {gamevars['game']} Local.yaml", f"Game{gamevars['vr']}_Info.Root_Folder_Docs", str(manual_docs))
+        else:
+            print(f"'{path}' is not a valid or existing directory path. Please try again.")
+            self.manual_docs_path_signal.emit()
 
 @contextlib.contextmanager
-def open_file_with_encoding(file_path: Path | str) -> Iterator[TextIOWrapper]:
+def open_file_with_encoding(file_path: Path | str | os.PathLike) -> Iterator[TextIOWrapper]:
     """Read only file open with encoding detection. Only for text files."""
 
-    if isinstance(file_path, str):
+    if isinstance(file_path, Path):
         file_path = Path(file_path)
     with file_path.open("rb") as f:
         raw_data = f.read()
@@ -95,7 +121,7 @@ class YamlSettingsCache:
         self.cache: dict[Path, ruamel.yaml.CommentedMap] = {}
         self.file_mod_times: dict[Path, float] = {}
 
-    def load_yaml(self, yaml_path: str | Path) -> dict[str, YAMLValue]:
+    def load_yaml(self, yaml_path: str | os.PathLike) -> dict[str, YAMLValue]:
         # Use pathlib for file handling and caching
         yaml_path = Path(yaml_path)
         if yaml_path.exists():
@@ -145,7 +171,7 @@ class YamlSettingsCache:
             else:
                 return None  # Key not found
         if value is None and "Path" not in key_path:  # type: ignore  # Error me if I mistype or screw up the value grab.
-            print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'")
+            print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'") # Despite what the type checker says, this code is reachable.
         return value
 
 # Instantiate a global cache object
@@ -168,7 +194,7 @@ def classic_settings(setting: str | None = None) -> str | bool | None:
         return get_setting
     return None
 
-gamevars["vr"] = ""  if not classic_settings("VR Mode") else "VR"
+gamevars["vr"] = "VR" if classic_settings("VR Mode") else ""
 
 
 # ================================================
@@ -337,6 +363,7 @@ async def classic_update_check(quiet: bool = False, gui_request: bool = True) ->
 # CHECK DEFAULT DOCUMENTS & GAME FOLDERS / FILES
 # ================================================
 # =========== CHECK DOCUMENTS FOLDER PATH -> GET GAME DOCUMENTS FOLDER ===========
+manual_docs_gui = ManualDocsPath()
 def docs_path_find() -> None:
     logging.debug("- - - INITIATED DOCS PATH CHECK")
     docs_name: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.Main_Docs_Name")  # type: ignore
@@ -371,6 +398,9 @@ def docs_path_find() -> None:
                     yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs", str(linux_docs))
 
     def get_manual_docs_path() -> None:
+        if "PySide6" in sys.modules:
+            manual_docs_gui.manual_docs_path_signal.emit()
+            return
         print(f"> > > PLEASE ENTER THE FULL DIRECTORY PATH WHERE YOUR {docs_name}.ini IS LOCATED < < <")
         while True:
             input_str = input(f"(EXAMPLE: C:/Users/Zen/Documents/My Games/{docs_name} | Press ENTER to confirm.)\n> ").strip()
@@ -390,10 +420,27 @@ def docs_path_find() -> None:
         else:
             get_linux_docs_path()
 
-    docs_path: str | None = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs")  # type: ignore
-    if not docs_path or not Path(docs_path).is_dir():
-        get_manual_docs_path()
+    docs_path = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs")  # type: ignore
+    try:  # In case .exists() complains about checking a None value.
+        if docs_path and not Path(docs_path).exists():
+            if "PySide6" in sys.modules:
+                manual_docs_gui.manual_docs_path_signal.emit()
+            else:
+                get_manual_docs_path()
+    except (ValueError, OSError):
+        if "PySide6" in sys.modules:
+            manual_docs_gui.manual_docs_path_signal.emit()
+        else:
+            get_manual_docs_path()
 
+def get_manual_docs_path_gui(path: str) -> None:
+    if os.path.isdir(path):
+        print(f"You entered: '{path}' | This path will be automatically added to CLASSIC Settings.yaml")
+        manual_docs = Path(path.strip())
+        yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs", str(manual_docs))
+    else:
+        print(f"'{path}' is not a valid or existing directory path. Please try again.")
+        manual_docs_gui.manual_docs_path_signal.emit()
 
 def docs_generate_paths() -> None:
     logging.debug("- - - INITIATED DOCS PATH GENERATION")

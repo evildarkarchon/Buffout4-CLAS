@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
     QDialog,
+    QDialogButtonBox,
     QFileDialog,
     QFrame,
     QGridLayout,
@@ -48,6 +49,45 @@ import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
 import CLASSIC_ScanLogs as CLogs
 
+
+class ManualPathDialog(QDialog):
+    def __init__(self, parent: QMainWindow | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Set INI Files Directory")
+        self.setFixedSize(700, 150)
+
+        # Create layout and input field
+        layout = QVBoxLayout(self)
+
+        # Add a label
+        label = QLabel(f"Enter the path for the {CMain.gamevars["game"]} INI files directory (Example: c:\\users\\<name>\\Documents\\My Games\\{CMain.gamevars['game']})", self)
+        layout.addWidget(label)
+
+        inputlayout = QHBoxLayout()
+        self.input_field = QLineEdit(self)
+        self.input_field.setPlaceholderText("Enter the INI directory or click 'Browse'...")
+        inputlayout.addWidget(self.input_field)
+
+        # Create the "Browse" button
+        browse_button = QPushButton("Browse...", self)
+        browse_button.clicked.connect(self.browse_directory)
+        inputlayout.addWidget(browse_button)
+        layout.addLayout(inputlayout)
+
+        # Create standard OK/Cancel buttons
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self) # type: ignore
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def browse_directory(self) -> None:
+        # Open directory browser and update the input field
+        manual_path = QFileDialog.getExistingDirectory(self, "Select Directory for INI Files")
+        if manual_path:
+            self.input_field.setText(manual_path)
+
+    def get_path(self) -> str:
+        return self.input_field.text()
 
 class PapyrusLogProcessor(QThread):
     # Signal to update the UI with new log messages
@@ -276,6 +316,8 @@ class MainWindow(QMainWindow):
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_output_text_box_papyrus_watcher)
 
+        CMain.manual_docs_gui.manual_docs_path_signal.connect(self.show_manual_docs_path_dialog)
+
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         """if event.type() == QEvent.KeyPress:
                 key_event = QKeyEvent(event)
@@ -283,6 +325,12 @@ class MainWindow(QMainWindow):
                     # Simulate an exception when F12 is pressed (for testing)
                     raise Exception("This is a test exception")"""
         return super().eventFilter(watched, event)
+
+    def show_manual_docs_path_dialog(self) -> None:
+        dialog = ManualPathDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            manual_path = dialog.get_path()
+            CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.manual_docs_path", manual_path)
 
     def update_popup(self) -> None:
         if not self.is_update_check_running:
