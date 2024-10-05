@@ -90,6 +90,45 @@ class ManualPathDialog(QDialog):
     def get_path(self) -> str:
         return self.input_field.text()
 
+class GamePathDialog(QDialog):
+    def __init__(self, parent: QMainWindow | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Set INI Files Directory")
+        self.setFixedSize(700, 150)
+
+        # Create layout and input field
+        layout = QVBoxLayout(self)
+
+        # Add a label
+        label = QLabel(f"Enter the path for the {CMain.gamevars["game"]} directory (example: C:\\Steam\\steamapps\\common\\{CMain.gamevars["game"]})", self)
+        layout.addWidget(label)
+
+        inputlayout = QHBoxLayout()
+        self.input_field = QLineEdit(self)
+        self.input_field.setPlaceholderText("Enter the Game's directory or click 'Browse'...")
+        inputlayout.addWidget(self.input_field)
+
+        # Create the "Browse" button
+        browse_button = QPushButton("Browse...", self)
+        browse_button.clicked.connect(self.browse_directory)
+        inputlayout.addWidget(browse_button)
+        layout.addLayout(inputlayout)
+
+        # Create standard OK/Cancel buttons
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self) # type: ignore
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def browse_directory(self) -> None:
+        # Open directory browser and update the input field
+        manual_path = QFileDialog.getExistingDirectory(self, f"Select Directory for {CMain.gamevars["game"]}")
+        if manual_path:
+            self.input_field.setText(manual_path)
+
+    def get_path(self) -> str:
+        return self.input_field.text()
+
 class PapyrusLogProcessor(QThread):
     # Signal to update the UI with new log messages
     new_log_messages = Signal(str)
@@ -318,6 +357,7 @@ class MainWindow(QMainWindow):
         self.timer.timeout.connect(self.update_output_text_box_papyrus_watcher)
 
         CMain.manual_docs_gui.manual_docs_path_signal.connect(self.show_manual_docs_path_dialog)
+        CMain.game_path_gui.game_path_signal.connect(self.show_game_path_dialog)
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         """if event.type() == QEvent.KeyPress:
@@ -332,6 +372,12 @@ class MainWindow(QMainWindow):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             manual_path = dialog.get_path()
             CMain.get_manual_docs_path_gui(manual_path)
+
+    def show_game_path_dialog(self) -> None:
+        dialog = GamePathDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            manual_path = dialog.get_path()
+            CMain.game_path_gui.get_game_path_gui(manual_path)
 
     def update_popup(self) -> None:
         if not self.is_update_check_running:
