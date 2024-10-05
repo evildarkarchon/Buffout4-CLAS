@@ -158,7 +158,7 @@ class YamlSettingsCache:
             else:
                 return None  # Key not found
         if value is None and "Path" not in key_path:  # type: ignore  # Error me if I mistype or screw up the value grab.
-            print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'") # Despite what the linter says, this code is reachable.
+            print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'") # Despite what the type checker says, this code is reachable.
         return value
 
 # Instantiate a global cache object
