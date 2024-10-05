@@ -38,7 +38,7 @@ if platform.system() == "Windows":
 
 type YAMLValue = dict[str, YAMLValue] | list[str] | str | int
 type YAMLValueOptional = YAMLValue | None
-type GameID = Literal["Fallout4", "Skyrim", "SkyrimSE", "Starfield"]
+type GameID = Literal["Fallout4", "Skyrim", "SkyrimSE", "Starfield"] # Entries must correspond to the game's My Games folder name.
 
 class GameVars(TypedDict):
     game: GameID
