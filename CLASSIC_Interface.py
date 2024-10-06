@@ -20,7 +20,7 @@ except ImportError:
 from pathlib import Path
 
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
-from PySide6.QtGui import QDesktopServices, QIcon, QTextCursor
+from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QBoxLayout,
@@ -142,22 +142,17 @@ class PapyrusLogProcessor(QThread):
         while self.is_running:
             messages = []
             try:
-                # Fetch all messages from the queue
                 while not self.result_queue.empty():
                     message = self.result_queue.get_nowait()
-                    # print(f"DEBUG: Retrieved message from queue: {message}")  # Debugging message content
                     messages.append(message)
             except queue.Empty:
-                # print("DEBUG: Queue was empty unexpectedly.")
                 pass
 
             if messages:
-                # Emit the messages to the main thread (for UI update)
-                joined_messages = "\n".join(messages)
-                # print(f"DEBUG: Emitting {len(messages)} messages to the UI: {joined_messages}")
-                self.new_log_messages.emit(joined_messages)
+                # Join the messages and emit them to the main thread (for UI update)
+                self.new_log_messages.emit("\n".join(messages))
 
-            # Sleep for a bit to avoid hammering the CPU
+            # Sleep for a bit to avoid hammering the CPU (you can adjust the interval)
             self.msleep(500)  # 500 ms, adjust as needed
 
     def stop(self) -> None:
@@ -209,18 +204,11 @@ def play_sound(sound_file: str) -> None:
 def papyrus_worker(q: multiprocessing.Queue, stop_event: multiprocessing.synchronize.Event) -> None:
     while not stop_event.is_set():
         papyrus_result, _ = CGame.papyrus_logging()
-
-        # Log the result to check if it's actually new data
-        # print(f"DEBUG: New Papyrus log data fetched: {papyrus_result.strip()[:100]}...")
-
-        # Ensure the message starts and ends with newlines, and trim excessive whitespace
+        # Ensure the message starts and ends with newlines
         papyrus_result = f"\n{papyrus_result.strip()}\n"
-        if papyrus_result:
-            q.put(papyrus_result)  # Add result to the queue
-            # print("DEBUG: Added new log data to the queue.")
-        # else:
-            # print("DEBUG: No new log data found.")
+        q.put(papyrus_result)
         time.sleep(5)  # Delay between checks
+
 
 class OutputRedirector(QObject):
     outputWritten = Signal(str)
@@ -1191,10 +1179,23 @@ class MainWindow(QMainWindow):
         self.game_files_thread = None
         self.enable_scan_buttons()
 
-    def toggle_papyrus_worker(self):  # noqa: ANN201
+    def toggle_papyrus_worker(self) -> None:
         if not self.is_worker_running:
-            # Start the worker process
-            # print("DEBUG: Starting Papyrus worker...")
+            # Start the Papyrus log processor thread
+            self.log_processor = PapyrusLogProcessor(self.result_queue)
+            self.log_processor.new_log_messages.connect(self.update_output_text_box)
+            self.log_processor.start()
+
+            # Start the worker process for papyrus logs
+            self.worker_stop_event = multiprocessing.Event()
+            self.worker_process = multiprocessing.Process(
+                target=papyrus_worker, args=(self.result_queue, self.worker_stop_event) # type: ignore
+            )
+            self.worker_process.daemon = True # type: ignore
+            self.worker_process.start() # type: ignore
+
+            # Start the timer for periodic updates
+            self.timer.start(5000)  # Update every 5 seconds
 
             # Update button state and style
             self.papyrus_button.setText("STOP PAPYRUS MONITORING")
@@ -1210,43 +1211,21 @@ class MainWindow(QMainWindow):
                 }
             """
             )
-
-            self.worker_stop_event.clear()  # Ensure the stop event is cleared
-            self.worker_process = multiprocessing.Process(
-                target=papyrus_worker, args=(self.result_queue, self.worker_stop_event)
-            )
-            self.worker_process.start()
-            #print(f"DEBUG: Papyrus worker process started with PID {self.worker_process.pid}")
-
-            # Start the log processing thread
-            self.log_processor = PapyrusLogProcessor(self.result_queue)
-            self.log_processor.new_log_messages.connect(self.update_output_text_box_papyrus_watcher)
-            self.log_processor.start()
-            # print("DEBUG: PapyrusLogProcessor thread started.")
-
             self.is_worker_running = True
-            self.timer.start(5000)  # Start the timer to periodically update the UI
-            # Make the cursor visible when monitoring starts
-            self.output_text_box.setCursorWidth(1)
-            # print("DEBUG: Timer started to update UI every 5 seconds.")
-
         else:
-            # Stop the worker process
-            # print("DEBUG: Stopping Papyrus worker...")
-
-            self.worker_stop_event.set()  # Signal to stop the worker
+            # Stop the worker process and the thread
+            self.worker_stop_event.set()  # Stop the multiprocessing worker
             if self.worker_process:
-                self.worker_process.join()  # Wait for the worker to finish
-                # print(f"DEBUG: Papyrus worker process with PID {self.worker_process.pid} stopped.")
+                self.worker_process.join()  # Ensure the worker process ends
 
-            # Stop the log processing thread
+            # Stop the log processor thread
             if self.log_processor:
                 self.log_processor.stop()
-                self.log_processor.wait()
-                # print("DEBUG: PapyrusLogProcessor thread stopped.")
+                self.log_processor.wait()  # Wait for the thread to stop
 
-            self.is_worker_running = False
-            self.timer.stop()  # Stop the timer
+            # Stop the timer
+            self.timer.stop()
+
             # Update button state and style
             self.papyrus_button.setText("START PAPYRUS MONITORING")
             self.papyrus_button.setStyleSheet(
@@ -1260,26 +1239,23 @@ class MainWindow(QMainWindow):
                     font-size: 14px;
                 }
             """
-
-
             )
-            # Hide the cursor when monitoring stops
-            self.output_text_box.setCursorWidth(0)
-            # print("DEBUG: Timer stopped.")
+            self.is_worker_running = False
 
     def update_output_text_box_papyrus_watcher(self) -> None:
         if not hasattr(self, "message_buffer"):
             self.message_buffer = ""
 
         try:
-            # Fetch new log data from the result_queue
             while not self.result_queue.empty():
                 message = self.result_queue.get_nowait()
-                print(f"DEBUG: Received message from result_queue: {message}")
                 self.message_buffer += message
 
-            # Check if the buffer contains complete Papyrus data
-            if "NUMBER OF DUMPS" in self.message_buffer and "NUMBER OF ERRORS" in self.message_buffer:
+            # Process the buffer if it contains complete Papyrus data
+            if (
+                "NUMBER OF DUMPS" in self.message_buffer
+                and "NUMBER OF ERRORS" in self.message_buffer
+            ):
                 # Split the buffer into lines
                 lines = self.message_buffer.split("\n")
                 papyrus_data = []
@@ -1306,7 +1282,7 @@ class MainWindow(QMainWindow):
                     current_text = self.output_text_box.toPlainText()
                     current_lines = current_text.split("\n")
 
-                    # Find the Papyrus monitoring section in the current output
+                    # Find the Papyrus monitoring section
                     papyrus_start = -1
                     papyrus_end = -1
                     for i, line in enumerate(current_lines):
@@ -1332,23 +1308,17 @@ class MainWindow(QMainWindow):
 
                     new_text = "\n".join(updated_lines)
                     self.output_text_box.setPlainText(new_text)
-                    # print(f"DEBUG: Updated text box with Papyrus data: {papyrus_data}")
 
-                # Append any non-Papyrus data to the text box
+                # Append any non-Papyrus data
                 if non_papyrus_data:
                     self.output_text_box.append("\n".join(non_papyrus_data))
-                    # print(f"DEBUG: Appended non-Papyrus data to the text box: {non_papyrus_data}")
 
-                # Clear processed Papyrus data but preserve unprocessed messages in the buffer
-                processed_data_boundary = self.message_buffer.rfind("NUMBER OF ERRORS")
-                if processed_data_boundary != -1:
-                    self.message_buffer = self.message_buffer[processed_data_boundary + len("NUMBER OF ERRORS"):]
-                # print("DEBUG: Cleared processed Papyrus data from the message buffer.")
+                # Clear the processed data from the buffer
+                self.message_buffer = self.message_buffer.split("NUMBER OF ERRORS")[-1]
 
-                # Scroll to the bottom of the text box immediately after updating
-                self.output_text_box.moveCursor(QTextCursor.End) # type: ignore
-                self.output_text_box.ensureCursorVisible()
-                # print("DEBUG: Scrolled to the bottom of the output text box.")
+                # Scroll to the bottom of the text box
+                scrollbar = self.output_text_box.verticalScrollBar()
+                scrollbar.setValue(scrollbar.maximum())
 
         except queue.Empty:
             pass  # No messages to process, continue
