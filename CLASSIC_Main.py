@@ -58,7 +58,7 @@ class ManualDocsPath(QObject):
         super().__init__()
 
     def get_manual_docs_path_gui(self, path: str) -> None:
-        if os.path.isdir(path):
+        if Path(path).is_dir():
             print(f"You entered: '{path}' | This path will be automatically added to CLASSIC Settings.yaml")
             manual_docs = Path(path.strip())
             yaml_settings(f"CLASSIC Data/CLASSIC {gamevars['game']} Local.yaml", f"Game{gamevars['vr']}_Info.Root_Folder_Docs", str(manual_docs))
@@ -73,7 +73,7 @@ class GamePathEntry(QObject):
         super().__init__()
 
     def get_game_path_gui(self, path: str) -> None:
-        if os.path.isdir(path):
+        if Path(path).is_dir():
             print(f"You entered: '{path}' | This path will be automatically added to CLASSIC Settings.yaml")
             game_path = Path(path.strip())
             yaml_settings(f"CLASSIC Data/CLASSIC {gamevars['game']} Local.yaml", f"Game{gamevars['vr']}_Info.Root_Folder_Game", str(game_path))
