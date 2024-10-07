@@ -42,7 +42,7 @@ def get_entry(formid: str, plugin: str) -> str | None:
     if db_path.is_file():
         with sqlite3.connect(db_path) as conn:
             c = conn.cursor()
-            c.execute("""SELECT entry FROM ? WHERE formid=? AND plugin=? COLLATE nocase""", (CMain.gamevars["game"], formid, plugin))
+            c.execute(f"SELECT entry FROM {CMain.gamevars["game"]} WHERE formid=? AND plugin=? COLLATE nocase", (formid, plugin))
             entry = c.fetchone()
             if entry and query_cache.get((formid, plugin)) is None:
                     query_cache[(formid, plugin)] = entry[0]
