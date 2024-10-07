@@ -1,6 +1,14 @@
 =====================================================================================================
 # CLASSIC CHANGELOG #
 
+7.30.1
+*CHANGES*
+- Prompts for INI directory and Game directory will be handled in the GUI
+- Fixed typos that prevented the detection of X-Cell in FCX mode.
+
+*KNOWN ISSUES*
+The Papyrus log monitor is still a WIP
+
 7.30 (Formerly known as 7.26.1 Unofficial)
 *CHANGE SUMMARY*
 - CLASSIC now uses a database cache, generated on startup, to improve query speed for the "Show FID Values" feature.
