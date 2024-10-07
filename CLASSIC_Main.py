@@ -517,16 +517,16 @@ def game_generate_paths() -> None:
     yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.XSE_Acronym")  # type: ignore
     xse_acronym_base: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", "Game_Info.XSE_Acronym")  # type: ignore
 
-    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Game_Folder_Data", fr"{game_path}Data")
-    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Game_Folder_Scripts", fr"{game_path}Data\Scripts")
-    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Game_Folder_Plugins", fr"{game_path}Data\{xse_acronym_base}\Plugins")
-    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Game_File_SteamINI", fr"{game_path}steam_api.ini")
-    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Game_File_EXE", fr"{game_path}{gamevars["game"]}{gamevars["vr"]}.exe")
+    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Game_Folder_Data", fr"{game_path}\Data")
+    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Game_Folder_Scripts", fr"{game_path}\Data\Scripts")
+    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Game_Folder_Plugins", fr"{game_path}\Data\{xse_acronym_base}\Plugins")
+    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Game_File_SteamINI", fr"{game_path}\steam_api.ini")
+    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Game_File_EXE", fr"{game_path}\{gamevars["game"]}{gamevars["vr"]}.exe")
     match gamevars["game"]:
         case "Fallout4" if not gamevars["vr"]:
-            yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", "Game_Info.Game_File_AddressLib", fr"{game_path}Data\{xse_acronym_base}\plugins\version-1-10-163-0.bin")
+            yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", "Game_Info.Game_File_AddressLib", fr"{game_path}\Data\{xse_acronym_base}\plugins\version-1-10-163-0.bin")
         case "Fallout4" if gamevars["vr"]:
-            yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", "GameVR_Info.Game_File_AddressLib", fr"{game_path}Data\{xse_acronym_base}\plugins\version-1-2-72-0.csv")
+            yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", "GameVR_Info.Game_File_AddressLib", fr"{game_path}\Data\{xse_acronym_base}\plugins\version-1-2-72-0.csv")
 
 
 # =========== CHECK GAME EXE FILE -> GET PATH AND HASHES ===========
