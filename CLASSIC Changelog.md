@@ -1,6 +1,13 @@
 =====================================================================================================
 # CLASSIC CHANGELOG #
 
+7.30.2
+*CHANGES*
+- Game installation directory is now properly saved to the local data file.
+- Removed the FormID database creation code and opted for bundling a premade database
+There is also a second database for you to add your own mods form ids to, just add the bundled xEdit script in CLASSIC Data to create the list and use the included tools to add them.
+
+
 7.30.1
 *CHANGES*
 - Prompts for INI directory and Game directory will be handled in the GUI
