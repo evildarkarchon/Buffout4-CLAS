@@ -37,8 +37,8 @@ with sqlite3.connect(args.db) as conn, args.file.open(encoding="utf-8", errors="
             # the _ catches any extraneous data that might be in the line
             plugin, formid, entry, _ = parts
             c.execute(
-                """INSERT INTO ? (plugin, formid, entry) VALUES (?, ?, ?)""",
-                (args.table, plugin, formid, entry),
+                f"INSERT INTO {args.table} (plugin, formid, entry) VALUES (?, ?, ?)",
+                (plugin, formid, entry),
             )
     if conn.in_transaction:
         conn.commit()
