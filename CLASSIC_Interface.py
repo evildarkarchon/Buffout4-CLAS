@@ -1,7 +1,6 @@
 import asyncio
 import multiprocessing
 import multiprocessing.synchronize
-import os
 import queue
 import sys
 import time
@@ -345,7 +344,7 @@ class MainWindow(QMainWindow):
         # Set up Papyrus monitoring
         self.result_queue: multiprocessing.Queue = multiprocessing.Queue()
         self.worker_stop_event = multiprocessing.Event()
-        self.worker_process = None
+        self.worker_process: multiprocessing.Process | None = None
         self.is_worker_running = False
 
         # Initialize thread attributes
@@ -562,8 +561,8 @@ class MainWindow(QMainWindow):
 
     def check_existing_backups(self) -> None:
         for category in ["XSE", "RESHADE", "VULKAN", "ENB"]:
-            backup_path = f"CLASSIC Backup/Game Files/Backup {category}"
-            if os.path.isdir(backup_path) and any(Path(backup_path).iterdir()):
+            backup_path = Path(f"CLASSIC Backup/Game Files/Backup {category}")
+            if backup_path.is_dir() and any(backup_path.iterdir()):
                 restore_button = getattr(self, f"RestoreButton_{category}", None)
                 if restore_button:
                     restore_button.setEnabled(True)
@@ -655,7 +654,7 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def open_backup_folder() -> None:
-        backup_path = os.path.join(os.getcwd(), "CLASSIC Backup", "Game Files")
+        backup_path = Path.cwd() / "CLASSIC Backup/Game Files"
         QDesktopServices.openUrl(QUrl.fromLocalFile(backup_path))
 
     def setup_output_text_box(self, layout: QLayout) -> None:

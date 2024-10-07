@@ -40,12 +40,13 @@ def handle_ini_exceptions(func: Callable) -> Callable:
     return wrapper
 
 @handle_ini_exceptions
-def mod_ini_config(ini_path: str, section: str, key: str, new_value: str | None = None) -> str | bool:
-    with open(ini_path, 'rb') as config_file:
-        ini_encoding = chardet.detect(config_file.read())['encoding']
+def mod_ini_config(ini_path: Path | str, section: str, key: str, new_value: str | None = None) -> str | bool:
+    ini_path = Path(ini_path)
+    with ini_path.open("rb") as config_file:
+        ini_encoding = chardet.detect(config_file.read())["encoding"]
 
     config = iniparse.ConfigParser()
-    with open(ini_path, 'r', encoding=ini_encoding) as config_file:  # noqa: UP015
+    with ini_path.open(encoding=ini_encoding) as config_file:
         config.readfp(config_file)
 
     if not config.has_section(section):
@@ -56,7 +57,7 @@ def mod_ini_config(ini_path: str, section: str, key: str, new_value: str | None 
     # If new_value is specified, update value in INI.
     if new_value is not None:
         config.set(section, key, str(new_value))
-        with open(ini_path, 'w', encoding=ini_encoding) as config_file:
+        with ini_path.open("w", encoding=ini_encoding) as config_file:
             config.write(config_file)
         return new_value
 
@@ -79,7 +80,7 @@ def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | No
             # If a new value is provided, update the key
             if new_value is not None:
                 data[section][key] = new_value # type: ignore
-                with open(toml_path, 'w') as toml_file:
+                with toml_path.open("w") as toml_file:
                     toml_file.write(data.as_string())
 
             return current_value
@@ -604,8 +605,8 @@ def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REM
     manage_list: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"{classic_list}") # type: ignore
     game_path: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game") # type: ignore
 
-    backup_path = f"CLASSIC Backup/Game Files/{classic_list}"
-    Path(backup_path).mkdir(parents=True, exist_ok=True)
+    backup_path = Path(f"CLASSIC Backup/Game Files/{classic_list}")
+    backup_path.mkdir(parents=True, exist_ok=True)
     game_files = list(Path(game_path).glob("*")) if game_path else []
     list_name = classic_list.split(" ", 1)
 
@@ -613,16 +614,16 @@ def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REM
         print(f"CREATING A BACKUP OF {list_name[1]} FILES, PLEASE WAIT...")
         try:
             for file in game_files:
-                if any(item.lower() in str(file.name).lower() for item in manage_list):
-                    destination_file = f"{backup_path}/{file.name}"
-                    if os.path.isfile(file):
+                if any(item.lower() in file.name.lower() for item in manage_list):
+                    destination_file = backup_path / file.name
+                    if file.is_file():
                         shutil.copy2(file, destination_file)
-                    elif os.path.isdir(file):
-                        if os.path.exists(destination_file):
-                            if os.path.isdir(destination_file):
+                    elif file.is_dir():
+                        if destination_file.exists():
+                            if destination_file.is_dir():
                                 shutil.rmtree(destination_file)
                             else:
-                                os.remove(destination_file)
+                                destination_file.unlink(missing_ok=True)
                         shutil.copytree(file, destination_file)
             print(f"✔️ SUCCESSFULLY CREATED A BACKUP OF {list_name[1]} FILES \n")
         except PermissionError:
@@ -633,16 +634,16 @@ def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REM
         print(f"RESTORING {list_name[1]} FILES FROM A BACKUP, PLEASE WAIT...")
         try:
             for file in game_files:
-                if any(item.lower() in str(file.name).lower() for item in manage_list):
-                    destination_file = f"{backup_path}/{file.name}"
-                    if os.path.isfile(destination_file):
+                if any(item.lower() in file.name.lower() for item in manage_list):
+                    destination_file = backup_path / file.name
+                    if destination_file.is_file():
                         shutil.copy2(destination_file, file)
-                    elif os.path.isdir(destination_file):
-                        if os.path.exists(file):
-                            if os.path.isdir(file):
+                    elif destination_file.is_dir():
+                        if file.exists():
+                            if file.is_dir():
                                 shutil.rmtree(file)
                             else:
-                                os.remove(file)
+                                file.unlink(missing_ok=True)
                         shutil.copytree(destination_file, file)
             print(f"✔️ SUCCESSFULLY RESTORED {list_name[1]} FILES TO THE GAME FOLDER \n")
         except PermissionError:
@@ -653,10 +654,10 @@ def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REM
         print(f"REMOVING {list_name[1]} FILES FROM YOUR GAME FOLDER, PLEASE WAIT...")
         try:
             for file in game_files:
-                if any(item.lower() in str(file.name).lower() for item in manage_list):
-                    if os.path.isfile(file):
-                        os.remove(file)
-                    elif os.path.isdir(file):
+                if any(item.lower() in file.name.lower() for item in manage_list):
+                    if file.is_file():
+                        file.unlink(missing_ok=True)
+                    elif file.is_dir():
                         os.removedirs(file)
             print(f"✔️ SUCCESSFULLY REMOVED {list_name[1]} FILES FROM THE GAME FOLDER \n")
         except PermissionError:

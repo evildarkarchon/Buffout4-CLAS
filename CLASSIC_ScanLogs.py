@@ -21,13 +21,14 @@ CMain.configure_logging()
 # ASSORTED FUNCTIONS
 # ================================================
 def pastebin_fetch(url: str) -> None:
-    if urlparse(url).netloc == "pastebin.com" and "/raw" not in url.path: # type: ignore
+    if urlparse(url).netloc == "pastebin.com" and "/raw" not in url:
         url = url.replace("pastebin.com", "pastebin.com/raw")
     response = requests.get(url)
     if response.status_code in requests.codes.ok:
-        if not os.path.exists("CLASSIC Pastebin"):
-            Path("CLASSIC Pastebin").mkdir(parents=True, exist_ok=True)
-        outfile = Path(f"CLASSIC Pastebin/crash-{urlparse(url).path.split('/')[-1]}.log")
+        pastebin_path = Path("CLASSIC Pastebin")
+        if not pastebin_path.is_dir():
+            pastebin_path.mkdir(parents=True, exist_ok=True)
+        outfile = pastebin_path / f"crash-{urlparse(url).path.split("/")[-1]}.log"
         outfile.write_text(response.text, encoding="utf-8", errors="ignore")
     else:
         response.raise_for_status()
@@ -37,10 +38,11 @@ query_cache: dict[tuple[str, str], str] = {}
 def get_entry(formid: str, plugin: str) -> str | None:
     if (entry := query_cache.get((formid, plugin))) is not None:
         return entry
-    if Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs.db").is_file():
-        with sqlite3.connect(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs.db") as conn:
+    db_path = Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs.db")
+    if db_path.is_file():
+        with sqlite3.connect(db_path) as conn:
             c = conn.cursor()
-            c.execute(f'''SELECT entry FROM {CMain.gamevars["game"]} WHERE formid=? AND plugin=? COLLATE nocase''', (formid, plugin))
+            c.execute("""SELECT entry FROM ? WHERE formid=? AND plugin=? COLLATE nocase""", (CMain.gamevars["game"], formid, plugin))
             entry = c.fetchone()
             if entry and query_cache.get((formid, plugin)) is None:
                     query_cache[(formid, plugin)] = entry[0]
@@ -55,8 +57,9 @@ def crashlogs_get_files() -> list[Path]:  # Get paths of all available crash log
     CUSTOM_folder: str = CMain.classic_settings("SCAN Custom Path") # type: ignore
     XSE_folder: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", "Game_Info.Docs_Folder_XSE") # type: ignore
 
-    if XSE_folder and Path(XSE_folder).exists():
-        xse_crash_files = list(Path(XSE_folder).glob("crash-*.log"))
+    XSE_path: Path | None = Path(XSE_folder) if XSE_folder else None
+    if XSE_path and XSE_path.exists():
+        xse_crash_files = list(XSE_path.glob("crash-*.log"))
         if xse_crash_files:
             for crash_file in xse_crash_files:
                 destination_file = fr"{CLASSIC_folder}/{crash_file.name}"
@@ -172,7 +175,7 @@ def crashlogs_scan() -> None:
                 if not mod1_found and mod_split[0].lower() in plugin_name.lower():
                     mod1_found = True
                     continue
-                if not mod2_found and  mod_split[1].lower() in plugin_name.lower():
+                if not mod2_found and mod_split[1].lower() in plugin_name.lower():
                     mod2_found = True
                     continue
             if mod1_found and mod2_found:
@@ -310,11 +313,12 @@ def crashlogs_scan() -> None:
         crashlog_GPUI = (not crashlog_GPUAMD and not crashlog_GPUNV)
 
         # IF LOADORDER FILE EXISTS, USE ITS PLUGINS
-        if os.path.exists("loadorder.txt"):
+        loadorder_path = Path("loadorder.txt")
+        if loadorder_path.exists():
             autoscan_report.extend(["* ✔️ LOADORDER.TXT FILE FOUND IN THE MAIN CLASSIC FOLDER! *\n",
                                     "CLASSIC will now ignore plugins in all crash logs and only detect plugins in this file.\n",
                                     "[ To disable this functionality, simply remove loadorder.txt from your CLASSIC folder. ]\n\n"])
-            with open("loadorder.txt", "r", encoding="utf-8", errors="ignore") as loadorder_file:  # noqa: UP015
+            with loadorder_path.open(encoding="utf-8", errors="ignore") as loadorder_file:
                 loadorder_data = loadorder_file.readlines()
             for elem in loadorder_data[1:]:
                 if all(elem not in item for item in crashlog_plugins):
@@ -609,7 +613,7 @@ def crashlogs_scan() -> None:
                 for plugin, plugin_id in crashlog_plugins.items():
                     if len(formid_split) >= 2 and str(plugin_id) == str(formid_split[1][:2]):
                         if CMain.classic_settings("Show FormID Values"):
-                            if os.path.exists(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs.db"):
+                            if Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs.db").exists():
                                 report = get_entry(formid_split[1][2:], plugin)
                                 if report:
                                     autoscan_report.append(f"- {formid_full} | [{plugin}] | {report} | {count}\n")
@@ -617,20 +621,22 @@ def crashlogs_scan() -> None:
                                     autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
                                     break
                             else:
-                                with open(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FID Main.txt", encoding="utf-8", errors="ignore") as fid_main, open(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FID Mods.txt", encoding="utf-8", errors="ignore") as fid_mods:
-                                        line_match_main = next((line for line in fid_main if str(formid_split[1][2:]) in line and plugin.lower() in line.lower()), None)
-                                        line_match_mods = next((line for line in fid_mods if str(formid_split[1][2:]) in line and plugin.lower() in line.lower()), None)
-                                        if line_match_main:
-                                            line_split = line_match_main.split(" | ")
-                                            fid_report = line_split[2].strip()  # 0 - Plugin | 1 - FormID | 2 - FID Value
-                                            autoscan_report.append(f"- {formid_full} | [{plugin}] | {fid_report} | {count}\n")
-                                        elif line_match_mods:
-                                            line_split = line_match_mods.split(" | ")
-                                            fid_report = line_split[2].strip()  # 0 - Plugin | 1 - FormID | 2 - FID Value
-                                            autoscan_report.append(f"- {formid_full} | [{plugin}] | {fid_report} | {count}\n")
-                                        else:
-                                            autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
-                                            break
+                                fid_main_path = Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FID Main.txt")
+                                fid_mods_path = Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FID Mods.txt")
+                                with fid_main_path.open(encoding="utf-8", errors="ignore") as fid_main, fid_mods_path.open(encoding="utf-8", errors="ignore") as fid_mods:
+                                    line_match_main = next((line for line in fid_main if str(formid_split[1][2:]) in line and plugin.lower() in line.lower()), None)
+                                    line_match_mods = next((line for line in fid_mods if str(formid_split[1][2:]) in line and plugin.lower() in line.lower()), None)
+                                    if line_match_main:
+                                        line_split = line_match_main.split(" | ")
+                                        fid_report = line_split[2].strip()  # 0 - Plugin | 1 - FormID | 2 - FID Value
+                                        autoscan_report.append(f"- {formid_full} | [{plugin}] | {fid_report} | {count}\n")
+                                    elif line_match_mods:
+                                        line_split = line_match_mods.split(" | ")
+                                        fid_report = line_split[2].strip()  # 0 - Plugin | 1 - FormID | 2 - FID Value
+                                        autoscan_report.append(f"- {formid_full} | [{plugin}] | {fid_report} | {count}\n")
+                                    else:
+                                        autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
+                                        break
                         else:
                             autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
                             break
@@ -679,18 +685,18 @@ def crashlogs_scan() -> None:
                 line.replace(f"{user_folder.parent}\\{user_folder.name}", "******").replace(f"{user_folder.parent}/{user_folder.name}", "******")
 
         # WRITE AUTOSCAN REPORT TO FILE
-        autoscan_name = str(crashlog_file.with_name(crashlog_file.stem + "-AUTOSCAN.md"))
-        with open(autoscan_name, "w", encoding="utf-8", errors="ignore") as autoscan_file:
+        autoscan_path = crashlog_file.with_name(crashlog_file.stem + "-AUTOSCAN.md")
+        with autoscan_path.open("w", encoding="utf-8", errors="ignore") as autoscan_file:
             logging.debug(f"- - -> RUNNING CRASH LOG FILE SCAN >>> SCANNED {crashlog_file.name}")
             autoscan_output = "".join(autoscan_report)
             autoscan_file.write(autoscan_output)
 
         if trigger_scan_failed and CMain.classic_settings("Move Unsolved Logs"):
-            backup_path = "CLASSIC Backup/Unsolved Logs"
-            Path(backup_path).mkdir(parents=True, exist_ok=True)
+            backup_path = Path("CLASSIC Backup/Unsolved Logs")
+            backup_path.mkdir(parents=True, exist_ok=True)
             autoscan_filepath = crashlog_file.with_name(crashlog_file.stem + "-AUTOSCAN.md")
-            crash_move = Path(backup_path, crashlog_file.name)
-            scan_move = Path(backup_path, autoscan_file.name)
+            crash_move = backup_path / crashlog_file.name
+            scan_move = backup_path / autoscan_file.name
 
             if crashlog_file.exists():
                 shutil.copy2(crashlog_file, crash_move)
