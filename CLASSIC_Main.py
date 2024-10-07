@@ -273,7 +273,7 @@ def batch_insert_entries_from_file(file_path: Path, db_path: Path) -> None:
 def insert_entries_to_db(db_path: Path, entries: list[tuple[str, ...]], query: str | None = None) -> None:
     with sqlite3.connect(db_path) as conn:
         if not query:
-            conn.executemany("""INSERT INTO ? (plugin, formid, entry) VALUES (?, ?, ?)""", (gamevars["game"], *entries))
+            conn.executemany(f"INSERT INTO {gamevars["game"]} (plugin, formid, entry) VALUES (?, ?, ?)", entries)
         else:
             conn.executemany(query, entries)
         conn.commit()
@@ -282,13 +282,12 @@ def create_formid_db() -> None:
     formid_db_path = Path(f"CLASSIC Data/databases/{gamevars["game"]} FormIDs.db")
     with sqlite3.connect(formid_db_path) as conn:
         conn.execute(
-            """CREATE TABLE IF NOT EXISTS ?(id INTEGER PRIMARY KEY AUTOINCREMENT,
-            plugin TEXT, formid TEXT, entry TEXT)""",
-            (gamevars["game"],),
+            f"""CREATE TABLE IF NOT EXISTS {gamevars["game"]}
+            (id INTEGER PRIMARY KEY AUTOINCREMENT,
+            plugin TEXT, formid TEXT, entry TEXT)"""
         )
         conn.execute(
-            """CREATE INDEX IF NOT EXISTS Fallout4_index ON ?(formid, plugin COLLATE nocase);""",
-            (gamevars["game"],),
+            f"CREATE INDEX IF NOT EXISTS {gamevars["game"]}_index ON {gamevars["game"]} (formid, plugin COLLATE nocase);"
         )
         if conn.in_transaction:
             conn.commit()
