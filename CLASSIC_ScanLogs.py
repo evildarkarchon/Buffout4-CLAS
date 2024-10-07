@@ -612,14 +612,14 @@ def crashlogs_scan() -> None:
                 for plugin, plugin_id in crashlog_plugins.items():
                     if len(formid_split) >= 2 and str(plugin_id) == str(formid_split[1][:2]):
                         if CMain.classic_settings("Show FormID Values"):
-                            if Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs.db").exists():
+                            if Path(f"CLASSIC Data/databases/{CMain.gamevars['game']} FormIDs.db").exists():
                                 report = get_entry(formid_split[1][2:], plugin)
                                 if report:
                                     autoscan_report.append(f"- {formid_full} | [{plugin}] | {report} | {count}\n")
                                 else:
                                     autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
                                     break
-                            else:
+                            """else:
                                 fid_main_path = Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FID Main.txt")
                                 fid_mods_path = Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FID Mods.txt")
                                 with fid_main_path.open(encoding="utf-8", errors="ignore") as fid_main, fid_mods_path.open(encoding="utf-8", errors="ignore") as fid_mods:
@@ -635,7 +635,7 @@ def crashlogs_scan() -> None:
                                         autoscan_report.append(f"- {formid_full} | [{plugin}] | {fid_report} | {count}\n")
                                     else:
                                         autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
-                                        break
+                                        break"""
                         else:
                             autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
                             break

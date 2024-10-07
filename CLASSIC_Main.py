@@ -285,22 +285,15 @@ def create_formid_db() -> None:
             f"""CREATE TABLE IF NOT EXISTS {gamevars["game"]}
             (id INTEGER PRIMARY KEY AUTOINCREMENT,
             plugin TEXT, formid TEXT, entry TEXT)"""
-            """CREATE TABLE IF NOT EXISTS ?
-            (id INTEGER PRIMARY KEY AUTOINCREMENT,
-            plugin TEXT, formid TEXT, entry TEXT)""",
-            (gamevars["game"],),
         )
         conn.execute(
             f"CREATE INDEX IF NOT EXISTS {gamevars["game"]}_index ON {gamevars["game"]} (formid, plugin COLLATE nocase);"
-            """CREATE INDEX IF NOT EXISTS Fallout4_index ON ?
-            (formid, plugin COLLATE nocase);""",
-            (gamevars["game"],),
         )
         if conn.in_transaction:
             conn.commit()
         if not formid_db_path.exists() or not formid_db_path.stat().st_size > 0:
             print("⏳ Generating FormID cache...", end="")
-            batch_insert_entries_from_file(Path(f"CLASSIC Data/databases/{gamevars["game"]} FID Main.txt"), formid_db_path)
+            batch_insert_entries_from_file(Path(f"CLASSIC Data/databases/{gamevars['game']} FID Main.txt"), formid_db_path)
             print(" Done!")
 
 def classic_data_extract() -> None:
