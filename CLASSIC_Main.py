@@ -282,12 +282,14 @@ def create_formid_db() -> None:
     formid_db_path = Path(f"CLASSIC Data/databases/{gamevars["game"]} FormIDs.db")
     with sqlite3.connect(formid_db_path) as conn:
         conn.execute(
-            """CREATE TABLE IF NOT EXISTS ?(id INTEGER PRIMARY KEY AUTOINCREMENT,
+            """CREATE TABLE IF NOT EXISTS ?
+            (id INTEGER PRIMARY KEY AUTOINCREMENT,
             plugin TEXT, formid TEXT, entry TEXT)""",
             (gamevars["game"],),
         )
         conn.execute(
-            """CREATE INDEX IF NOT EXISTS Fallout4_index ON ?(formid, plugin COLLATE nocase);""",
+            """CREATE INDEX IF NOT EXISTS Fallout4_index ON ?
+            (formid, plugin COLLATE nocase);""",
             (gamevars["game"],),
         )
         if conn.in_transaction:
