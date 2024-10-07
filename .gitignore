@@ -5,7 +5,7 @@ build/
 dist/
 .mypy_cache/
 .ruff_cache/
-.vscode/*
+.vscode
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
@@ -13,3 +13,30 @@ dist/
 .venv
 venv/
 poetry.toml
+Release/
+Archive/
+CLASSIC Backup/
+*.log
+*-AUTOSCAN.md
+*.exe
+*.spec
+*.dat
+CLASSIC GFS Report.md
+*.code-workspace
+FormID_List*
+Fallout4 FID*.txt
+*.7z
+*.xml
+*.dll
+*.db
+*Local.yaml
+*.bak
+test.*
+*.temp
+*.sqdbpro
+game_vars.py
+CLASSIC Ignore.yaml
+CLASSIC Settings.yaml
+CLASSIC-Fallout4.pyproj
+CLASSIC Data/databases/Fallout4 FormIDs.sqbpro
+*.old
