@@ -9,10 +9,10 @@ def insert(lines: list[str], game: str, path_db: Path) -> None:
         c = conn.cursor()
         for line in lines:
             line = line.strip()
-            parts = line.split(" | ", maxsplit=3)
+            parts = line.split(" | ", maxsplit=2)
             if len(parts) >= 3:
                 # the _ catches any extraneous data that might be in the line
-                plugin, formid, entry, _ = parts
+                plugin, formid, entry = parts
                 c.execute(
                     f"""INSERT INTO {game} (plugin, formid, entry) VALUES (?, ?, ?)""",
                     (plugin, formid, entry),
@@ -22,7 +22,7 @@ def insert(lines: list[str], game: str, path_db: Path) -> None:
 
 
 for game in ("Fallout4", "Skyrim", "Starfield"):
-    path_db = base_path / f"{game} FormIDs.db"
+    path_db = Path.cwd() / f"{game} FormIDs Main.db"
     path_main = base_path / f"{game} FID Main.txt"
     path_mods = base_path / f"{game} FID Mods.txt"
     path_db.unlink(missing_ok=True)

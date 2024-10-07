@@ -10,7 +10,7 @@ class Arguments(Tap):
 
     file: Path = Path("FormID_List.txt")  # The file to add to the database
     table: Literal["Fallout4", "Skyrim", "Starfield"] = "Fallout4"  # The table to add the file to
-    db: Path = Path("../CLASSIC Data/databases/Fallout4 FormIDs.db")  # "The database to add the file to"
+    db: Path = Path("../CLASSIC Data/databases/Fallout4 FormIDs Local.db")  # "The database to add the file to"
     verbose: bool = False  # Prints out the lines as they are added
 
 
@@ -21,8 +21,16 @@ if not args.file.exists():
     raise FileNotFoundError(msg)
 
 if not args.db.exists():
-    msg = f"Database {args.db} not found"
-    raise FileNotFoundError(msg)
+    msg = f"Database {args.db} not found, creating it..."
+    with sqlite3.connect(args.db) as conn:
+        conn.execute(
+            f"""CREATE TABLE IF NOT EXISTS {args.table}
+            (id INTEGER PRIMARY KEY AUTOINCREMENT,
+            plugin TEXT, formid TEXT, entry TEXT)"""
+        )
+        conn.execute(f"CREATE INDEX IF NOT EXISTS {args.table}_index ON {args.table} (formid, plugin COLLATE nocase);")
+        if conn.in_transaction:
+            conn.commit()
 
 with sqlite3.connect(args.db) as conn, args.file.open(encoding="utf-8", errors="ignore") as f:
     c = conn.cursor()

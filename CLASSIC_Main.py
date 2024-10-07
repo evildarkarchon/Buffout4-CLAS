@@ -6,7 +6,6 @@ import logging
 import os
 import platform
 import shutil
-import sqlite3
 import sys
 import zipfile
 from collections.abc import Iterator
@@ -250,52 +249,6 @@ def classic_logging() -> None:
             except (ValueError, OSError) as err:
                 print(f"An error occurred while deleting {journal_path.name}: {err}")
 
-def batch_insert_entries_from_file(file_path: Path, db_path: Path) -> None:
-    batch_size = 1000  # Define the batch size for inserts
-    entries: list[tuple[str, ...]] = []
-
-    with file_path.open(encoding="utf-8") as file:
-        for line in file:
-            # Assume each line is formatted as 'plugin | formid | entry'
-            parts = line.strip().split(' | ')
-            if len(parts) == 3:
-                entries.append(tuple(parts))
-
-            # When we reach the batch size, insert and clear the list
-            if len(entries) >= batch_size:
-                insert_entries_to_db(db_path, entries)
-                entries.clear()
-
-        # Insert any remaining entries after the loop
-        if entries:
-            insert_entries_to_db(db_path, entries)
-
-def insert_entries_to_db(db_path: Path, entries: list[tuple[str, ...]], query: str | None = None) -> None:
-    with sqlite3.connect(db_path) as conn:
-        if not query:
-            conn.executemany(f"INSERT INTO {gamevars["game"]} (plugin, formid, entry) VALUES (?, ?, ?)", entries)
-        else:
-            conn.executemany(query, entries)
-        conn.commit()
-
-def create_formid_db() -> None:
-    formid_db_path = Path(f"CLASSIC Data/databases/{gamevars["game"]} FormIDs.db")
-    with sqlite3.connect(formid_db_path) as conn:
-        conn.execute(
-            f"""CREATE TABLE IF NOT EXISTS {gamevars["game"]}
-            (id INTEGER PRIMARY KEY AUTOINCREMENT,
-            plugin TEXT, formid TEXT, entry TEXT)"""
-        )
-        conn.execute(
-            f"CREATE INDEX IF NOT EXISTS {gamevars["game"]}_index ON {gamevars["game"]} (formid, plugin COLLATE nocase);"
-        )
-        if conn.in_transaction:
-            conn.commit()
-        if not formid_db_path.exists() or not formid_db_path.stat().st_size > 0:
-            print("⏳ Generating FormID cache...", end="")
-            batch_insert_entries_from_file(Path(f"CLASSIC Data/databases/{gamevars['game']} FID Main.txt"), formid_db_path)
-            print(" Done!")
-
 def classic_data_extract() -> None:
     def open_zip() -> zipfile.ZipFile:
 
@@ -323,9 +276,6 @@ def classic_data_extract() -> None:
         print(f"❌ ERROR : UNABLE TO FIND {fid_main_path.name}! CLASSIC will not be able to show FormID values.")
         print("Please ensure that you have extracted all CLASSIC files into the same folder after downloading.")
         raise
-
-    if fid_main_path.exists() and not Path(f"CLASSIC Data/databases/{gamevars["game"]} FormIDs.db").exists():
-        create_formid_db()
 
 async def classic_update_check(quiet: bool = False, gui_request: bool = True) -> bool:
     logging.debug("- - - INITIATED UPDATE CHECK")

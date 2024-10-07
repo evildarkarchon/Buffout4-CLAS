@@ -38,15 +38,24 @@ query_cache: dict[tuple[str, str], str] = {}
 def get_entry(formid: str, plugin: str) -> str | None:
     if (entry := query_cache.get((formid, plugin))) is not None:
         return entry
-    db_path = Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs.db")
-    if db_path.is_file():
-        with sqlite3.connect(db_path) as conn:
-            c = conn.cursor()
-            c.execute(f"SELECT entry FROM {CMain.gamevars["game"]} WHERE formid=? AND plugin=? COLLATE nocase", (formid, plugin))
-            entry = c.fetchone()
-            if entry and query_cache.get((formid, plugin)) is None:
+
+    # Define paths for both Main and Local databases
+    db_paths = [
+        Path(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars['game']} Main.db"),
+        Path(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars['game']} Local.db")
+    ]
+
+    for db_path in db_paths:
+        if db_path.is_file():
+            with sqlite3.connect(db_path) as conn:
+                c = conn.cursor()
+                c.execute(f"SELECT entry FROM {CMain.gamevars['game']} WHERE formid=? AND plugin=? COLLATE nocase", (formid, plugin))
+                entry = c.fetchone()
+                if entry:
                     query_cache[(formid, plugin)] = entry[0]
-    return query_cache.get((formid, plugin))
+                    return entry[0]
+
+    return None
 
 # ================================================
 # INITIAL REFORMAT FOR CRASH LOG FILES
