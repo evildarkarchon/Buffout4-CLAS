@@ -94,7 +94,7 @@ def check_crashgen_settings() -> str:
     message_list: list[str] = []
     plugins_path: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Game_Folder_Plugins")  # type: ignore
     crashgen_name: str | None = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.CRASHGEN_LogName")  # type: ignore
-    xse_folder: list[str] | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Docs_Folder_XSE")  # type: ignore
+    xse_folder: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Docs_Folder_XSE")  # type: ignore
 
     crashgen_toml_og: Path | None = Path(plugins_path).joinpath("Buffout4\\config.toml") if plugins_path else None
     crashgen_toml_vr: Path | None = Path(plugins_path).joinpath("Buffout4.toml") if plugins_path else None
@@ -110,8 +110,8 @@ def check_crashgen_settings() -> str:
                              f"When editing {crashgen_name} toml settings, make sure you are editing the correct file. \n",
                              f"Please recheck your {crashgen_name} installation and delete any obsolete files. \n-----\n"])
 
-    IsXCellPresent = any("xcell" in file.lower() for file in xse_folder) if xse_folder else False
-    IsBakaScrapHeapPresent = any("bakascrapheap" in file.lower() for file in xse_folder) if xse_folder else False
+    IsXCellPresent: bool = any("x-cell" in file.lower() for file in xse_folder) if xse_folder else False
+    IsBakaScrapHeapPresent: bool = any("bakascrapheap" in file.lower() for file in xse_folder) if xse_folder else False
     if crashgen_toml_main:
         if xse_folder and mod_toml_config(crashgen_toml_main, "Patches", "Achievements") and any("achievements" in file.lower() for file in xse_folder):
             message_list.extend(["# ❌ CAUTION : The Achievements Mod and/or Unlimited Survival Mode is installed, but Achievements is set to TRUE # \n",
@@ -138,12 +138,12 @@ def check_crashgen_settings() -> str:
         else:
             message_list.append(f"✔️ HavokMemorySystem parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
-        if mod_toml_config(crashgen_toml_main, "Patches", "BSTextireStreamerLocalHeap") and IsXCellPresent:
-            message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but BSTextireStreamerLocalHeap parameter is set to TRUE # \n",
+        if mod_toml_config(crashgen_toml_main, "Patches", "BSTextureStreamerLocalHeap") and IsXCellPresent:
+            message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE # \n",
                                  "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
-            mod_toml_config(crashgen_toml_main, "Patches", "BSTextireStreamerLocalHeap", "False")
+            mod_toml_config(crashgen_toml_main, "Patches", "BSTextureStreamerLocalHeap", "False")
         else:
-            message_list.append(f"✔️ BSTextireStreamerLocalHeap parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+            message_list.append(f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
         if mod_toml_config(crashgen_toml_main, "Patches", "ScaleformAllocator") and IsXCellPresent:
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but ScaleformAllocator parameter is set to TRUE # \n",
@@ -668,12 +668,10 @@ def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REM
 # COMBINED RESULTS
 # ================================================
 def game_combined_result() -> str:
-    docs_path: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Docs") # type: ignore
-    game_path: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game") # type: ignore
-    if game_path and docs_path:
-        combined_return = [check_xse_plugins(), check_crashgen_settings(), check_log_errors(docs_path), check_log_errors(game_path), scan_wryecheck(), scan_mod_inis()]
-        return "".join(combined_return)
-    return ""
+    docs_path: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Docs") # type: ignore
+    game_path: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game") # type: ignore
+    combined_return = [check_xse_plugins(), check_crashgen_settings(), check_log_errors(docs_path), check_log_errors(game_path), scan_wryecheck(), scan_mod_inis()]
+    return "".join(combined_return)
 
 
 def mods_combined_result() -> str:  # KEEP THESE SEPARATE SO THEY ARE NOT INCLUDED IN AUTOSCAN REPORTS

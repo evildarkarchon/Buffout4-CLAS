@@ -299,7 +299,7 @@ def crashlogs_scan() -> None:
                 trigger_plugins_loaded = True
             else:
                 stats_crashlog_incomplete += 1
-        elif CMain.gamevars["game"] == "SkyrimSE":
+        elif CMain.gamevars["game"] == "Skyrim":
             if any("Skyrim.esm" in elem for elem in segment_plugins):
                 trigger_plugins_loaded = True
             else:

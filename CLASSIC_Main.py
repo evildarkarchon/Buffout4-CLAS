@@ -38,7 +38,7 @@ if platform.system() == "Windows":
 
 type YAMLValue = dict[str, YAMLValue] | list[str] | str | int
 type YAMLValueOptional = YAMLValue | None
-type GameID = Literal["Fallout4", "Skyrim", "SkyrimSE", "Starfield"] # Entries must correspond to the game's My Games folder name.
+type GameID = Literal["Fallout4", "Skyrim", "Starfield"] # Entries must correspond to the game's My Games folder name.
 
 class GameVars(TypedDict):
     game: GameID
@@ -427,17 +427,14 @@ def get_manual_docs_path_gui(path: str) -> None:
     if Path(path).is_dir():
         file_found: bool = False
         for file in Path(path).rglob("*.ini"):
-            if f"{gamevars['game']}.ini" in file.name or (gamevars["game"] == "SkyrimSE" and "Skyrim.ini" in file.name):
+            if f"{gamevars['game']}.ini" in file.name:
                 print(f"You entered: '{path}' | This path will be automatically added to CLASSIC Settings.yaml")
                 manual_docs = Path(path)
                 yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs", str(manual_docs))
                 file_found = True
                 break
         if not file_found:
-            if gamevars["game"] != "SkyrimSE":
-                print(f"❌ ERROR : NO {gamevars['game']}.ini FILE FOUND IN '{path}'! Please try again.")
-            elif gamevars["game"] == "SkyrimSE":
-                print(f"❌ ERROR : NO Skyrim.ini FILE FOUND IN '{path}'! Please try again.")
+            print(f"❌ ERROR : NO {gamevars['game']}.ini FILE FOUND IN '{path}'! Please try again.")
             manual_docs_gui.manual_docs_path_signal.emit()
     else:
         print(f"'{path}' is not a valid or existing directory path. Please try again.")
@@ -474,6 +471,9 @@ def game_path_find() -> None:
                     if not game_path or not Path(game_path).exists():
                         if "PySide6" in sys.modules:
                             game_path_gui.game_path_signal.emit()
+                            if not Path(game_path).joinpath(f"{gamevars['game']}{gamevars['vr']}.exe").exists():
+                                print(f"❌ ERROR : NO {gamevars['game']}{gamevars['vr']}.exe FILE FOUND IN '{game_path}'! Please try again.")
+                                game_path_gui.game_path_signal.emit()
                         else:
                             print(f"> > PLEASE ENTER THE FULL DIRECTORY PATH WHERE YOUR {game_name} IS LOCATED < <")
                             path_input = input(fr"(EXAMPLE: C:\Steam\steamapps\common\{game_name} | Press ENTER to confirm.)\n> ")
