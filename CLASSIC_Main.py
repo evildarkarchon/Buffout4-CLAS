@@ -503,7 +503,7 @@ def game_path_find() -> None:
                             print(f"You entered: {path_input} | This path will be automatically added to CLASSIC Settings.yaml")
                             game_path = Path(path_input.strip())
 
-                            yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Game", str(game_path))
+                    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Game", str(game_path))
     else:
         print(f"❌ CAUTION : THE {xse_acronym.lower()}.log FILE IS MISSING FROM YOUR GAME DOCUMENTS FOLDER! \n")
         print(f"   You need to run the game at least once with {xse_acronym.lower()}_loader.exe \n")
