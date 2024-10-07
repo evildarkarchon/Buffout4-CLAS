@@ -488,13 +488,13 @@ def game_path_find() -> None:
         with open_file_with_encoding(xse_file) as LOG_Check:
             Path_Check = LOG_Check.readlines()
             for logline in Path_Check:
-                if "plugin directory" in logline:
-                    logline = logline[19:].replace(f"\\Data\\{xse_acronym_base}\\Plugins", "").replace("\n", "")
+                if logline.startswith("plugin directory"):
+                    logline = logline.split("=", maxsplit=1)[1].strip().replace(f"\\Data\\{xse_acronym_base}\\Plugins", "").replace("\n", "")
                     game_path = Path(logline)
                     if not logline or not game_path.exists():
                         if "PySide6" in sys.modules:
                             game_path_gui.game_path_signal.emit()
-                            if not Path(game_path).joinpath(f"{gamevars['game']}{gamevars['vr']}.exe").exists():
+                            if not game_path.joinpath(f"{gamevars['game']}{gamevars['vr']}.exe").exists():
                                 print(f"❌ ERROR : NO {gamevars['game']}{gamevars['vr']}.exe FILE FOUND IN '{game_path}'! Please try again.")
                                 game_path_gui.game_path_signal.emit()
                         else:
@@ -503,7 +503,7 @@ def game_path_find() -> None:
                             print(f"You entered: {path_input} | This path will be automatically added to CLASSIC Settings.yaml")
                             game_path = Path(path_input.strip())
 
-                            yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Game", str(game_path))
+                    yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Game", str(game_path))
     else:
         print(f"❌ CAUTION : THE {xse_acronym.lower()}.log FILE IS MISSING FROM YOUR GAME DOCUMENTS FOLDER! \n")
         print(f"   You need to run the game at least once with {xse_acronym.lower()}_loader.exe \n")
