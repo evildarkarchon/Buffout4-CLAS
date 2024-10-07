@@ -14,9 +14,8 @@ def insert(lines: list[str], game: str, path_db: Path) -> None:
                 # the _ catches any extraneous data that might be in the line
                 plugin, formid, entry, _ = parts
                 c.execute(
-                    """INSERT INTO ? (plugin, formid, entry)
-                        VALUES (?, ?, ?)""",
-                    (game, plugin, formid, entry),
+                    f"""INSERT INTO {game} (plugin, formid, entry) VALUES (?, ?, ?)""",
+                    (plugin, formid, entry),
                 )
         if conn.in_transaction:
             conn.commit()
@@ -31,12 +30,11 @@ for game in ("Fallout4", "Skyrim", "Starfield"):
     if path_main.exists():
         with sqlite3.connect(path_db) as conn:
             conn.execute(
-                """CREATE TABLE IF NOT EXISTS ?
+                f"""CREATE TABLE IF NOT EXISTS {game}
                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                plugin TEXT, formid TEXT, entry TEXT)""",
-                (game,),
+                plugin TEXT, formid TEXT, entry TEXT)"""
             )
-            conn.execute("CREATE INDEX IF NOT EXISTS ?_index ON ? (formid, plugin COLLATE nocase);", (game, game))
+            conn.execute(f"CREATE INDEX IF NOT EXISTS {game}_index ON {game} (formid, plugin COLLATE nocase);")
             if conn.in_transaction:
                 conn.commit()
 
