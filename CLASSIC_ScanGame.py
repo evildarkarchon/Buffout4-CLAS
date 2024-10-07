@@ -11,7 +11,7 @@ from typing import Any, Literal
 import chardet
 import iniparse  # type: ignore
 import tomlkit
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, PageElement
 
 import CLASSIC_Main as CMain
 
@@ -69,23 +69,20 @@ def mod_ini_config(ini_path: Path | str, section: str, key: str, new_value: str 
 
 
 def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | None = None) -> Any | None:
-    # Read the TOML file
+    """Read the TOML file"""
     with CMain.open_file_with_encoding(toml_path) as toml_file:
         data = tomlkit.parse(toml_file.read())
 
-    if section in data:
-        if key in data[section]: # type: ignore
-            current_value = data[section][key] # type: ignore
+    if section not in data or key in data[section]: # type: ignore
+        return None
+    current_value = data[section][key] # type: ignore
 
-            # If a new value is provided, update the key
-            if new_value is not None:
-                data[section][key] = new_value # type: ignore
-                with toml_path.open("w") as toml_file:
-                    toml_file.write(data.as_string())
-
-            return current_value
-        return None  # Key not found in the section.
-    return None  # Section not found in the TOML.
+    # If a new value is provided, update the key
+    if new_value is not None:
+        data[section][key] = new_value # type: ignore
+        with toml_path.open("w") as toml_file:
+            toml_file.write(data.as_string())
+    return current_value
 
 
 # ================================================
@@ -93,12 +90,16 @@ def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | No
 # ================================================
 def check_crashgen_settings() -> str:
     message_list: list[str] = []
-    plugins_path: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Game_Folder_Plugins")  # type: ignore
-    crashgen_name: str | None = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.CRASHGEN_LogName")  # type: ignore
-    xse_folder: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Docs_Folder_XSE")  # type: ignore
+    plugins_folder = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Game_Folder_Plugins")
+    crashgen_name_setting = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.CRASHGEN_LogName")
+    xse_folder = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", "Game_Info.Docs_Folder_XSE")
 
-    crashgen_toml_og: Path | None = Path(plugins_path).joinpath("Buffout4\\config.toml") if plugins_path else None
-    crashgen_toml_vr: Path | None = Path(plugins_path).joinpath("Buffout4.toml") if plugins_path else None
+    plugins_path = Path(plugins_folder) if isinstance(plugins_folder, str) else None
+    crashgen_name = crashgen_name_setting if isinstance(crashgen_name_setting, str) else ""
+    xse_path = Path(xse_folder) if isinstance(xse_folder, str) else None
+
+    crashgen_toml_og = plugins_path / "Buffout4/config.toml" if plugins_path else None
+    crashgen_toml_vr = plugins_path / "Buffout4.toml" if plugins_path else None
     if crashgen_toml_og and crashgen_toml_og.is_file():
         crashgen_toml_main = crashgen_toml_og
     elif crashgen_toml_vr and crashgen_toml_vr.is_file():
@@ -107,53 +108,54 @@ def check_crashgen_settings() -> str:
         raise FileNotFoundError("Buffout4.toml not found in the plugins folder.")
 
     if (crashgen_toml_og and crashgen_toml_og.is_file()) and (crashgen_toml_vr and crashgen_toml_vr.is_file()):
-        message_list.extend([f"# ❌ CAUTION : BOTH VERSIONS OF {crashgen_name.upper()} TOML SETTINGS FILES WERE FOUND! #\n", # type: ignore
+        message_list.extend([f"# ❌ CAUTION : BOTH VERSIONS OF {crashgen_name.upper()} TOML SETTINGS FILES WERE FOUND! #\n",
                              f"When editing {crashgen_name} toml settings, make sure you are editing the correct file. \n",
                              f"Please recheck your {crashgen_name} installation and delete any obsolete files. \n-----\n"])
 
-    IsXCellPresent: bool = any("x-cell" in file.lower() for file in xse_folder) if xse_folder else False
-    IsBakaScrapHeapPresent: bool = any("bakascrapheap" in file.lower() for file in xse_folder) if xse_folder else False
+    xse_files = {file.name.lower() for file in xse_path.iterdir()} if xse_path else set()
+    Has_XCell = any("x-cell" in file for file in xse_files)
+    Has_BakaScrapHeap = any("bakascrapheap" in file for file in xse_files)
     if crashgen_toml_main:
-        if xse_folder and mod_toml_config(crashgen_toml_main, "Patches", "Achievements") and any("achievements" in file.lower() for file in xse_folder):
+        if xse_files and mod_toml_config(crashgen_toml_main, "Patches", "Achievements") and any("achievements" in file for file in xse_files):
             message_list.extend(["# ❌ CAUTION : The Achievements Mod and/or Unlimited Survival Mode is installed, but Achievements is set to TRUE # \n",
                                  f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with {crashgen_name}. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "Achievements", "False")
         else:
             message_list.append(f"✔️ Achievements parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
-        if mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager") and IsBakaScrapHeapPresent:
+        if Has_BakaScrapHeap and mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager"):
             message_list.extend(["# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but MemoryManager parameter is set to TRUE # \n",
                                  f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with {crashgen_name}. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", "False")
-        elif mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager") and IsXCellPresent:
+        elif Has_XCell and mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager"):
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but MemoryManager parameter is set to TRUE # \n",
                                  "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", "False")
         else:
             message_list.append(f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
-        if mod_toml_config(crashgen_toml_main, "Patches", "HavokMemorySystem") and IsXCellPresent:
+        if Has_XCell and mod_toml_config(crashgen_toml_main, "Patches", "HavokMemorySystem"):
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but HavokMemorySystem parameter is set to TRUE # \n",
                                  "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "HavokMemorySystem", "False")
         else:
             message_list.append(f"✔️ HavokMemorySystem parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
-        if mod_toml_config(crashgen_toml_main, "Patches", "BSTextureStreamerLocalHeap") and IsXCellPresent:
+        if Has_XCell and mod_toml_config(crashgen_toml_main, "Patches", "BSTextureStreamerLocalHeap"):
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE # \n",
                                  "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "BSTextureStreamerLocalHeap", "False")
         else:
             message_list.append(f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
-        if mod_toml_config(crashgen_toml_main, "Patches", "ScaleformAllocator") and IsXCellPresent:
+        if Has_XCell and mod_toml_config(crashgen_toml_main, "Patches", "ScaleformAllocator"):
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but ScaleformAllocator parameter is set to TRUE # \n",
                                  "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "ScaleFormAllocator", "False")
         else:
             message_list.append(f"✔️ ScaleformAllocator parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
-        if mod_toml_config(crashgen_toml_main, "Patches", "SmallBlockAllocator") and IsXCellPresent:
+        if Has_XCell and mod_toml_config(crashgen_toml_main, "Patches", "SmallBlockAllocator"):
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but SmallBlockAllocator parameter is set to TRUE # \n",
                                  "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Patches", "SmallBlockAllocator", "False")
@@ -161,7 +163,7 @@ def check_crashgen_settings() -> str:
             message_list.append(f"✔️ SmallBlockAllocator parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
 
-        if xse_folder and mod_toml_config(crashgen_toml_main, "Compatibility", "F4EE") and any("f4ee" in file.lower() for file in xse_folder):
+        if xse_files and mod_toml_config(crashgen_toml_main, "Compatibility", "F4EE") and any("f4ee" in file for file in xse_files):
             message_list.extend(["# ❌ CAUTION : Looks Menu is installed, but F4EE parameter under [Compatibility] is set to FALSE # \n",
                                  "    Auto Scanner will change this parameter to TRUE to prevent bugs and crashes from Looks Menu. \n-----\n"])
             mod_toml_config(crashgen_toml_main, "Compatibility", "F4EE", "True")
@@ -178,22 +180,29 @@ def check_crashgen_settings() -> str:
 # ================================================
 # CHECK ERRORS IN LOG FILES FOR GIVEN FOLDER
 # ================================================
-def check_log_errors(folder_path: str) -> str:
+def check_log_errors(folder_path: Path | str) -> str:
+    if isinstance(folder_path, str):
+        folder_path = Path(folder_path)
+    catch_errors_setting = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "catch_log_errors")
+    ignore_logs_list_setting = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_files")
+    ignore_logs_errors_setting = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_errors")
+
+    catch_errors = catch_errors_setting if isinstance(catch_errors_setting, list) else []
+    ignore_logs_list = ignore_logs_list_setting if isinstance(ignore_logs_list_setting, list) else []
+    ignore_logs_errors = ignore_logs_errors_setting if isinstance(ignore_logs_errors_setting, list) else []
     message_list: list[str] = []
     errors_list: list[str] = []
-    catch_errors: list[str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "catch_log_errors")  # type: ignore
-    ignore_logs_list: list[str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_files")  # type: ignore
-    ignore_logs_errors: list[str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_errors")  # type: ignore
 
-    valid_log_files = [file for file in Path(folder_path).glob("*.log") if "crash-" not in file.name]
+    valid_log_files = [file for file in folder_path.glob("*.log") if "crash-" not in file.name]
     for file in valid_log_files:
         if all(part.lower() not in str(file).lower() for part in ignore_logs_list):
             try:
                 with CMain.open_file_with_encoding(file) as log_file:
                     log_data = log_file.readlines()
                 for line in log_data:
-                    if any(item.lower() in line.lower() for item in catch_errors) and all(elem.lower() not in line.lower() for elem in ignore_logs_errors):
-                        errors_list.append(f"ERROR > {line}")  # noqa: PERF401
+                    line_lower = line.lower()
+                    if any(item.lower() in line_lower for item in catch_errors) and all(elem.lower() not in line_lower for elem in ignore_logs_errors):
+                        errors_list.append(f"ERROR > {line}")
 
                 if errors_list:
                     message_list.extend(["[!] CAUTION : THE FOLLOWING LOG FILE REPORTS ONE OR MORE ERRORS! \n",
@@ -203,7 +212,7 @@ def check_log_errors(folder_path: str) -> str:
 
                     message_list.append(f"\n* TOTAL NUMBER OF DETECTED LOG ERRORS * : {len(errors_list)} \n")
 
-            except (PermissionError, OSError):
+            except OSError:
                 message_list.append(f"❌ ERROR : Unable to scan this log file :\n  {file}")
                 logging.warning(f"> ! > DETECT LOG ERRORS > UNABLE TO SCAN : {file}")
                 continue
@@ -216,7 +225,8 @@ def check_log_errors(folder_path: str) -> str:
 # ================================================
 def check_xse_plugins() -> str:  # RESERVED | Might be expanded upon in the future.
     message_list: list[str] = []
-    plugins_folder: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Game_Folder_Plugins") # type: ignore
+    plugins_folder = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Game_Folder_Plugins")
+    plugins_path = Path(plugins_folder) if isinstance(plugins_folder, str) and len(plugins_folder) >= 1  else None
     adlib_versions = {"VR Mode": ("version-1-2-72-0.csv", "Virtual Reality (VR) version", "https://www.nexusmods.com/fallout4/mods/64879?tab=files"),
                       "Non-VR Mode": ("version-1-10-163-0.bin", "Non-VR (Regular) version", "https://www.nexusmods.com/fallout4/mods/47327?tab=files")}
 
@@ -224,20 +234,16 @@ def check_xse_plugins() -> str:  # RESERVED | Might be expanded upon in the futu
     selected_version = adlib_versions[enabled_mode]
     other_version = adlib_versions["VR Mode" if enabled_mode == "Non-VR Mode" else "Non-VR Mode"]
 
-    if isinstance(plugins_folder, str) and len(plugins_folder) >= 1 and Path(plugins_folder).joinpath(selected_version[0]).exists():
+    if plugins_path and plugins_path.joinpath(selected_version[0]).exists():
         message_list.append("✔️ You have the latest version of the Address Library file! \n-----\n")
-    elif isinstance(plugins_folder, str) and len(plugins_folder) >= 1 and Path(plugins_folder).joinpath(other_version[0]).exists():
+    elif plugins_path and plugins_path.joinpath(other_version[0]).exists():
         message_list.extend(["❌ CAUTION : You have installed the wrong version of the Address Library file! \n",
                              f"  Remove the current Address Library file and install the {selected_version[1]}.\n",
                              f"  Link: {selected_version[2]} \n-----\n"])
-    elif not isinstance(plugins_folder, str) or len(plugins_folder) < 1:
+    else:
         message_list.extend(["❓ NOTICE : Unable to locate Address Library \n",
                              "  If you have Address Library installed, please check the path in your settings. \n",
                              "  If you don't have it installed, you can find it on the Nexus. \n",
-                             f"  Link: {selected_version[2]} \n-----\n"])
-    else:
-        message_list.extend(["❓ NOTICE : Unable to find the Address Library file or your version is outdated! \n",
-                             "  Please ensure that Address Libray is installed and that you have the latest version. \n",
                              f"  Link: {selected_version[2]} \n-----\n"])
 
     return "".join(message_list)
@@ -248,10 +254,11 @@ def check_xse_plugins() -> str:  # RESERVED | Might be expanded upon in the futu
 # ================================================
 def papyrus_logging() -> tuple[str, int]:
     message_list: list[str] = []
-    papyrus_path: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Docs_File_PapyrusLog") # type: ignore
+    papyrus_path_setting = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Docs_File_PapyrusLog")
+    papyrus_path = Path(papyrus_path_setting) if isinstance(papyrus_path_setting, str) else None
 
     count_dumps = count_stacks = count_warnings = count_errors = 0
-    if papyrus_path and Path(papyrus_path).exists():
+    if papyrus_path and papyrus_path.exists():
         with CMain.open_file_with_encoding(papyrus_path) as papyrus_log:
             papyrus_data = papyrus_log.readlines()
         for line in papyrus_data:
@@ -285,9 +292,13 @@ def papyrus_logging() -> tuple[str, int]:
 # ================================================
 def scan_wryecheck() -> str:
     message_list: list[str] = []
-    wrye_missinghtml: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Warnings_MODS.Warn_WRYE_MissingHTML") # type: ignore
-    wrye_plugincheck: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Docs_File_WryeBashPC") # type: ignore
-    wrye_warnings: dict[str, str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Warnings_WRYE") # type: ignore
+    wrye_missinghtml_setting = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", "Warnings_MODS.Warn_WRYE_MissingHTML")
+    wrye_plugincheck_setting = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Docs_File_WryeBashPC")
+    wrye_warnings_setting = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Warnings_WRYE")
+
+    wrye_missinghtml = wrye_missinghtml_setting if isinstance(wrye_missinghtml_setting, str) else None
+    wrye_plugincheck = Path(wrye_plugincheck_setting) if isinstance(wrye_plugincheck_setting, str) else None
+    wrye_warnings = wrye_warnings_setting if isinstance(wrye_warnings_setting, dict) else {}
 
     if wrye_plugincheck and Path(wrye_plugincheck).is_file():
         message_list.extend(["\n✔️ WRYE BASH PLUGIN CHECKER REPORT WAS FOUND! ANALYZING CONTENTS... \n",
@@ -297,27 +308,29 @@ def scan_wryecheck() -> str:
             WB_HTML = WB_Check.read()
 
         # Parse the HTML code using BeautifulSoup.
-        soup = BeautifulSoup(WB_HTML, 'html.parser')
+        soup = BeautifulSoup(WB_HTML, "html.parser")
 
-        for h3 in soup.find_all('h3'):  # Find all <h3> elems and loop through them.
+        h3: PageElement
+        for h3 in soup.find_all("h3"):  # Find all <h3> elems and loop through them.
             title = h3.get_text()  # Get title of current <h3> and create plugin list.
-            plugin_list = []
+            plugin_list: list[str] = []
 
-            for p in h3.find_next_siblings('p'):  # Find all <p> elements that come after current <h3> element.
-                if p.find_previous_sibling('h3') == h3:  # Check if current <p> elem is under same <h3> elem as previous <p>.
+            for p in h3.find_next_siblings("p"):  # Find all <p> elements that come after current <h3> element.
+                if p.find_previous_sibling("h3") == h3:  # Check if current <p> elem is under same <h3> elem as previous <p>.
                     text = p.get_text().strip().replace("•\xa0 ", "")
-                    if '.esp' in text or ".esl" in text or ".esm" in text:  # Get text of <p> elem and check plugin extensions.
+                    if any(ext in text for ext in (".esp", ".esl", ".esm")):  # Get text of <p> elem and check plugin extensions.
                         plugin_list.append(text)
                 else:  # If current <p> elem is under a different <h3> elem, break loop.
                     break
             # Format title and list of plugins.
-            if title != "Active Plugins:" and len(title) < 32:
-                diff = 32 - len(title)
-                left = diff // 2
-                right = diff - left
-                message_list.append("\n   " + "=" * left + f" {title} " + "=" * right + "\n")
-            elif title != "Active Plugins:":
-                message_list.append(title)
+            if title != "Active Plugins:":
+                if len(title) < 32:
+                    diff = 32 - len(title)
+                    left = diff // 2
+                    right = diff - left
+                    message_list.append(f"\n   {"=" * left} {title} {"=" * right}\n")
+                else:
+                    message_list.append(title)
 
             if title == "ESL Capable":
                 esl_count = sum(1 for _ in plugin_list)
@@ -326,20 +339,21 @@ def scan_wryecheck() -> str:
                                      "  SimpleESLify: https://www.nexusmods.com/skyrimspecialedition/mods/27568 \n  -----\n"])
 
             for warn_name, warn_desc in wrye_warnings.items():
-                if warn_name in title:
-                    message_list.append(warn_desc)
+                if str(warn_name) in str(title):
+                    message_list.append(str(warn_desc))
 
             if title not in {"ESL Capable", "Active Plugins:"}:
-                for elem in plugin_list:
-                    message_list.append(f"    > {elem} \n")  # noqa: PERF401
+                message_list.extend([f"    > {elem} \n" for elem in plugin_list])
 
         message_list.extend(["\n❔ For more info about the above detected problems, see the WB Advanced Readme \n",
                              "  For more details about solutions, read the Advanced Troubleshooting Article \n",
                              "  Advanced Troubleshooting: https://www.nexusmods.com/fallout4/articles/4141 \n",
                              "  Wrye Bash Advanced Readme Documentation: https://wrye-bash.github.io/docs/ \n",
                              "  [ After resolving any problems, run Plugin Checker in Wrye Bash again! ] \n\n"])
-    else:
+    elif wrye_missinghtml is not None:
         message_list.append(wrye_missinghtml)
+    else:
+        raise ValueError("ERROR: Warnings_WRYE missing from the database!")
 
     return "".join(message_list)
 
@@ -350,15 +364,16 @@ def scan_wryecheck() -> str:
 def scan_mod_inis() -> str:  # Mod INI files check.
     message_list: list[str] = []
     vsync_list: list[str] = []
-    game_root: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game") # type: ignore
+    game_root = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game")
+    game_root_path = Path(game_root) if isinstance(game_root, str) else None
 
 
     files: list[str]
-    if game_root:
-        for root, _, files in os.walk(game_root):
+    if game_root_path:
+        for root, _, files in game_root_path.walk():
             for file in files:
-                ini_path = os.path.join(root, file)
-                if ".ini" in file.lower():
+                ini_path = root / file
+                if ini_path.suffix.lower() == ".ini":
                     with CMain.open_file_with_encoding(ini_path) as ini_file:
                         ini_data = ini_file.read()
                     if "sstartingconsolecommand" in ini_data.lower():
@@ -420,91 +435,90 @@ def scan_mods_unpacked() -> str:
     message_list: list[str] = []
     cleanup_list: list[str] = []
     modscan_list: list[str] = []
-    xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym") # type: ignore
-    xse_scriptfiles: dict[str, str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.XSE_HashedScripts") # type: ignore
+    xse_acronym_setting = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym")
+    xse_scriptfiles_setting = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.XSE_HashedScripts")
 
-    backup_path = "CLASSIC Backup/Cleaned Files"
-    Path(backup_path).mkdir(parents=True, exist_ok=True)
-    mod_path: str | None = CMain.classic_settings("MODS Folder Path")  # type: ignore
-    if mod_path:
-        if Path(mod_path).exists():
-            filter_names = ["readme", "changes", "changelog", "change log"]
-            print("✔️ MODS FOLDER PATH FOUND! PERFORMING INITIAL MOD FILES CLEANUP...")
-            for root, dirs, files in os.walk(mod_path, topdown=False):
-                for dirname in dirs:
-                    main_path = root.replace(mod_path, "")
-                    # ================================================
-                    # DETECT MODS WITH AnimationFileData
-                    if dirname.lower() == "animationfiledata":
-                        root_main = main_path.split(os.path.sep)[1]
-                        modscan_list.append(f"[-] NOTICE (ANIMDATA) : {root_main} > CONTAINS CUSTOM ANIMATION FILE DATA \n")
-                    # ================================================
-                    # (RE)MOVE REDUNDANT FOMOD FOLDERS
-                    elif dirname.lower() == "fomod":
-                        fomod_folder_path = os.path.join(root, dirname)
-                        relative_path = os.path.relpath(fomod_folder_path, mod_path)
-                        new_folder_path = os.path.join(backup_path, relative_path)
+    xse_acronym = xse_acronym_setting if isinstance(xse_acronym_setting, str) else ""
+    xse_scriptfiles = xse_scriptfiles_setting if isinstance(xse_scriptfiles_setting, dict) else {}
 
-                        cleanup_list.append(f"MOVED > {fomod_folder_path} FOLDER TO > {backup_path} \n")
-                        shutil.move(fomod_folder_path, new_folder_path)
-
-                for filename in files:
-                    main_path = root.replace(mod_path, "")
-                    # ================================================
-                    # DETECT DDS FILES WITH INCORRECT DIMENSIONS
-                    if ".dds" in filename.lower():
-                        dds_file_path = os.path.join(root, filename)
-                        with open(dds_file_path, 'rb') as dds_file:
-                            dds_data = dds_file.read()
-                        if dds_data[:4] == b'DDS ':
-                            width = struct.unpack('<I', dds_data[12:16])[0]
-                            height = struct.unpack('<I', dds_data[16:20])[0]
-                            if width % 2 != 0 or height % 2 != 0:
-                                modscan_list.append(f"[!] CAUTION (DDS-DIMS) : {dds_file_path} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n")
-                    # ================================================
-                    # DETECT INVALID TEXTURE FILE FORMATS
-                    elif any(ext in filename.lower() for ext in (".tga", ".png")):
-                        inv_file_path = os.path.join(root, filename)
-                        modscan_list.append(f"[-] NOTICE (-FORMAT-) : {inv_file_path} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n")
-                    # ================================================
-                    # DETECT INVALID SOUND FILE FORMATS
-                    elif any(ext in filename.lower() for ext in (".mp3", ".m4a")):
-                        root_main = main_path.split(os.path.sep)[1]
-                        modscan_list.append(f"[-] NOTICE (-FORMAT-) : {root_main} > {filename} > HAS THE WRONG SOUND FORMAT, SHOULD BE XWM OR WAV \n")
-                    # ================================================
-                    # DETECT MODS WITH SCRIPT EXTENDER FILE COPIES
-                    elif any(filename.lower() == key.lower() for key in xse_scriptfiles) and "workshop framework" not in root.lower():
-                        xse_file_path = os.path.join(root, filename)
-                        if f"Scripts\\{filename}" in xse_file_path:
-                            root_main = main_path.split(os.path.sep)[1]
-                            modscan_list.append(f"[!] CAUTION (XSE-COPY) : {root_main} > CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES \n")
-                    # ================================================
-                    # DETECT MODS WITH PRECOMBINE / PREVIS FILES
-                    elif any(ext in filename.lower() for ext in (".uvd", "_oc.nif")):
-                        root_main = main_path.split(os.path.sep)[1]
-                        modscan_list.append(f"[!] CAUTION (-PREVIS-) : {root_main} > CONTAINS LOOSE PRECOMBINE / PREVIS FILES \n")
-                    # ================================================
-                    # (RE)MOVE REDUNDANT README / CHANGELOG FILES
-                    elif any(names.lower() in filename.lower() for names in filter_names) and filename.lower().endswith(".txt"):
-                        readme_file_path = os.path.join(root, filename)
-                        relative_path = os.path.relpath(readme_file_path, mod_path)
-                        new_file_path = os.path.join(backup_path, relative_path)
-
-                        # Create subdirectories if they don't exist.
-                        os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
-                        cleanup_list.append(f"MOVED > {readme_file_path} FILE TO > {backup_path} \n")
-                        shutil.move(readme_file_path, new_file_path)
-
-            print("✔️ CLEANUP COMPLETE! NOW ANALYZING ALL UNPACKED/LOOSE MOD FILES...")
-            message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Reminders")) # type: ignore
-            message_list.append("========= RESULTS FROM UNPACKED / LOOSE FILES =========\n")
-        else:
-            message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Invalid")) # type: ignore
+    backup_path = Path("CLASSIC Backup/Cleaned Files")
+    backup_path.mkdir(parents=True, exist_ok=True)
+    mod_folder = CMain.classic_settings("MODS Folder Path")
+    mod_path = Path(mod_folder) if isinstance(mod_folder, str) else None
+    if not mod_path:
+        message_list.append(str(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Missing")))
+    elif not mod_path.is_dir():
+        message_list.append(str(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Invalid")))
     else:
-        message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Missing")) # type: ignore
+        filter_names = ["readme", "changes", "changelog", "change log"]
+        print("✔️ MODS FOLDER PATH FOUND! PERFORMING INITIAL MOD FILES CLEANUP...")
+        for root, dirs, files in mod_path.walk(top_down=False):
+            main_path = root.relative_to(mod_path)
+            root_main = main_path.parts[1]
+            for dirname in dirs:
+                # ================================================
+                # DETECT MODS WITH AnimationFileData
+                if dirname.lower() == "animationfiledata":
+                    modscan_list.append(f"[-] NOTICE (ANIMDATA) : {root_main} > CONTAINS CUSTOM ANIMATION FILE DATA \n")
+                # ================================================
+                # (RE)MOVE REDUNDANT FOMOD FOLDERS
+                elif dirname.lower() == "fomod":
+                    fomod_folder_path = root / dirname
+                    relative_path = fomod_folder_path.relative_to(mod_path)
+                    new_folder_path = backup_path / relative_path
+
+                    cleanup_list.append(f"MOVED > {fomod_folder_path} FOLDER TO > {backup_path.as_posix()} \n")
+                    shutil.move(fomod_folder_path, new_folder_path)
+
+            for filename in files:
+                # ================================================
+                # DETECT DDS FILES WITH INCORRECT DIMENSIONS
+
+                file_path = root / filename
+                file_ext = file_path.suffix.lower()
+                if file_ext == ".dds":
+                    with file_path.open("rb") as dds_file:
+                        dds_data = dds_file.read(20)
+                    if dds_data[:4] == b"DDS ":
+                        width = struct.unpack("<I", dds_data[12:16])[0]
+                        height = struct.unpack("<I", dds_data[16:20])[0]
+                        if width % 2 != 0 or height % 2 != 0:
+                            modscan_list.append(f"[!] CAUTION (DDS-DIMS) : {file_path.as_posix()} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n")
+                # ================================================
+                # DETECT INVALID TEXTURE FILE FORMATS
+                elif file_ext in (".tga", ".png"):
+                    modscan_list.append(f"[-] NOTICE (-FORMAT-) : {file_path.as_posix()} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n")
+                # ================================================
+                # DETECT INVALID SOUND FILE FORMATS
+                elif file_ext in (".mp3", ".m4a"):
+                    modscan_list.append(f"[-] NOTICE (-FORMAT-) : {root_main} > {filename} > HAS THE WRONG SOUND FORMAT, SHOULD BE XWM OR WAV \n")
+                # ================================================
+                # DETECT MODS WITH SCRIPT EXTENDER FILE COPIES
+                elif any(filename.lower() == key.lower() for key in xse_scriptfiles) and "workshop framework" not in str(root).lower():
+                    if f"Scripts\\{filename}" in str(file_path):
+                        modscan_list.append(f"[!] CAUTION (XSE-COPY) : {root_main} > CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES \n")
+                # ================================================
+                # DETECT MODS WITH PRECOMBINE / PREVIS FILES
+                elif any(ext in filename.lower() for ext in (".uvd", "_oc.nif")):
+                    modscan_list.append(f"[!] CAUTION (-PREVIS-) : {root_main} > CONTAINS LOOSE PRECOMBINE / PREVIS FILES \n")
+                # ================================================
+                # (RE)MOVE REDUNDANT README / CHANGELOG FILES
+                elif file_ext == ".txt" and any(names.lower() in filename.lower() for names in filter_names):
+                    relative_path = file_path.relative_to(mod_path)
+                    new_file_path = backup_path / relative_path
+
+                    # Create subdirectories if they don't exist.
+                    new_file_path.parent.mkdir(parents=True, exist_ok=True)
+                    cleanup_list.append(f"MOVED > {file_path} FILE TO > {backup_path.as_posix()} \n")
+                    shutil.move(file_path, new_file_path)
+
+        print("✔️ CLEANUP COMPLETE! NOW ANALYZING ALL UNPACKED/LOOSE MOD FILES...")
+        message_list.append(str(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Reminders")))
+        message_list.append("========= RESULTS FROM UNPACKED / LOOSE FILES =========\n")
+
 
     modscan_unique_list = sorted(set(modscan_list))
-    return "".join(message_list) + "".join(cleanup_list) + "".join(modscan_unique_list)
+    return f"{"".join(message_list)}{"".join(cleanup_list)}{"".join(modscan_unique_list)}"
 
 
 # ================================================
@@ -513,86 +527,77 @@ def scan_mods_unpacked() -> str:
 def scan_mods_archived() -> str:
     message_list: list[str] = []
     modscan_list: list[str] = []
-    xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym") # type: ignore
-    xse_scriptfiles: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.XSE_HashedScripts") # type: ignore
+    xse_acronym_setting = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym")
+    xse_scriptfiles_setting = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.XSE_HashedScripts")
 
-    CLASSIC_folder = Path.cwd()
-    bsarch_path = r"CLASSIC Data\BSArch.exe"
-    bsarch_path_full = fr"{CLASSIC_folder}\{bsarch_path}"
-    mod_path: str | None = CMain.classic_settings("MODS Folder Path")  # type: ignore
-    if mod_path:
-        if Path(mod_path).exists():
-            if Path(bsarch_path).exists():
-                print("✔️ ALL REQUIREMENTS SATISFIED! NOW ANALYZING ALL BA2 MOD ARCHIVES...")
-                message_list.append("\n========== RESULTS FROM ARCHIVED / BA2 FILES ==========\n")
-                for root, _, files in os.walk(mod_path, topdown=False):
-                    for filename in files:
-                        if "textures.ba2" in filename.lower():
-                            main_path = root.replace(mod_path, "")
-                            ba2_file_path = os.path.join(root, filename)
-                            command_dump = f'"{bsarch_path_full}" "{ba2_file_path}" -dump'
+    xse_acronym = xse_acronym_setting if isinstance(xse_acronym_setting, str) else ""
+    xse_scriptfiles = xse_scriptfiles_setting if isinstance(xse_scriptfiles_setting, dict) else {}
 
-                            archived_dump = subprocess.run(command_dump, shell=True, capture_output=True, text=True, check=False)
-                            if archived_dump.returncode == 0:
-                                archived_output = archived_dump.stdout
-                                # ================================================
-                                # DETECT DDS FILES WITH INCORRECT DIMENSIONS
-                                output_split = archived_output.split("\n")
-                                output_list = [item for item in output_split if item]
-                                for index, line in enumerate(output_list):
-                                    if ".dds" in line.lower():
-                                        dds_meta = output_list[index + 2]
-                                        dds_meta_split = dds_meta.split(":")
-                                        width = dds_meta_split[1].replace("  Height", "").strip()
-                                        height = dds_meta_split[2].replace("  CubeMap", "").strip()
-                                        if (width.isdecimal() and int(width) % 2 != 0) or (height.isdecimal() and int(height) % 2 != 0):
-                                            root_main = main_path.split(os.path.sep)[1]
-                                            modscan_list.append(f"[!] CAUTION (DDS-DIMS) : ({root_main}) {line} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n")
-                                    # ================================================
-                                    # DETECT INVALID TEXTURE FILE FORMATS
-                                    elif any(ext in line.lower() for ext in (".tga", ".png")):
-                                        root_main = main_path.split(os.path.sep)[1]
-                                        modscan_list.append(f"[-] NOTICE (-FORMAT-) : ({root_main}) {line} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n")
-                            else:
-                                error_message = archived_dump.stderr
-                                print("Command failed with error:\n", error_message)
-
-                        elif "main.ba2" in filename.lower():
-                            main_path = root.replace(mod_path, "")
-                            ba2_file_path = os.path.join(root, filename)
-                            command_list = f'"{bsarch_path_full}" "{ba2_file_path}" -list'
-                            archived_list = subprocess.run(command_list, shell=True, capture_output=True, text=True, check=False)
-                            if archived_list.returncode == 0:
-                                archived_output = archived_list.stdout
-                                # ================================================
-                                # DETECT INVALID SOUND FILE FORMATS
-                                if any(ext in archived_output.lower() for ext in (".mp3", ".m4a")):
-                                    root_main = main_path.split(os.path.sep)[1]
-                                    modscan_list.append(f"[-] NOTICE (-FORMAT-) : {root_main} > BA2 ARCHIVE CONTAINS SOUND FILES IN THE WRONG FORMAT \n")
-                                # ================================================
-                                # DETECT MODS WITH AnimationFileData
-                                if "animationfiledata" in archived_output.lower():
-                                    root_main = main_path.split(os.path.sep)[1]
-                                    modscan_list.append(f"[-] NOTICE (ANIMDATA) : {root_main} > BA2 ARCHIVE CONTAINS CUSTOM ANIMATION FILE DATA \n")
-                                # ================================================
-                                # DETECT MODS WITH SCRIPT EXTENDER FILE COPIES
-                                if any(f"scripts\\{key.lower()}" in archived_output.lower() for key in xse_scriptfiles) and "workshop framework" not in root.lower():
-                                    root_main = main_path.split(os.path.sep)[1]
-                                    modscan_list.append(f"[!] CAUTION (XSE-COPY) : {root_main} > BA2 ARCHIVE CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES \n")
-                                # ================================================
-                                # DETECT MODS WITH PRECOMBINE / PREVIS FILES
-                                if any(ext in archived_output.lower()for ext in (".uvd", "_oc.nif")) and "previs repair pack" not in root.lower():
-                                    root_main = main_path.split(os.path.sep)[1]
-                                    modscan_list.append(f"[-] NOTICE (-PREVIS-) : {root_main} > BA2 ARCHIVE CONTAINS CUSTOM PRECOMBINE / PREVIS FILES \n")
-                            else:
-                                error_message = archived_list.stderr
-                                print("BSArch command failed with the following error:\n", error_message)
-            else:
-                message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_BSArch_Missing")) # type: ignore
-        else:
-            message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Invalid")) # type: ignore
+    bsarch_path = Path.cwd() / "CLASSIC Data/BSArch.exe"
+    mod_folder = CMain.classic_settings("MODS Folder Path")
+    mod_path = Path(mod_folder) if isinstance(mod_folder, str) else None
+    if not mod_path:
+        message_list.append(str(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Missing")))
+    elif not mod_path.exists():
+        message_list.append(str(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Invalid")))
+    elif not bsarch_path.exists():
+        message_list.append(str(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_BSArch_Missing")))
     else:
-        message_list.append(CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "Mods_Warn.Mods_Path_Missing")) # type: ignore
+        print("✔️ ALL REQUIREMENTS SATISFIED! NOW ANALYZING ALL BA2 MOD ARCHIVES...")
+        message_list.append("\n========== RESULTS FROM ARCHIVED / BA2 FILES ==========\n")
+        for root, _, files in mod_path.walk(top_down=False):
+            main_path = root.relative_to(mod_path)
+            root_main = main_path.parts[1]
+            for filename in files:
+                file_path = root / filename
+
+                if filename.lower().endswith("textures.ba2"):
+                    command_dump = (bsarch_path, file_path, "-dump")
+                    archived_dump = subprocess.run(command_dump, shell=True, capture_output=True, text=True, check=False)
+                    if archived_dump.returncode != 0:
+                        print("Command failed with error:\n", archived_dump.stderr)
+                    else:
+                        archived_output = archived_dump.stdout
+                        # ================================================
+                        # DETECT DDS FILES WITH INCORRECT DIMENSIONS
+                        output_split = archived_output.split("\n")
+                        output_list = [item for item in output_split if item]
+                        for index, line in enumerate(output_list):
+                            if ".dds" in line.lower():
+                                dds_meta = output_list[index + 2]
+                                dds_meta_split = dds_meta.split(":")
+                                width = dds_meta_split[1].replace("  Height", "").strip()
+                                height = dds_meta_split[2].replace("  CubeMap", "").strip()
+                                if (width.isdecimal() and int(width) % 2 != 0) or (height.isdecimal() and int(height) % 2 != 0):
+                                    modscan_list.append(f"[!] CAUTION (DDS-DIMS) : ({root_main}) {line} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n")
+                            # ================================================
+                            # DETECT INVALID TEXTURE FILE FORMATS
+                            elif any(ext in line.lower() for ext in (".tga", ".png")):
+                                modscan_list.append(f"[-] NOTICE (-FORMAT-) : ({root_main}) {line} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n")
+
+                elif filename.lower().endswith("main.ba2"):
+                    command_list = (bsarch_path, file_path, "-list")
+                    archived_list = subprocess.run(command_list, shell=True, capture_output=True, text=True, check=False)
+                    if archived_list.returncode != 0:
+                        print("BSArch command failed with the following error:\n", archived_list.stderr)
+                    else:
+                        archived_output = archived_list.stdout
+                        # ================================================
+                        # DETECT INVALID SOUND FILE FORMATS
+                        if any(ext in archived_output.lower() for ext in (".mp3", ".m4a")):
+                            modscan_list.append(f"[-] NOTICE (-FORMAT-) : {root_main} > BA2 ARCHIVE CONTAINS SOUND FILES IN THE WRONG FORMAT \n")
+                        # ================================================
+                        # DETECT MODS WITH AnimationFileData
+                        if "animationfiledata" in archived_output.lower():
+                            modscan_list.append(f"[-] NOTICE (ANIMDATA) : {root_main} > BA2 ARCHIVE CONTAINS CUSTOM ANIMATION FILE DATA \n")
+                        # ================================================
+                        # DETECT MODS WITH SCRIPT EXTENDER FILE COPIES
+                        if any(f"scripts\\{key.lower()}" in archived_output.lower() for key in xse_scriptfiles) and "workshop framework" not in str(root).lower():
+                            modscan_list.append(f"[!] CAUTION (XSE-COPY) : {root_main} > BA2 ARCHIVE CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES \n")
+                        # ================================================
+                        # DETECT MODS WITH PRECOMBINE / PREVIS FILES
+                        if any(ext in archived_output.lower()for ext in (".uvd", "_oc.nif")) and "previs repair pack" not in str(root).lower():
+                            modscan_list.append(f"[-] NOTICE (-PREVIS-) : {root_main} > BA2 ARCHIVE CONTAINS CUSTOM PRECOMBINE / PREVIS FILES \n")
 
     modscan_unique_list = sorted(set(modscan_list))
     return "".join(message_list) + "".join(modscan_unique_list)
@@ -602,12 +607,15 @@ def scan_mods_archived() -> str:
 # BACKUP / RESTORE / REMOVE
 # ================================================
 def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REMOVE"] = "BACKUP") -> None:
-    manage_list: list[str] = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"{classic_list}") # type: ignore
-    game_path: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game") # type: ignore
+    manage_list_setting = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", classic_list)
+    game_path_setting = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game")
+
+    manage_list = manage_list_setting if isinstance(manage_list_setting, list) else []
+    game_path = Path(game_path_setting) if isinstance(game_path_setting, str) else None
 
     backup_path = Path(f"CLASSIC Backup/Game Files/{classic_list}")
     backup_path.mkdir(parents=True, exist_ok=True)
-    game_files = list(Path(game_path).glob("*")) if game_path else []
+    game_files = list(game_path.glob("*")) if game_path else []
     list_name = classic_list.split(" ", 1)
 
     if mode == "BACKUP":
@@ -669,10 +677,16 @@ def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REM
 # COMBINED RESULTS
 # ================================================
 def game_combined_result() -> str:
-    docs_path: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Docs") # type: ignore
-    game_path: str = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game") # type: ignore
-    combined_return = [check_xse_plugins(), check_crashgen_settings(), check_log_errors(docs_path), check_log_errors(game_path), scan_wryecheck(), scan_mod_inis()]
-    return "".join(combined_return)
+    docs_path_setting = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Docs")
+    game_path_setting = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game")
+
+    docs_path = Path(docs_path_setting) if isinstance(docs_path_setting, str) else None
+    game_path = Path(game_path_setting) if isinstance(game_path_setting, str) else None
+
+    if game_path and docs_path:
+        combined_return = [check_xse_plugins(), check_crashgen_settings(), check_log_errors(docs_path), check_log_errors(game_path), scan_wryecheck(), scan_mod_inis()]
+        return "".join(combined_return)
+    return ""
 
 
 def mods_combined_result() -> str:  # KEEP THESE SEPARATE SO THEY ARE NOT INCLUDED IN AUTOSCAN REPORTS
@@ -683,7 +697,8 @@ def mods_combined_result() -> str:  # KEEP THESE SEPARATE SO THEY ARE NOT INCLUD
 def write_combined_results() -> None:
     game_result = game_combined_result()
     mods_result = mods_combined_result()
-    with open("CLASSIC GFS Report.md", "w", encoding="utf-8", errors="ignore") as scan_report:
+    gfs_report = Path("CLASSIC GFS Report.md")
+    with gfs_report.open("w", encoding="utf-8", errors="ignore") as scan_report:
         scan_report.write(game_result + mods_result)
 
 
