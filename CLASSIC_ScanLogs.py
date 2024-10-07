@@ -51,37 +51,35 @@ def get_entry(formid: str, plugin: str) -> str | None:
 # ================================================
 # INITIAL REFORMAT FOR CRASH LOG FILES
 # ================================================
-def crashlogs_get_files() -> list[Path]:  # Get paths of all available crash logs.
+def crashlogs_get_files() -> list[Path]:
+    """Get paths of all available crash logs."""
     logging.debug("- - - INITIATED CRASH LOG FILE LIST GENERATION")
     CLASSIC_folder = Path.cwd()
-    CUSTOM_folder: str = CMain.classic_settings("SCAN Custom Path") # type: ignore
-    XSE_folder: str | None = CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", "Game_Info.Docs_Folder_XSE") # type: ignore
+    CUSTOM_folder = Path(str(CMain.classic_settings("SCAN Custom Path")))
+    XSE_folder = Path(str(CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", "Game_Info.Docs_Folder_XSE")))
 
-    XSE_path: Path | None = Path(XSE_folder) if XSE_folder else None
-    if XSE_path and XSE_path.exists():
-        xse_crash_files = list(XSE_path.glob("crash-*.log"))
-        if xse_crash_files:
-            for crash_file in xse_crash_files:
-                destination_file = fr"{CLASSIC_folder}/{crash_file.name}"
-                if not Path(destination_file).is_file():
-                    shutil.copy2(crash_file, destination_file)
+    if XSE_folder.is_dir():
+        for crash_file in XSE_folder.glob("crash-*.log"):
+            destination_file = CLASSIC_folder / crash_file.name
+            if not Path(destination_file).is_file():
+                shutil.copy2(crash_file, destination_file)
 
     crash_files = list(CLASSIC_folder.glob("crash-*.log"))
-    if CUSTOM_folder and Path(CUSTOM_folder).exists():
+    if CUSTOM_folder.is_dir():
         crash_files.extend(Path(CUSTOM_folder).glob("crash-*.log"))
 
     return crash_files
 
 
-def crashlogs_reformat() -> None:  # Reformat plugin lists in crash logs, so that old and new CRASHGEN formats match.
+def crashlogs_reformat() -> None:
+    """Reformat plugin lists in crash logs, so that old and new CRASHGEN formats match."""
     logging.debug("- - - INITIATED CRASH LOG FILE REFORMAT")
     xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym") # type: ignore
     remove_list: list[str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_records") # type: ignore
     simple_logs = CMain.classic_settings("Simplify Logs")
 
-    crash_files = crashlogs_get_files()
-    for file in crash_files:
-        with file.open("r", encoding="utf-8", errors="ignore") as crash_log:
+    for file in crashlogs_get_files():
+        with file.open(encoding="utf-8", errors="ignore") as crash_log:
             crash_data = crash_log.readlines()
         try:
             index_plugins = next(index for index, item in enumerate(crash_data) if xse_acronym and xse_acronym not in item and "PLUGINS:" in item)
@@ -149,13 +147,14 @@ def crashlogs_scan() -> None:
         main_files_check = "❌ FCX Mode is disabled, skipping game files check... \n-----\n"
         game_files_check = ""
 
-    # DETECT ONE WHOLE KEY (1 MOD) PER LOOP IN YAML DICT
     def detect_mods_single(yaml_dict: dict[str, str]) -> bool:
+        """Detect one whole key (1 mod) per loop in YAML dict."""
         trigger_mod_found = False
         for mod_name in yaml_dict:
+            mod_name_lower = mod_name.lower()
             mod_warn = yaml_dict.get(mod_name)
             for plugin_name, plugin_fid in crashlog_plugins.items():
-                if mod_name.lower() in plugin_name.lower():
+                if mod_name_lower in plugin_name.lower():
                     if mod_warn:
                         autoscan_report.extend([f"[!] FOUND : [{plugin_fid}] ", mod_warn])
                     else:
@@ -164,18 +163,19 @@ def crashlogs_scan() -> None:
                     break
         return trigger_mod_found
 
-    # DETECT ONE SPLIT KEY (2 MODS) PER LOOP IN YAML DICT
     def detect_mods_double(yaml_dict: dict[str, str]) -> bool:
+        """Detect one split key (2 mods) per loop in YAML dict."""
         trigger_mod_found = False
         for mod_name in yaml_dict:
             mod_warn = yaml_dict.get(mod_name)
-            mod_split = mod_name.split(' | ', 1)
+            mod_split = mod_name.lower().split(" | ", 1)
             mod1_found = mod2_found = False
             for plugin_name in crashlog_plugins:
-                if not mod1_found and mod_split[0].lower() in plugin_name.lower():
+                plugin_name = plugin_name.lower()
+                if not mod1_found and mod_split[0] in plugin_name:
                     mod1_found = True
                     continue
-                if not mod2_found and mod_split[1].lower() in plugin_name.lower():
+                if not mod2_found and mod_split[1] in plugin_name:
                     mod2_found = True
                     continue
             if mod1_found and mod2_found:
@@ -186,11 +186,11 @@ def crashlogs_scan() -> None:
                 trigger_mod_found = True
         return trigger_mod_found
 
-    # DETECT ONE IMPORTANT CORE AND GPU SPECIFIC MOD PER LOOP IN YAML DICT
     def detect_mods_important(yaml_dict: dict[str, str]) -> None:
+        """Detect one important Core and GPU specific mod per loop in YAML dict."""
         gpu_rival = "nvidia" if (crashlog_GPUAMD or crashlog_GPUI) else "amd" if crashlog_GPUNV else None
         for mod_name in yaml_dict:
-            mod_warn = yaml_dict.get(mod_name)
+            mod_warn = yaml_dict.get(mod_name, "")
             mod_split = mod_name.split(' | ', 1)
             mod_found = False
             for plugin_name in crashlog_plugins:
@@ -198,21 +198,23 @@ def crashlogs_scan() -> None:
                     mod_found = True
                     continue
             if mod_found:
-                if gpu_rival and gpu_rival in mod_warn.lower(): # type: ignore
+                if gpu_rival and gpu_rival in mod_warn.lower():
                     autoscan_report.extend([f"❓ {mod_split[1]} is installed, BUT IT SEEMS YOU DON'T HAVE AN {gpu_rival.upper()} GPU?\n",
                                             "IF THIS IS CORRECT, COMPLETELY UNINSTALL THIS MOD TO AVOID ANY PROBLEMS! \n\n"])
                 else:
                     autoscan_report.extend([f"✔️ {mod_split[1]} is installed!\n\n"])
-            elif gpu_rival not in mod_warn.lower() and mod_warn: # type: ignore
+            elif (gpu_rival and mod_warn) and gpu_rival not in mod_warn.lower():
                 autoscan_report.extend([f"❌ {mod_split[1]} is not installed!\n", mod_warn, "\n"])
 
     def crashlog_generate_segment(segment_start: str, segment_end: str, crash_data: list[str]) -> list[str]:
+            segment_start = segment_start.lower()
+            segment_end = segment_end.lower()
             try:
-                index_start: int = next(index for index, item in enumerate(crash_data) if segment_start.lower() in item.lower()) + 1
+                index_start: int = next(index for index, item in enumerate(crash_data) if segment_start in item.lower()) + 1
             except StopIteration:
                 index_start = 0
             try:
-                index_end: int = next(index for index, item in enumerate(crash_data) if segment_end.lower() in item.lower() and xse_acronym.lower() not in item.lower()) - 1
+                index_end: int = next(index for index, item in enumerate(crash_data) if segment_end in item.lower() and xse_acronym.lower() not in item.lower()) - 1
             except StopIteration:
                 index_end = len(crash_data)
 
@@ -223,16 +225,14 @@ def crashlogs_scan() -> None:
             return segment_output
 
     crashlog_list = crashlogs_get_files()
-    scan_failed_list = []
-    scan_folder = Path.cwd()
+    scan_failed_list: list[str] = []
     user_folder = Path.home()
-    scan_invalid_list = list(scan_folder.glob("crash-*.txt"))
     stats_crashlog_scanned = stats_crashlog_incomplete = stats_crashlog_failed = 0
     logging.info(f"- - - INITIATED CRASH LOG FILE SCAN >>> CURRENTLY SCANNING {len(crashlog_list)} FILES")
     for crashlog_file in crashlog_list:
         autoscan_report = []
         trigger_plugin_limit = trigger_plugins_loaded = trigger_scan_failed = False
-        with crashlog_file.open("r", encoding="utf-8", errors="ignore") as crash_log:
+        with crashlog_file.open(encoding="utf-8", errors="ignore") as crash_log:
             crash_log.seek(0)  # DON'T FORGET WHEN READING FILE MULTIPLE TIMES
             crash_data = crash_log.readlines()
 
@@ -337,7 +337,7 @@ def crashlogs_scan() -> None:
                         plugin_fid = pluginmatch.group(1)"""
                     plugin_fid = pluginmatch.group(1)
                     plugin_name = pluginmatch.group(3)
-                    if all(plugin_name not in item for item in crashlog_plugins) and plugin_fid is not None:
+                    if plugin_fid is not None and all(plugin_name not in item for item in crashlog_plugins):
                         crashlog_plugins[plugin_name] = plugin_fid.replace(":", "")
                     elif plugin_name and "dll" in plugin_name.lower():
                         crashlog_plugins[plugin_name] = "DLL"
@@ -362,8 +362,7 @@ def crashlogs_scan() -> None:
         for elem in segment_allmodules:
             # SOME IMPORTANT DLLs ONLY APPEAR UNDER ALL MODULES
             if "vulkan" in elem.lower():
-                elem = elem.strip()
-                elem_parts = elem.split(' ', 1)
+                elem_parts = elem.strip().split(" ", 1)
                 elem_parts[1] = "DLL"
                 if all(elem_parts[0] not in item for item in crashlog_plugins):
                     crashlog_plugins[elem_parts[0]] = elem_parts[1]
@@ -393,9 +392,9 @@ def crashlogs_scan() -> None:
         for key in suspects_stack_list:
             key_split = key.split(" | ", 1)
             error_req_found = error_opt_found = stack_found = False
-            item_list = suspects_stack_list.get(key)
-            has_required_item = any("ME-REQ|" in elem for elem in item_list) # type: ignore
-            for item in item_list: # type: ignore
+            item_list = suspects_stack_list.get(key, [])
+            has_required_item = any("ME-REQ|" in elem for elem in item_list)
+            for item in item_list:
                 if "|" in item:
                     item_split = item.split("|", 1)
                     if item_split[0] == "ME-REQ":
@@ -585,18 +584,18 @@ def crashlogs_scan() -> None:
         # ================================================
 
         autoscan_report.append("# LIST OF (POSSIBLE) PLUGIN SUSPECTS #\n")
-        plugins_matches = []
+        plugins_matches: list[str] = []
         for line in segment_callstack:
+            line = line.lower()
             for plugin in crashlog_plugins:
-                if plugin.lower() in line.lower() and "modified by:" not in line.lower() and all(ignore.lower() not in plugin.lower() for ignore in game_ignore_plugins):
-                    plugins_matches.append(plugin)  # noqa: PERF401
+                plugin = plugin.lower()
+                if plugin in line and "modified by:" not in line and all(ignore.lower() not in plugin for ignore in game_ignore_plugins):
+                    plugins_matches.append(plugin)
 
-        if len(plugins_matches) >= 1:
+        if plugins_matches:
             plugins_found = dict(Counter(plugins_matches))
-            if len(plugins_found) >= 1:
-                for key, value in plugins_found.items():
-                    autoscan_report.append(f"- {key} | {value}\n")
-
+            if plugins_found:
+                autoscan_report.extend([f"- {key} | {value}\n" for key, value in plugins_found.items()])
                 autoscan_report.extend(["\n[Last number counts how many times each Plugin Suspect shows up in the crash log.]\n",
                                     f"These Plugins were caught by {crashgen_name} and some of them might be responsible for this crash.\n",
                                     "You can try disabling these plugins and check if the game still crashes, though this method can be unreliable.\n\n"])
@@ -704,6 +703,7 @@ def crashlogs_scan() -> None:
                 shutil.copy2(autoscan_filepath, scan_move)
 
     # CHECK FOR FAILED OR INVALID CRASH LOGS
+    scan_invalid_list = list(Path.cwd().glob("crash-*.txt"))
     if scan_failed_list or scan_invalid_list:
         print("❌ NOTICE : CLASSIC WAS UNABLE TO PROPERLY SCAN THE FOLLOWING LOG(S):")
         print('\n'.join(scan_failed_list))
