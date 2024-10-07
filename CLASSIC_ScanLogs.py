@@ -294,16 +294,11 @@ def crashlogs_scan() -> None:
 
         crashlog_GPUAMD = crashlog_GPUNV = False
         crashlog_plugins: dict[str, str] = {}
-        if CMain.gamevars["game"] == "Fallout4":
-            if any("Fallout4.esm" in elem for elem in segment_plugins):
-                trigger_plugins_loaded = True
-            else:
-                stats_crashlog_incomplete += 1
-        elif CMain.gamevars["game"] == "Skyrim":
-            if any("Skyrim.esm" in elem for elem in segment_plugins):
-                trigger_plugins_loaded = True
-            else:
-                stats_crashlog_incomplete += 1
+
+        if any(f"{CMain.gamevars["game"]}.esm" in elem for elem in segment_plugins):
+            trigger_plugins_loaded = True
+        else:
+            stats_crashlog_incomplete += 1
 
         # ================================================
         # 3) CHECK EACH SEGMENT AND CREATE REQUIRED VALUES
