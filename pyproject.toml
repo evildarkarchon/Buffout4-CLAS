@@ -25,6 +25,7 @@ aiohttp = "^3.10.8"
 regex = "^2024.9.11"
 iniparse = "^0.5"
 pyside6 = "^6.7.3"
+typed-argument-parser = "^1.10.1"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.11.2"
