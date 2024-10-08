@@ -158,6 +158,9 @@ class YamlSettingsCache:
 
     def get_setting(self, yaml_path: Path, key_path: str, new_value: str | bool | None = None) -> YAMLValue | None:
         data = self.load_yaml(yaml_path)
+        if data is None:
+            raise TypeError("Failed to load YAML.")
+
         keys = key_path.split('.') if isinstance(key_path, str) else key_path
         value = data
 
@@ -188,27 +191,30 @@ class YamlSettingsCache:
             print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'") # Despite what the type checker says, this code is reachable.
         return value
 
-# Instantiate a global cache object
-yaml_cache = YamlSettingsCache()
-
 # Function compatible with the old interface
 def yaml_settings(yaml_path: str, key_path: str, new_value: str | bool | None = None) -> YAMLValue | None:
+    if yaml_cache is None:
+        raise TypeError("CMain not initialized")
     return yaml_cache.get_setting(Path(yaml_path), key_path, new_value)
 
 def classic_settings(setting: str | None = None) -> str | bool | None:
     settings_path = Path("CLASSIC Settings.yaml")
     if not settings_path.exists():
-        default_settings: str = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.default_settings")  # type: ignore
+        default_settings = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.default_settings")
+        if not isinstance(default_settings, str):
+            raise ValueError("Invalid Default Settings in 'CLASSIC Main.yaml'")
+
         with settings_path.open("w", encoding="utf-8") as file:
             file.write(default_settings)
     if setting:
-        get_setting: str | bool | None = yaml_settings(str(settings_path), f"CLASSIC_Settings.{setting}")  # type: ignore
-        if get_setting is None and "Path" not in setting:  # Error me if I make a stupid mistype.
-            print(f"❌ ERROR (classic_settings) : Trying to grab a None value for : '{setting}'")
-        return get_setting
-    return None
+        setting_value = yaml_settings(str(settings_path), f"CLASSIC_Settings.{setting}")
+        if not isinstance(setting_value, str) and not isinstance(setting_value, bool) and setting_value is not None:
+            raise ValueError(f"Invalid value for '{setting}' in '{settings_path.name}'")
 
-gamevars["vr"] = "VR" if classic_settings("VR Mode") else ""
+        if setting_value is None and "Path" not in setting:  # Error me if I make a stupid mistype.
+            print(f"❌ ERROR (classic_settings) : Trying to grab a None value for : '{setting}'")
+        return setting_value
+    return None
 
 
 # ================================================
@@ -325,8 +331,10 @@ async def classic_update_check(quiet: bool = False, gui_request: bool = True) ->
 # CHECK DEFAULT DOCUMENTS & GAME FOLDERS / FILES
 # ================================================
 # =========== CHECK DOCUMENTS FOLDER PATH -> GET GAME DOCUMENTS FOLDER ===========
-manual_docs_gui = ManualDocsPath()
 def docs_path_find() -> None:
+    if manual_docs_gui is None:
+        raise TypeError("CMain not initialized")
+
     logging.debug("- - - INITIATED DOCS PATH CHECK")
     docs_name: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.Main_Docs_Name")  # type: ignore
 
@@ -360,6 +368,9 @@ def docs_path_find() -> None:
                     yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs", str(linux_docs))
 
     def get_manual_docs_path() -> None:
+        if manual_docs_gui is None:
+            raise TypeError("CMain not initialized")
+
         if "PySide6" in sys.modules:
             manual_docs_gui.manual_docs_path_signal.emit()
             return
@@ -396,6 +407,9 @@ def docs_path_find() -> None:
             get_manual_docs_path()
 
 def get_manual_docs_path_gui(path: str) -> None:
+    if manual_docs_gui is None:
+        raise TypeError("CMain not initialized")
+
     path = path.strip()
     if Path(path).is_dir():
         file_found: bool = False
@@ -426,8 +440,10 @@ def docs_generate_paths() -> None:
 
 
 # =========== CHECK DOCUMENTS XSE FILE -> GET GAME ROOT FOLDER PATH ===========
-game_path_gui = GamePathEntry()
 def game_path_find() -> None:
+    if game_path_gui is None:
+        raise TypeError("CMain not initialized")
+
     logging.debug("- - - INITIATED GAME PATH CHECK")
     xse_file: str | None = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Docs_File_XSE")  # type: ignore
     xse_acronym: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.XSE_Acronym")  # type: ignore
@@ -767,7 +783,21 @@ def main_generate_required() -> None:
     print("✔️ ALL CLASSIC AND GAME SETTINGS CHECKS HAVE BEEN PERFORMED!")
     print("    YOU CAN NOW SCAN YOUR CRASH LOGS, GAME AND/OR MOD FILES \n")
 
+yaml_cache: YamlSettingsCache | None = None
+manual_docs_gui: ManualDocsPath | None = None
+game_path_gui: GamePathEntry | None = None
+
+def initialize() -> None:
+    global yaml_cache, manual_docs_gui, game_path_gui  # noqa: PLW0603
+
+    # Instantiate a global cache object
+    yaml_cache = YamlSettingsCache()
+    gamevars["vr"] = "VR" if classic_settings("VR Mode") else ""
+    manual_docs_gui = ManualDocsPath()
+    game_path_gui = GamePathEntry()
+
 
 if __name__ == "__main__":  # AKA only autorun / do the following when NOT imported.
+    initialize()
     main_generate_required()
     os.system("pause")

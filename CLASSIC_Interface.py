@@ -244,6 +244,10 @@ class GameFilesScanWorker(QObject):
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
+
+        if CMain.manual_docs_gui is None or CMain.game_path_gui is None:
+            raise TypeError("CMain not initialized")
+
         self.setWindowTitle(
             f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings('CLASSIC Data/databases/CLASSIC Main.yaml', 'CLASSIC_Info.version')}"
         )
@@ -373,6 +377,9 @@ class MainWindow(QMainWindow):
             CMain.get_manual_docs_path_gui(manual_path)
 
     def show_game_path_dialog(self) -> None:
+        if CMain.game_path_gui is None:
+            raise TypeError("CMain not initialized")
+
         dialog = GamePathDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             manual_path = dialog.get_path()
@@ -1326,6 +1333,7 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     app = QApplication(sys.argv)
+    CMain.initialize()
 
     try:
         window = MainWindow()

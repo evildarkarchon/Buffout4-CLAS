@@ -14,8 +14,7 @@ import requests
 import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
 
-CMain.configure_logging()
-
+query_cache: dict[tuple[str, str], str] = {}
 
 # ================================================
 # ASSORTED FUNCTIONS
@@ -32,8 +31,6 @@ def pastebin_fetch(url: str) -> None:
         outfile.write_text(response.text, encoding="utf-8", errors="ignore")
     else:
         response.raise_for_status()
-
-query_cache: dict[tuple[str, str], str] = {}
 
 def get_entry(formid: str, plugin: str) -> str | None:
     if (entry := query_cache.get((formid, plugin))) is not None:
@@ -742,6 +739,8 @@ def crashlogs_scan() -> None:
 
 
 if __name__ == "__main__":
+    CMain.initialize()
+    CMain.configure_logging()
     CMain.main_generate_required()
     import argparse
 
