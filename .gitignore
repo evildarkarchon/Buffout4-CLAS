@@ -1,43 +1,58 @@
+# Python
 __pycache__/
-*.py[cod]
-*$py.class
-build/
-dist/
 .mypy_cache/
 .ruff_cache/
-.vscode
+.venv
+*.lock
+*.py[cod]
+*$py.class
+poetry.toml
+venv/
+
+# VSCode
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
 !.vscode/settings.json
 !.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-.venv
-venv/
-poetry.toml
-Release/
-Archive/
-CLASSIC Backup/
-*.log
-*-AUTOSCAN.md
+*.code-workspace
+lcov.info
+
+# exe Build Files
 *.exe
 *.spec
-*.dat
-CLASSIC GFS Report.md
-*.code-workspace
-FormID_List*
-Fallout4 FID*.txt
-*.7z
-*.xml
-*.dll
+build/
+dist/
+
+# CLASSIC Runtime-Created Files
+*-AUTOSCAN.md
 *.db
+*.log
 *Local.yaml
-*.bak
-test.*
-*.temp
-*.sqdbpro
-game_vars.py
+CLASSIC Backup/
+CLASSIC GFS Report.md
 CLASSIC Ignore.yaml
 CLASSIC Settings.yaml
-CLASSIC-Fallout4.pyproj
-CLASSIC Data/databases/Fallout4 FormIDs.sqbpro
+Fallout4 FID*.txt
+FormID_List*
+
+# Test/Dev Files
+.coverage
+.pytest_cache/
+*.bak
+*.dat
+*.dll
 *.old
+*.pyproj
+*.sqbpro
+*.sqdbpro
+*.temp
 *.tmp
+*.xml
+game_vars.py
+test.*
+
+# User Files
+*.7z
+Archive/
+Release/
