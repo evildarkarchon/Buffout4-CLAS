@@ -26,6 +26,14 @@ from urllib3.exceptions import InsecureRequestWarning
 if platform.system() == "Windows":
     import winreg
 
+# nuitka-project: --enable-plugin=pyside6
+# nuitka-project: --unstripped
+# nuitka-project: --standalone
+# nuitka-project: --onefile
+# nuitka-project: --windows-console-mode=disable
+# nuitka-project: --output-filename=CLASSIC.exe
+# nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/CLASSIC Data/graphics/CLASSIC.ico
+
 """ AUTHOR NOTES (POET): ❓ ❌ ✔️
     ❓ REMINDER: 'shadows x from outer scope' means the variable name repeats both in the func and outside all other func.
     ❓ Comments marked as RESERVED in all scripts are intended for future updates or tests, do not edit / move / remove.
@@ -37,7 +45,7 @@ if platform.system() == "Windows":
     ❓ We're going to have to special-case (or disable) Starfield Script Extender update checks because it's on Nexus, not silverlock.org.
 """
 
-type YAMLValue = dict[str, YAMLValue] | list[str] | str | int
+type YAMLValue = dict[str, list[str] | str | int] | list[str] | str | int
 type YAMLValueOptional = YAMLValue | None
 type GameID = Literal["Fallout4", "Skyrim", "Starfield"] # Entries must correspond to the game's My Games folder name.
 
@@ -186,7 +194,7 @@ class YamlSettingsCache:
                 return None  # Key not found
         if value is None and "Path" not in key_path:  # type: ignore  # Error me if I mistype or screw up the value grab.
             print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'") # Despite what the type checker says, this code is reachable.
-        return value
+        return value # type: ignore
 
 # Instantiate a global cache object
 yaml_cache = YamlSettingsCache()
