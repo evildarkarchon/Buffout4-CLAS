@@ -42,3 +42,7 @@ CLASSIC Data/databases/Fallout4 FormIDs.sqbpro
 *.old
 *.tmp
 poetry.lock
+*.pdb
+CLASSIC_Interface.build
+CLASSIC_Interface.dist
+CLASSIC_Interface.onefile-build
