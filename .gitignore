@@ -19,10 +19,10 @@ venv/
 lcov.info
 
 # exe Build Files
-*.build
-*.dist
+*.build/
+*.dist/
 *.exe
-*.onefile-build
+*.onefile-build/
 *.pdb
 *.spec
 build/
