@@ -23,7 +23,6 @@ regex = "^2024.9.11"
 iniparse = "^0.5"
 pyside6 = "^6.7.3"
 typed-argument-parser = "^1.10.1"
-nuitka = "^2.4.8"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.11.2"
