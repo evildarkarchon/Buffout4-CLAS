@@ -15,11 +15,8 @@ from typing import Literal, TypedDict
 
 import aiohttp
 import chardet
-import regex as re
-import requests
 import ruamel.yaml
 import urllib3
-from bs4 import BeautifulSoup
 from PySide6.QtCore import QObject, Signal
 from urllib3.exceptions import InsecureRequestWarning
 
@@ -693,8 +690,8 @@ def main_files_backup() -> None:
 
     backup_list: list[str] = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_AutoBackup")  # type: ignore
     game_path: str | None = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Game")  # type: ignore
-    xse_acronym: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.XSE_Acronym")  # type: ignore
-    xse_acronym_base: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", "Game_Info.XSE_Acronym")  # type: ignore
+    yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.XSE_Acronym")  # type: ignore
+    yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", "Game_Info.XSE_Acronym")  # type: ignore
     xse_log_file: str | None = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Docs_File_XSE")  # type: ignore
     xse_ver_latest: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.XSE_Ver_Latest")  # type: ignore
     with open_file_with_encoding(xse_log_file) as xse_log: # type: ignore
@@ -719,29 +716,6 @@ def main_files_backup() -> None:
         if file.name not in backup_files and any(file.name in item for item in backup_list):
             destination_file = backup_path / file.name
             shutil.copy2(file, destination_file)
-
-    # Check for Script Extender updates since we also need local version for it.
-    xse_links: list[str] = []
-    try:
-        response = requests.get(f"https://{xse_acronym_base.lower()}.silverlock.org", verify=False, timeout=10)
-        if response.status_code == 200:  # Check if request went through.
-            soup = BeautifulSoup(response.text, 'html.parser')
-            links = soup.find_all('a')  # Find all anchor tags (links) in HTML.
-            for link in links:
-                href = link.get('href')  # We only care about links for archives.
-                if href and (re.search(r'\.7z$', href, concurrent=True) or re.search(r'\.zip$', href, concurrent=True)):
-                    xse_links.append(str(href))
-        else:
-            print(f"❌ ERROR : Unable to check for {xse_acronym} updates. \n Status Code: {response.status_code} \n")
-
-    except (ValueError, OSError, requests.exceptions.RequestException) as err:
-        print(f"❌ ERROR : Unable to check for {xse_acronym} updates. \n {err} \n")
-
-    if xse_links:
-        version_format = str(version_xse.replace(".", "_").replace("0_", ""))
-        if not any(version_format in link for link in xse_links):
-            print(yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", "Warnings_XSE.Warn_Outdated"))
-
 
 # =========== GENERATE MAIN RESULTS ===========
 def main_combined_result() -> str:
