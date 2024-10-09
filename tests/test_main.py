@@ -1,3 +1,6 @@
+import datetime
+import logging
+import os
 import random
 import shutil
 import stat
@@ -284,3 +287,29 @@ def test_classic_generate_files() -> None:
     assert return_value is None, "classic_generate_files() unexpectedly returned a value"
     assert ignore_path.is_file(), f"{ignore_path} was not created"
     assert local_path.is_file(), f"{local_path} was not created"
+
+@pytest.fixture(scope="session")
+def _test_configure_logging(_move_user_files: None) -> Generator[None]:
+    log_path = Path("CLASSIC Journal.log")
+    assert not log_path.is_file(), f"{log_path} existed before testing"
+    assert "CLASSIC" not in logging.Logger.manager.loggerDict, "Logger configured before testing"
+    return_value = CLASSIC_Main.configure_logging()  # type: ignore[func-returns-value]
+    assert return_value is None, "configure_logging() unexpectedly returned a value"
+    assert CLASSIC_Main.logger.name == "CLASSIC", "A logger named CLASSIC was not configured"
+    assert log_path.is_file(), f"{log_path} was not created"
+    CLASSIC_Main.logger.info("Logger test")
+    yield
+    for h in CLASSIC_Main.logger.handlers:
+        if isinstance(h, logging.FileHandler):
+            h.close()
+    assert log_path.stat().st_size > 0, "Log file was not written to"
+
+@pytest.mark.usefixtures("_move_user_files", "_test_configure_logging")
+def test_classic_logging() -> None:
+    log_path = Path("CLASSIC Journal.log")
+    assert log_path.is_file(), f"{log_path} does not exist"
+    new_time = (datetime.datetime.now() - datetime.timedelta(days=8)).timestamp()
+    os.utime(log_path, (new_time, new_time))
+    assert log_path.stat().st_mtime == new_time, f"Timestamps not updated on {log_path}"
+    CLASSIC_Main.classic_logging()
+    assert log_path.stat().st_size == 0, f"{log_path} was not regenerated"
