@@ -274,7 +274,7 @@ def test_classic_settings() -> None:
     update_check = CLASSIC_Main.classic_settings("Update Check")
     assert update_check is True or update_check is False, "update_check must be bool"
 
-@pytest.mark.usefixtures("_move_user_files", "yaml_cache")
+@pytest.mark.usefixtures("_move_user_files", "_gamevars", "yaml_cache")
 def test_classic_generate_files() -> None:
     ignore_path = Path("CLASSIC Ignore.yaml")
     local_path = Path(f"CLASSIC Data/CLASSIC {CLASSIC_Main.gamevars["game"]} Local.yaml")
