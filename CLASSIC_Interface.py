@@ -385,6 +385,7 @@ class MainWindow(QMainWindow):
         self.initialize_folder_paths()
         self.setup_output_redirection()
         self.output_buffer = ""
+        CMain.initialize()
         CMain.main_generate_required()
         # Perform initial update check
         if CMain.classic_settings("Update Check"):
@@ -1399,7 +1400,6 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     app = QApplication(sys.argv)
-    CMain.initialize()
 
     try:
         window = MainWindow()
