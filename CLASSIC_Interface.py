@@ -67,7 +67,7 @@ class AudioPlayer(QObject):
         # Connect signals to respective slots
         self.play_error_signal.connect(self.play_error_sound)
         self.play_notify_signal.connect(self.play_notify_sound)
-        self.play_custom_signal.connect(self.play_custom_sound)  # Use custom path
+        self.play_custom_signal.connect(lambda file: self.play_custom_sound(file))  # Use custom path
 
     def play_error_sound(self) -> None:
         if self.audio_enabled and self.error_sound.isLoaded():
@@ -82,6 +82,9 @@ class AudioPlayer(QObject):
         custom_sound.setSource(QUrl.fromLocalFile(sound_path))
         custom_sound.setVolume(1.0)
         custom_sound.play()
+
+    def toggle_audio(self, state: bool) -> None:
+        self.audio_enabled = state
 
 class ManualPathDialog(QDialog):
     def __init__(self, parent: QMainWindow | None = None) -> None:
@@ -828,8 +831,7 @@ class MainWindow(QMainWindow):
         # Add a separator after the checkboxes
         layout.addWidget(self.create_separator())
 
-    @staticmethod
-    def create_checkbox(label_text: str, setting: str) -> QCheckBox:
+    def create_checkbox(self, label_text: str, setting: str) -> QCheckBox:
         checkbox = QCheckBox(label_text)
         if CMain.classic_settings(setting) is not None:
             checkbox.setChecked(CMain.classic_settings(setting)) # type: ignore
@@ -842,6 +844,10 @@ class MainWindow(QMainWindow):
                 "CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}", bool(state) # type: ignore
             )
         )
+        if setting == "AUDIO NOTIFICATIONS":
+            checkbox.stateChanged.connect(
+                lambda state: self.audio_player.toggle_audio(state)
+            )
 
         # Apply custom style sheet
         checkbox.setStyleSheet(
