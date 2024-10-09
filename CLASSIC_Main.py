@@ -155,9 +155,6 @@ class YamlSettingsCache:
 
     def get_setting(self, yaml_path: Path, key_path: str, new_value: str | bool | None = None) -> YAMLValue | None:
         data = self.load_yaml(yaml_path)
-        if data is None:
-            raise TypeError("Failed to load YAML.")
-
         keys = key_path.split('.') if isinstance(key_path, str) else key_path
         value = data
 
