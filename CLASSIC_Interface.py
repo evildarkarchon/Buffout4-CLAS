@@ -61,6 +61,11 @@ class AudioPlayer(QObject):
         self.player.setSource(file)
         self.player.play()
 
+    def play_sound(self, sound: str) -> None:
+        file = QUrl.fromLocalFile(sound)
+        self.player.setSource(file)
+        self.player.play()
+
 class ManualPathDialog(QDialog):
     def __init__(self, parent: QMainWindow | None = None) -> None:
         super().__init__(parent)
