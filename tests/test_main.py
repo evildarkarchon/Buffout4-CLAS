@@ -4,6 +4,7 @@ import stat
 import string
 from collections.abc import Generator
 from pathlib import Path
+from typing import TypeAliasType, get_args
 
 import pytest
 
@@ -79,7 +80,7 @@ def _move_user_files() -> Generator[None]:
         for d in dirs:
             subdir = current / d
             assert not any(subdir.iterdir()), f"{subdir} has unexpected contents"
-            (subdir).rmdir()
+            subdir.rmdir()
             assert not subdir.exists(), f"Failed to delete {subdir}"
     temp_path.rmdir()
     assert not temp_path.exists(), f"Failed to delete {temp_path}"
@@ -96,6 +97,20 @@ def yaml_cache() -> CLASSIC_Main.YamlSettingsCache:
     assert isinstance(CLASSIC_Main.yaml_cache.cache, dict), "cache dict not created"
     assert isinstance(CLASSIC_Main.yaml_cache.file_mod_times, dict), "file_mod_times dict not created"
     return CLASSIC_Main.yaml_cache
+
+
+@pytest.fixture
+def _gamevars() -> None:
+    assert isinstance(CLASSIC_Main.gamevars, dict), "CLASSIC_Main.gamevars should be initialized to dict"
+    assert len(CLASSIC_Main.gamevars) > 0, "CLASSIC_Main.gamevars should contain default values"
+    assert isinstance(CLASSIC_Main.GameID, TypeAliasType), "CLASSIC_Main.GameID type is unexpected"
+    assert CLASSIC_Main.GameVars.__annotations__["game"] is CLASSIC_Main.GameID, "CLASSIC_Main.GameVars type is unexpected"
+    game_ids = get_args(CLASSIC_Main.GameVars.__annotations__["game"].__value__)
+    vr_values = get_args(CLASSIC_Main.GameVars.__annotations__["vr"])
+    assert len(game_ids) > 0, "CLASSIC_Main.GameID type is unexpected"
+    assert all(isinstance(g, str) for g in game_ids), "CLASSIC_Main.GameID type is unexpected"
+    assert CLASSIC_Main.gamevars.get("game") in game_ids, "CLASSIC_Main.gamevars['game'] not initialized"
+    assert CLASSIC_Main.gamevars.get("vr") in vr_values, "CLASSIC_Main.gamevars['vr'] not initialized"
 
 
 @pytest.fixture
@@ -125,7 +140,8 @@ def test_remove_readonly(test_file_text: Path) -> None:
     assert (
         test_file_text.stat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY == 1
     ), f"{test_file_text} should be read-only"
-    CLASSIC_Main.remove_readonly(test_file_text)
+    return_value = CLASSIC_Main.remove_readonly(test_file_text)  # type: ignore[func-returns-value]
+    assert return_value is None, "remove_readonly() unexpectedly returned a value"
     assert (
         test_file_text.stat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY == 0
     ), f"{test_file_text} should NOT be read-only"
@@ -257,3 +273,14 @@ def test_classic_settings() -> None:
     assert settings_path.is_file(), f"Failed to create {settings_path}"
     update_check = CLASSIC_Main.classic_settings("Update Check")
     assert update_check is True or update_check is False, "update_check must be bool"
+
+@pytest.mark.usefixtures("_move_user_files", "yaml_cache")
+def test_classic_generate_files() -> None:
+    ignore_path = Path("CLASSIC Ignore.yaml")
+    local_path = Path(f"CLASSIC Data/CLASSIC {CLASSIC_Main.gamevars["game"]} Local.yaml")
+    assert not ignore_path.is_file(), f"{ignore_path} existed before testing"
+    assert not local_path.is_file(), f"{local_path} existed before testing"
+    return_value = CLASSIC_Main.classic_generate_files()  # type: ignore[func-returns-value]
+    assert return_value is None, "classic_generate_files() unexpectedly returned a value"
+    assert ignore_path.is_file(), f"{ignore_path} was not created"
+    assert local_path.is_file(), f"{local_path} was not created"
