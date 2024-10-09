@@ -12,6 +12,7 @@ from typing import Any, Literal
 
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QIcon
+from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtWidgets import (
     QApplication,
     QBoxLayout,
@@ -41,6 +42,24 @@ import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
 import CLASSIC_ScanLogs as CLogs
 
+
+class AudioPlayer(QObject):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.player = QMediaPlayer()
+        self.audio_output = QAudioOutput()
+        self.player.setAudioOutput(self.audio_output)
+
+    def play_error_sound(self) -> None:
+        file = QUrl.fromLocalFile("CLASSIC Data/sounds/error.wav")
+        self.player.setSource(file)
+        self.player.play()
+
+    def play_notify_sound(self) -> None:
+        file = QUrl.fromLocalFile("CLASSIC Data/sounds/notify.wav")
+        self.player.setSource(file)
+        self.player.play()
 
 class ManualPathDialog(QDialog):
     def __init__(self, parent: QMainWindow | None = None) -> None:
@@ -209,7 +228,9 @@ class CrashLogsScanWorker(QObject):
 
     @Slot()
     def run(self) -> None:
+        audio_player = AudioPlayer()
         CLogs.crashlogs_scan()
+        audio_player.play_notify_sound()
         self.finished.emit()
 
 
@@ -218,9 +239,11 @@ class GameFilesScanWorker(QObject):
 
     @Slot()
     def run(self) -> None:
+        audio_player = AudioPlayer()
         print(CGame.game_combined_result())
         print(CGame.mods_combined_result())
         CGame.write_combined_results()
+        audio_player.play_notify_sound()
         self.finished.emit()
 
 
@@ -298,6 +321,8 @@ class MainWindow(QMainWindow):
 
         # Set up the custom exception handler for the main window
         self.installEventFilter(self)
+
+        self.audio_player = AudioPlayer()
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
