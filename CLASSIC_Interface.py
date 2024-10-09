@@ -42,6 +42,13 @@ import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
 import CLASSIC_ScanLogs as CLogs
 
+# nuitka-project: --enable-plugin=pyside6
+# nuitka-project: --unstripped
+# nuitka-project: --standalone
+# nuitka-project: --onefile
+# nuitka-project: --windows-console-mode=disable
+# nuitka-project: --output-filename=CLASSIC.exe
+# nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/CLASSIC Data/graphics/CLASSIC.ico
 
 class AudioPlayer(QObject):
     # Define signals for different sounds

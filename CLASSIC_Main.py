@@ -23,14 +23,6 @@ from urllib3.exceptions import InsecureRequestWarning
 if platform.system() == "Windows":
     import winreg
 
-# nuitka-project: --enable-plugin=pyside6
-# nuitka-project: --unstripped
-# nuitka-project: --standalone
-# nuitka-project: --onefile
-# nuitka-project: --windows-console-mode=disable
-# nuitka-project: --output-filename=CLASSIC.exe
-# nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/CLASSIC Data/graphics/CLASSIC.ico
-
 """ AUTHOR NOTES (POET): ❓ ❌ ✔️
     ❓ REMINDER: 'shadows x from outer scope' means the variable name repeats both in the func and outside all other func.
     ❓ Comments marked as RESERVED in all scripts are intended for future updates or tests, do not edit / move / remove.
