@@ -299,6 +299,8 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
 
+        CMain.initialize()
+
         self.setWindowTitle(
             f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings('CLASSIC Data/databases/CLASSIC Main.yaml', 'CLASSIC_Info.version')}"
         )
@@ -389,7 +391,6 @@ class MainWindow(QMainWindow):
         self.initialize_folder_paths()
         self.setup_output_redirection()
         self.output_buffer = ""
-        CMain.initialize()
         CMain.main_generate_required()
         # Perform initial update check
         if CMain.classic_settings("Update Check"):
