@@ -54,6 +54,7 @@ class AudioPlayer(QObject):
         self.audio_enabled = CMain.classic_settings("Audio Notifications")
         if self.audio_enabled is None:
             CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.Audio Notifications", True)
+            self.audio_enabled = True
 
         # Setup QSoundEffect objects for the preset sounds
         self.error_sound = QSoundEffect()
