@@ -12,7 +12,7 @@ from typing import Any, Literal
 
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QIcon
-from PySide6.QtMultimedia import QAudioOutput, QSoundEffect
+from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import (
     QApplication,
     QBoxLayout,
@@ -51,6 +51,9 @@ class AudioPlayer(QObject):
 
     def __init__(self) -> None:
         super().__init__()
+        self.audio_enabled = CMain.classic_settings("Audio Notifications")
+        if self.audio_enabled is None:
+            CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.Audio Notifications", True)
 
         # Setup QSoundEffect objects for the preset sounds
         self.error_sound = QSoundEffect()
@@ -67,11 +70,11 @@ class AudioPlayer(QObject):
         self.play_custom_signal.connect(self.play_custom_sound)  # Use custom path
 
     def play_error_sound(self) -> None:
-        if self.error_sound.isLoaded():
+        if self.audio_enabled and self.error_sound.isLoaded():
             self.error_sound.play()
 
     def play_notify_sound(self) -> None:
-        if self.notify_sound.isLoaded():
+        if self.audio_enabled and self.notify_sound.isLoaded():
             self.notify_sound.play()
 
     def play_custom_sound(self, sound_path: str) -> None:
@@ -806,6 +809,7 @@ class MainWindow(QMainWindow):
             ("VR MODE", "VR Mode"),
             ("SHOW FID VALUES", "Show FormID Values"),
             ("MOVE INVALID LOGS", "Move Unsolved Logs"),
+            ("AUDIO NOTIFICATIONS", "Audio Notifications")
         ]
 
         for index, (label, setting) in enumerate(checkboxes):
@@ -827,7 +831,12 @@ class MainWindow(QMainWindow):
     @staticmethod
     def create_checkbox(label_text: str, setting: str) -> QCheckBox:
         checkbox = QCheckBox(label_text)
-        checkbox.setChecked(CMain.classic_settings(setting)) # type: ignore
+        if CMain.classic_settings(setting) is not None:
+            checkbox.setChecked(CMain.classic_settings(setting)) # type: ignore
+        else:
+            CMain.yaml_settings("CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}", False)
+            checkbox.setChecked(False)
+
         checkbox.stateChanged.connect(
             lambda state: CMain.yaml_settings(
                 "CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}", bool(state) # type: ignore
