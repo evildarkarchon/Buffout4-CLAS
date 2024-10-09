@@ -25,15 +25,15 @@ def handle_ini_exceptions(func: Callable) -> Callable:
         try:
             return func(*args, **kwargs)
         except FileNotFoundError as e:
-            logging.error(f"ERROR: File not found - {e}")
+            CMain.logger.error(f"ERROR: File not found - {e}")
         except KeyError as e:
-            logging.error(f"ERROR: Invalid section or key - {e}")
+            CMain.logger.error(f"ERROR: Invalid section or key - {e}")
         except OSError as e:
-            logging.error(f"ERROR: Unable to read or write the file - {e}")
+            CMain.logger.error(f"ERROR: Unable to read or write the file - {e}")
         except UnicodeError as e:
-            logging.error(f"ERROR: Unable to read the file due to encoding issues - {e}")
+            CMain.logger.error(f"ERROR: Unable to read the file due to encoding issues - {e}")
         except Exception as e:  # noqa: BLE001
-            logging.error(f"ERROR: An unexpected error occurred - {e}")
+            CMain.logger.error(f"ERROR: An unexpected error occurred - {e}")
         return None
     return wrapper
 
@@ -212,7 +212,7 @@ def check_log_errors(folder_path: Path | str) -> str:
 
             except OSError:
                 message_list.append(f"❌ ERROR : Unable to scan this log file :\n  {file}")
-                logging.warning(f"> ! > DETECT LOG ERRORS > UNABLE TO SCAN : {file}")
+                CMain.logger.warning(f"> ! > DETECT LOG ERRORS > UNABLE TO SCAN : {file}")
                 continue
 
     return "".join(message_list)
@@ -388,21 +388,21 @@ def scan_mod_inis() -> str:  # Mod INI files check.
                     case "espexplorer.ini":
                         if "; F10" in mod_ini_config(ini_path, "General", "HotKey"):
                             mod_ini_config(ini_path, "General", "HotKey", "0x79")
-                            logging.info(f"> > > PERFORMED INI HOTKEY FIX FOR {file}")
+                            CMain.logger.info(f"> > > PERFORMED INI HOTKEY FIX FOR {file}")
                             message_list.append(f"> Performed INI Hotkey Fix For : {file} \n")
                     case "epo.ini":
                         if int(mod_ini_config(ini_path, "Particles", "iMaxDesired")) > 5000:
                             mod_ini_config(ini_path, "Particles", "iMaxDesired", "5000")
-                            logging.info(f"> > > PERFORMED INI PARTICLE COUNT FIX FOR {file}")
+                            CMain.logger.info(f"> > > PERFORMED INI PARTICLE COUNT FIX FOR {file}")
                             message_list.append(f"> Performed INI Particle Count Fix For : {file} \n")
                     case "f4ee.ini":
                         if mod_ini_config(ini_path, "CharGen", "bUnlockHeadParts") == 0:
                             mod_ini_config(ini_path, "CharGen", "bUnlockHeadParts", "1")
-                            logging.info(f"> > > PERFORMED INI HEAD PARTS UNLOCK FOR {file}")
+                            CMain.logger.info(f"> > > PERFORMED INI HEAD PARTS UNLOCK FOR {file}")
                             message_list.append(f"> Performed INI Head Parts Unlock For : {file} \n")
                         if mod_ini_config(ini_path, "CharGen", "bUnlockTints") == 0:
                             mod_ini_config(ini_path, "CharGen", "bUnlockTints", "1")
-                            logging.info(f"> > > PERFORMED INI FACE TINTS UNLOCK FOR {file}")
+                            CMain.logger.info(f"> > > PERFORMED INI FACE TINTS UNLOCK FOR {file}")
                             message_list.append(f"> Performed INI Face Tints Unlock For : {file} \n")
                     case "fallout4_test.ini": # f-strings don't work in match-case statements as far as I can tell.
                         if mod_ini_config(ini_path, "CreationKit", "VSyncRender") is True: # CREATION KIT
@@ -412,7 +412,7 @@ def scan_mod_inis() -> str:  # Mod INI files check.
                             vsync_list.append(f"{ini_path} | SETTING: EnableVSync \n")
                         if float(mod_ini_config(ini_path, "Limiter", "LoadingScreenFPS")) < 600.0:
                             mod_ini_config(ini_path, "Limiter", "LoadingScreenFPS", "600.0")
-                            logging.info(f"> > > PERFORMED INI LOADING SCREEN FPS FIX FOR {file}")
+                            CMain.logger.info(f"> > > PERFORMED INI LOADING SCREEN FPS FIX FOR {file}")
                             message_list.append(f"> Performed INI Loading Screen FPS Fix For : {file} \n")
                     case "longloadingtimesfix.ini":
                         if mod_ini_config(ini_path, "Limiter", "EnableVSync") is True:

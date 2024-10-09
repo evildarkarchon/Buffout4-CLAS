@@ -59,7 +59,7 @@ def get_entry(formid: str, plugin: str) -> str | None:
 # ================================================
 def crashlogs_get_files() -> list[Path]:
     """Get paths of all available crash logs."""
-    logging.debug("- - - INITIATED CRASH LOG FILE LIST GENERATION")
+    CMain.logger.debug("- - - INITIATED CRASH LOG FILE LIST GENERATION")
     CLASSIC_folder = Path.cwd()
     CUSTOM_folder = Path(str(CMain.classic_settings("SCAN Custom Path")))
     XSE_folder = Path(str(CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", "Game_Info.Docs_Folder_XSE")))
@@ -79,7 +79,7 @@ def crashlogs_get_files() -> list[Path]:
 
 def crashlogs_reformat() -> None:
     """Reformat plugin lists in crash logs, so that old and new CRASHGEN formats match."""
-    logging.debug("- - - INITIATED CRASH LOG FILE REFORMAT")
+    CMain.logger.debug("- - - INITIATED CRASH LOG FILE REFORMAT")
     xse_acronym: str = CMain.yaml_settings(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars["game"]}.yaml", f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym") # type: ignore
     remove_list: list[str] = CMain.yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "exclude_log_records") # type: ignore
     simple_logs = CMain.classic_settings("Simplify Logs")
@@ -234,7 +234,7 @@ def crashlogs_scan() -> None:
     scan_failed_list: list[str] = []
     user_folder = Path.home()
     stats_crashlog_scanned = stats_crashlog_incomplete = stats_crashlog_failed = 0
-    logging.info(f"- - - INITIATED CRASH LOG FILE SCAN >>> CURRENTLY SCANNING {len(crashlog_list)} FILES")
+    CMain.logger.info(f"- - - INITIATED CRASH LOG FILE SCAN >>> CURRENTLY SCANNING {len(crashlog_list)} FILES")
     for crashlog_file in crashlog_list:
         autoscan_report = []
         trigger_plugin_limit = trigger_plugins_loaded = trigger_scan_failed = False
@@ -692,7 +692,7 @@ def crashlogs_scan() -> None:
         # WRITE AUTOSCAN REPORT TO FILE
         autoscan_path = crashlog_file.with_name(crashlog_file.stem + "-AUTOSCAN.md")
         with autoscan_path.open("w", encoding="utf-8", errors="ignore") as autoscan_file:
-            logging.debug(f"- - -> RUNNING CRASH LOG FILE SCAN >>> SCANNED {crashlog_file.name}")
+            CMain.logger.debug(f"- - -> RUNNING CRASH LOG FILE SCAN >>> SCANNED {crashlog_file.name}")
             autoscan_output = "".join(autoscan_report)
             autoscan_file.write(autoscan_output)
 
@@ -723,7 +723,7 @@ def crashlogs_scan() -> None:
     # ================================================
     # CRASH LOG SCAN COMPLETE / TERMINAL OUTPUT
     # ================================================
-    logging.info("- - - COMPLETED CRASH LOG FILE SCAN >>> ALL AVAILABLE LOGS SCANNED")
+    CMain.logger.info("- - - COMPLETED CRASH LOG FILE SCAN >>> ALL AVAILABLE LOGS SCANNED")
     print("SCAN COMPLETE! (IT MIGHT TAKE SEVERAL SECONDS FOR SCAN RESULTS TO APPEAR)")
     print("SCAN RESULTS ARE AVAILABLE IN FILES NAMED crash-date-and-time-AUTOSCAN.md \n")
     print(f"{random.choice(classic_game_hints)}\n-----")
