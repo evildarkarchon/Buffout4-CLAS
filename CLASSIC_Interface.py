@@ -6,17 +6,9 @@ import sys
 import time
 import traceback
 from collections.abc import Callable
+from pathlib import Path
 from types import TracebackType
 from typing import Any, Literal
-
-try:  # soundfile (specically its Numpy dependency) seem to cause virus alerts from some AV programs, including Windows Defender.
-    import sounddevice as sdev  # type: ignore
-    import soundfile as sfile  # type: ignore
-
-    has_soundfile = True
-except ImportError:
-    has_soundfile = False
-from pathlib import Path
 
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QIcon
@@ -193,13 +185,6 @@ def custom_excepthook(exc_type: type[BaseException], exc_value: BaseException, e
 sys.excepthook = custom_excepthook
 
 
-def play_sound(sound_file: str) -> None:
-    if has_soundfile:
-        sound, samplerate = sfile.read(f"CLASSIC Data/sounds/{sound_file}")  # type: ignore
-        sdev.play(sound, samplerate)  # type: ignore
-        sdev.wait()  # type: ignore
-
-
 def papyrus_worker(q: multiprocessing.Queue, stop_event: multiprocessing.synchronize.Event) -> None:
     while not stop_event.is_set():
         papyrus_result, _ = CGame.papyrus_logging()
@@ -225,7 +210,6 @@ class CrashLogsScanWorker(QObject):
     @Slot()
     def run(self) -> None:
         CLogs.crashlogs_scan()
-        play_sound("classic_notify.wav")
         self.finished.emit()
 
 
@@ -237,7 +221,6 @@ class GameFilesScanWorker(QObject):
         print(CGame.game_combined_result())
         print(CGame.mods_combined_result())
         CGame.write_combined_results()
-        play_sound("classic_notify.wav")
         self.finished.emit()
 
 
