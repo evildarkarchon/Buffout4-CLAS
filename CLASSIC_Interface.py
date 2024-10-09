@@ -12,7 +12,7 @@ from typing import Any, Literal
 
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QIcon
-from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
+from PySide6.QtMultimedia import QAudioOutput, QSoundEffect
 from PySide6.QtWidgets import (
     QApplication,
     QBoxLayout,
@@ -44,27 +44,41 @@ import CLASSIC_ScanLogs as CLogs
 
 
 class AudioPlayer(QObject):
+    # Define signals for different sounds
+    play_error_signal = Signal()
+    play_notify_signal = Signal()
+    play_custom_signal = Signal(str)  # Signal to play a custom sound with a path
 
     def __init__(self) -> None:
         super().__init__()
-        self.player = QMediaPlayer()
-        self.audio_output = QAudioOutput()
-        self.player.setAudioOutput(self.audio_output)
+
+        # Setup QSoundEffect objects for the preset sounds
+        self.error_sound = QSoundEffect()
+        self.error_sound.setSource(QUrl.fromLocalFile("CLASSIC Data/sounds/classic_error.wav"))
+        self.error_sound.setVolume(1.0)  # Set max volume
+
+        self.notify_sound = QSoundEffect()
+        self.notify_sound.setSource(QUrl.fromLocalFile("CLASSIC Data/sounds/classic_notify.wav"))
+        self.notify_sound.setVolume(1.0)  # Set max volume
+
+        # Connect signals to respective slots
+        self.play_error_signal.connect(self.play_error_sound)
+        self.play_notify_signal.connect(self.play_notify_sound)
+        self.play_custom_signal.connect(self.play_custom_sound)  # Use custom path
 
     def play_error_sound(self) -> None:
-        file = QUrl.fromLocalFile("CLASSIC Data/sounds/error.wav")
-        self.player.setSource(file)
-        self.player.play()
+        if self.error_sound.isLoaded():
+            self.error_sound.play()
 
     def play_notify_sound(self) -> None:
-        file = QUrl.fromLocalFile("CLASSIC Data/sounds/notify.wav")
-        self.player.setSource(file)
-        self.player.play()
+        if self.notify_sound.isLoaded():
+            self.notify_sound.play()
 
-    def play_sound(self, sound: str) -> None:
-        file = QUrl.fromLocalFile(sound)
-        self.player.setSource(file)
-        self.player.play()
+    def play_custom_sound(self, sound_path: str) -> None:
+        custom_sound = QSoundEffect()
+        custom_sound.setSource(QUrl.fromLocalFile(sound_path))
+        custom_sound.setVolume(1.0)
+        custom_sound.play()
 
 class ManualPathDialog(QDialog):
     def __init__(self, parent: QMainWindow | None = None) -> None:
@@ -230,26 +244,41 @@ class OutputRedirector(QObject):
 
 class CrashLogsScanWorker(QObject):
     finished = Signal()
+    notify_sound_signal = Signal()
+    error_sound_signal = Signal()
+    custom_sound_signal = Signal(str)  # In case a custom sound needs to be played
 
     @Slot()
     def run(self) -> None:
-        audio_player = AudioPlayer()
-        CLogs.crashlogs_scan()
-        audio_player.play_notify_sound()
-        self.finished.emit()
+        # Here you can determine the appropriate sound to play.
+        # For simplicity, we're triggering the notify sound when the scan completes.
+        try:
+            CLogs.crashlogs_scan()
+            self.notify_sound_signal.emit()  # Emit signal to play notify sound
+        except Exception:  # noqa: BLE001
+            self.error_sound_signal.emit()  # Emit signal to play error sound in case of exception
+        finally:
+            self.finished.emit()
 
 
 class GameFilesScanWorker(QObject):
     finished = Signal()
+    notify_sound_signal = Signal()
+    error_sound_signal = Signal()
+    custom_sound_signal = Signal(str)
 
     @Slot()
     def run(self) -> None:
-        audio_player = AudioPlayer()
-        print(CGame.game_combined_result())
-        print(CGame.mods_combined_result())
-        CGame.write_combined_results()
-        audio_player.play_notify_sound()
-        self.finished.emit()
+        try:
+            print(CGame.game_combined_result())
+            print(CGame.mods_combined_result())
+            CGame.write_combined_results()
+            self.notify_sound_signal.emit()  # Emit signal to play notify sound
+        except Exception:  # noqa: BLE001
+            self.error_sound_signal.emit()  # Emit error sound if something fails
+        finally:
+            self.finished.emit()
+
 
 
 class MainWindow(QMainWindow):
@@ -1155,6 +1184,10 @@ class MainWindow(QMainWindow):
             self.crash_logs_thread = QThread()
             self.crash_logs_worker = CrashLogsScanWorker()
             self.crash_logs_worker.moveToThread(self.crash_logs_thread)
+
+            self.crash_logs_worker.notify_sound_signal.connect(self.audio_player.play_notify_signal.emit)
+            self.crash_logs_worker.error_sound_signal.connect(self.audio_player.play_error_signal.emit)
+
             self.crash_logs_thread.started.connect(self.crash_logs_worker.run)
             self.crash_logs_worker.finished.connect(self.crash_logs_thread.quit)
             self.crash_logs_worker.finished.connect(self.crash_logs_worker.deleteLater)
@@ -1171,6 +1204,10 @@ class MainWindow(QMainWindow):
             self.game_files_thread = QThread()
             self.game_files_worker = GameFilesScanWorker()
             self.game_files_worker.moveToThread(self.game_files_thread)
+
+            self.game_files_worker.notify_sound_signal.connect(self.audio_player.play_notify_signal.emit)
+            self.game_files_worker.error_sound_signal.connect(self.audio_player.play_error_signal.emit)
+
             self.game_files_thread.started.connect(self.game_files_worker.run)
             self.game_files_worker.finished.connect(self.game_files_thread.quit)
             self.game_files_worker.finished.connect(self.game_files_worker.deleteLater)
