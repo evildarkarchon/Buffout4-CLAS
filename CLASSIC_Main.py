@@ -20,7 +20,7 @@ import urllib3
 from PySide6.QtCore import QObject, Signal
 from urllib3.exceptions import InsecureRequestWarning
 
-if platform.system() == "Windows":
+with contextlib.suppress(ImportError):
     import winreg
 
 """ AUTHOR NOTES (POET): ❓ ❌ ✔️
@@ -352,7 +352,7 @@ def docs_path_find() -> None:
         if manual_docs_gui is None:
             raise TypeError("CMain not initialized")
 
-        if "PySide6" in sys.modules:
+        if gui_mode:
             manual_docs_gui.manual_docs_path_signal.emit()
             return
         print(f"> > > PLEASE ENTER THE FULL DIRECTORY PATH WHERE YOUR {docs_name}.ini IS LOCATED < < <")
@@ -377,12 +377,12 @@ def docs_path_find() -> None:
     docs_path = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs")  # type: ignore
     try:  # In case .exists() complains about checking a None value.
         if docs_path and not Path(docs_path).exists():
-            if "PySide6" in sys.modules:
+            if gui_mode:
                 manual_docs_gui.manual_docs_path_signal.emit()
             else:
                 get_manual_docs_path()
     except (ValueError, OSError):
-        if "PySide6" in sys.modules:
+        if gui_mode:
             manual_docs_gui.manual_docs_path_signal.emit()
         else:
             get_manual_docs_path()
@@ -422,6 +422,24 @@ def docs_generate_paths() -> None:
 
 # =========== CHECK DOCUMENTS XSE FILE -> GET GAME ROOT FOLDER PATH ===========
 def game_path_find() -> None:
+    def get_game_registry_path() -> Path | None:
+        try:
+            # Open the registry key
+            reg_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, rf"SOFTWARE\WOW6432Node\Bethesda Softworks\{gamevars['game']}{gamevars['vr']}")  # type: ignore
+            # Query the 'installed path' value
+            path, _ = winreg.QueryValueEx(reg_key, "installed path") # type: ignore
+            winreg.CloseKey(reg_key) # type: ignore
+            outpath = Path(path) if path else None
+
+            if outpath and outpath.is_dir() and outpath.joinpath(f"{gamevars['game']}{gamevars['vr']}.exe").exists():
+                return outpath
+            else:  # noqa: RET505
+                return None
+        except (UnboundLocalError, FileNotFoundError, OSError):
+            return None
+
+    game_path = get_game_registry_path()
+
     if game_path_gui is None:
         raise TypeError("CMain not initialized")
 
@@ -431,7 +449,7 @@ def game_path_find() -> None:
     xse_acronym_base: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", "Game_Info.XSE_Acronym")  # type: ignore
     game_name: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.Main_Root_Name")  # type: ignore
 
-    if xse_file and Path(xse_file).is_file():
+    if not game_path and xse_file and Path(xse_file).is_file():
         with open_file_with_encoding(xse_file) as LOG_Check:
             Path_Check = LOG_Check.readlines()
             for logline in Path_Check:
@@ -439,7 +457,7 @@ def game_path_find() -> None:
                     logline = logline.split("=", maxsplit=1)[1].strip().replace(f"\\Data\\{xse_acronym_base}\\Plugins", "").replace("\n", "")
                     game_path = Path(logline)
                     if not logline or not game_path.exists():
-                        if "PySide6" in sys.modules:
+                        if gui_mode:
                             game_path_gui.game_path_signal.emit()
                             if not game_path.joinpath(f"{gamevars['game']}{gamevars['vr']}.exe").exists():
                                 print(f"❌ ERROR : NO {gamevars['game']}{gamevars['vr']}.exe FILE FOUND IN '{game_path}'! Please try again.")
@@ -451,7 +469,7 @@ def game_path_find() -> None:
                             game_path = Path(path_input.strip())
 
                     yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Game", str(game_path))
-    else:
+    elif not game_path and xse_file and not Path(xse_file).is_file(): # type: ignore
         print(f"❌ CAUTION : THE {xse_acronym.lower()}.log FILE IS MISSING FROM YOUR GAME DOCUMENTS FOLDER! \n")
         print(f"   You need to run the game at least once with {xse_acronym.lower()}_loader.exe \n")
         print("    After that, try running CLASSIC again! \n-----\n")
@@ -744,15 +762,17 @@ def main_generate_required() -> None:
 yaml_cache: YamlSettingsCache | None = None
 manual_docs_gui: ManualDocsPath | None = None
 game_path_gui: GamePathEntry | None = None
+gui_mode: bool = False
 
-def initialize() -> None:
-    global yaml_cache, manual_docs_gui, game_path_gui  # noqa: PLW0603
+def initialize(is_gui: bool = False) -> None:
+    global gui_mode, yaml_cache, manual_docs_gui, game_path_gui  # noqa: PLW0603
 
     # Instantiate a global cache object
     yaml_cache = YamlSettingsCache()
     gamevars["vr"] = "VR" if classic_settings("VR Mode") else ""
     manual_docs_gui = ManualDocsPath()
     game_path_gui = GamePathEntry()
+    gui_mode = is_gui
 
 
 if __name__ == "__main__":  # AKA only autorun / do the following when NOT imported.
