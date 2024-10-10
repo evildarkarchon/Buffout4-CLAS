@@ -15,6 +15,8 @@ import ruamel.yaml
 
 import CLASSIC_Main
 
+LATEST_VERSION = "CLASSIC v7.30.2"
+
 TEST_YAML_TEXT = """Section 1:
   Game Name: Elder Scrolls VI
   False Bool: false
@@ -453,7 +455,7 @@ async def test_classic_update_check(yaml_cache: CLASSIC_Main.YamlSettingsCache) 
         yaml_cache.file_mod_times[yaml_path] = last_mod_time
 
     yaml_cache.cache[yaml_path] = ruamel.yaml.CommentedMap({
-        "CLASSIC_Info": {"version": "CLASSIC v7.30.2"},
+        "CLASSIC_Info": {"version": LATEST_VERSION},
         "CLASSIC_Interface": {"update_warning_Fallout4": "", "update_unable_Fallout4": ""},
     })
 
@@ -464,3 +466,40 @@ async def test_classic_update_check(yaml_cache: CLASSIC_Main.YamlSettingsCache) 
 
     return_value = await CLASSIC_Main.classic_update_check(quiet=False, gui_request=True)
     assert return_value is False, "classic_update_check() should return False"
+
+
+@pytest.mark.usefixtures("_move_user_files", "_gamevars")
+def test_docs_path_find(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
+    """Test CLASSIC_Main's `docs_path_find()`."""
+    if CLASSIC_Main.manual_docs_gui is None:
+        manual_docs_gui_backup = None
+    else:
+        manual_docs_gui_backup = CLASSIC_Main.manual_docs_gui
+        CLASSIC_Main.manual_docs_gui = None
+
+    pytest.raises(TypeError, CLASSIC_Main.docs_path_find)
+
+    if manual_docs_gui_backup is None:
+        CLASSIC_Main.manual_docs_gui = CLASSIC_Main.ManualDocsPath()
+    else:
+        CLASSIC_Main.manual_docs_gui = manual_docs_gui_backup
+
+    game = CLASSIC_Main.gamevars["game"]
+
+    # Fake the YAML cache to prevent loading real values.
+    yaml_path = Path("CLASSIC Data/databases/CLASSIC Fallout4.yaml")
+    if yaml_path.exists():
+        last_mod_time = yaml_path.stat().st_mtime
+        yaml_cache.file_mod_times[yaml_path] = last_mod_time
+
+    yaml_cache.cache[yaml_path] = ruamel.yaml.CommentedMap({
+        "Game_Info": {"Main_Docs_Name": game},
+    })
+
+    yaml_local_path = Path(f"CLASSIC Data/CLASSIC {game} Local.yaml")
+    assert not yaml_local_path.exists(), f"{yaml_local_path} existed before testing"
+
+    CLASSIC_Main.docs_path_find()
+
+    assert yaml_local_path.is_file(), f"{yaml_local_path} was not created"
+    assert yaml_local_path.stat().st_size > 0, f"{yaml_local_path} was not written to"
