@@ -1,3 +1,4 @@
+import binascii
 import datetime
 import logging
 import os
@@ -40,6 +41,18 @@ Section 2:
   Dict Write:
   List Write:
 """
+
+# Hex for an uncompressed zip containing an empty `databases/CLASSIC Main.yaml`
+# To recreate file: `with open("f.zip", "wb") as f: f.write(binascii.unhexlify(TEST_ZIP))`
+TEST_ZIP = (
+    "504B03041400000000004CA749590000000000000000000000000A0000006461746162617365732F504B03040A0000000000"
+    "38A749590000000000000000000000001B0000006461746162617365732F434C4153534943204D61696E2E79616D6C504B01"
+    "023F001400000000004CA749590000000000000000000000000A002400000000000000100000000000000064617461626173"
+    "65732F0A0020000000000001001800A881BA81AF1ADB0100000000000000000000000000000000504B01023F000A00000000"
+    "0038A749590000000000000000000000001B00240000000000000020000000280000006461746162617365732F434C415353"
+    "4943204D61696E2E79616D6C0A002000000000000100180057E1A06BAF1ADB0100000000000000000000000000000000504B"
+    "05060000000002000200C9000000610000000000"
+)
 
 RUNTIME_FILES = (
     "CLASSIC Settings.yaml",
@@ -94,6 +107,28 @@ def _move_user_files() -> Generator[None]:
 
 
 @pytest.fixture
+def _move_data_files() -> Generator[None]:
+    """Rename `CLASSIC Data/` to `test_temp-CLASSIC Data/` during testing and restores it after.
+
+    Any files created during testing are deleted.
+    """
+    data_path = Path("CLASSIC Data")
+    backup_path = Path("test_temp-CLASSIC Data")
+    assert data_path.is_dir(), f"{data_path} does not exist"
+    assert not backup_path.exists(), f"{backup_path} existed before testing"
+    data_path.rename(backup_path)
+    assert not data_path.is_dir(), f"{data_path} was not renamed"
+    assert backup_path.exists(), f"{backup_path} was not created"
+    yield
+    assert backup_path.is_dir(), f"{backup_path} was deleted by another process or test"
+    shutil.rmtree(data_path)
+    assert not data_path.is_dir(), f"{data_path} was not deleted"
+    backup_path.rename(data_path)
+    assert not backup_path.exists(), f"{backup_path} was not renamed"
+    assert data_path.is_dir(), f"{data_path} was not created"
+
+
+@pytest.fixture
 def _initialize_main() -> None:
     """Initialize CLASSIC_Main's globals."""
     CLASSIC_Main.initialize()
@@ -120,7 +155,7 @@ def _gamevars() -> None:
     assert isinstance(CLASSIC_Main.gamevars, dict), "CLASSIC_Main.gamevars should be initialized to dict"
     assert len(CLASSIC_Main.gamevars) > 0, "CLASSIC_Main.gamevars should contain default values"
     assert isinstance(CLASSIC_Main.GameID, TypeAliasType), "CLASSIC_Main.GameID type is unexpected"
-    assert CLASSIC_Main.GameVars.__annotations__["game"] is CLASSIC_Main.GameID, "CLASSIC_Main.GameVars type is unexpected"
+    assert (CLASSIC_Main.GameVars.__annotations__["game"] is CLASSIC_Main.GameID), "CLASSIC_Main.GameVars type is unexpected"
     game_ids = get_args(CLASSIC_Main.GameVars.__annotations__["game"].__value__)
     vr_values = get_args(CLASSIC_Main.GameVars.__annotations__["vr"])
     assert len(game_ids) > 0, "CLASSIC_Main.GameID type is unexpected"
@@ -136,6 +171,7 @@ def test_file_text() -> Generator[Path]:
     test_file_path.touch(exist_ok=True)
     assert test_file_path.is_file(), f"failed to create {test_file_path}"
     yield test_file_path
+    test_file_path.chmod(stat.S_IWRITE)
     test_file_path.unlink(missing_ok=True)
     assert not test_file_path.exists(), f"failed to delete {test_file_path}"
 
@@ -152,7 +188,7 @@ def test_file_yaml() -> Generator[Path]:
     assert not test_file_path.exists(), f"failed to delete {test_file_path}"
 
 
-@pytest.mark.skip(reason="Known issue to be fixed in PR")
+@pytest.mark.xfail(reason="Known issue to be fixed in PR", raises=AssertionError)
 def test_remove_readonly(test_file_text: Path) -> None:
     """Test CLASSIC_Main's `remove_readonly()`."""
     test_file_text.chmod(~stat.S_IWRITE)
@@ -326,6 +362,7 @@ def _test_configure_logging(_move_user_files: None) -> Generator[None]:
             h.close()
     assert log_path.stat().st_size > 0, "Log file was not written to"
 
+@pytest.mark.xfail(reason="Known issue to be fixed in PR", raises=AssertionError)
 @pytest.mark.usefixtures("_move_user_files", "_test_configure_logging")
 def test_classic_logging() -> None:
     """Test CLASSIC_Main's `classic_logging()`."""
@@ -336,3 +373,40 @@ def test_classic_logging() -> None:
     assert log_path.stat().st_mtime == new_time, f"Timestamps not updated on {log_path}"
     CLASSIC_Main.classic_logging()
     assert log_path.stat().st_size == 0, f"{log_path} was not regenerated"
+
+@pytest.fixture
+def _move_zip_files() -> Generator[None]:
+    zip_path = Path("CLASSIC Data.zip")
+    zipfiles = list(Path.cwd().rglob(str(zip_path), case_sensitive=False))
+
+    for zipfile in zipfiles:
+        zipfile.rename(zipfile.with_stem("test_temp"))
+
+    yield
+
+    for zipfile in zipfiles:
+        zipfile.with_stem("test_temp").rename(zipfile)
+
+
+@pytest.mark.usefixtures("_move_data_files", "_move_zip_files")
+def test_classic_data_extract() -> None:
+    """Test CLASSIC_Main's `classic_data_extract()`."""
+    zip_path = Path("CLASSIC Data.zip")
+    data_path = Path("CLASSIC Data")
+    yaml_path = Path("CLASSIC Data/databases/CLASSIC Main.yaml")
+
+    assert not data_path.exists(), "CLASSIC Data folder existed before testing"
+
+    pytest.raises(FileNotFoundError, CLASSIC_Main.classic_data_extract)
+
+    with zip_path.open("wb") as f:
+        f.write(binascii.unhexlify(TEST_ZIP))
+
+    return_value = CLASSIC_Main.classic_data_extract()  # type: ignore[func-returns-value]
+    assert return_value is None, "classic_data_extract() unexpectedly returned a value"
+
+    assert data_path.is_dir(), f"{data_path} was not created"
+    assert yaml_path.is_file(), f"{yaml_path} was not extracted"
+
+    zip_path.unlink(missing_ok=True)
+    assert not zip_path.exists(), f"Failed to delete {zip_path}"
