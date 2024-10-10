@@ -438,6 +438,7 @@ def game_path_find() -> None:
     game_path = get_game_registry_path()
 
     if game_path and game_path.is_dir() and game_path.joinpath(f"{gamevars['game']}{gamevars['vr']}.exe").is_file():
+        yaml_settings(f"CLASSIC Data/CLASSIC {gamevars['game']} Local.yaml", f"Game{gamevars['vr']}_Info.Root_Folder_Game", str(game_path))
         return
 
     if game_path_gui is None:
