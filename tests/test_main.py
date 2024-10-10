@@ -382,6 +382,7 @@ def test_classic_logging() -> None:
 
 @pytest.fixture
 def _move_zip_files() -> Generator[None]:
+    """Rename any zip files named `CLASSIC Data.zip` for the duration of the test."""
     zip_path = Path("CLASSIC Data.zip")
     zipfiles = list(Path.cwd().rglob(str(zip_path), case_sensitive=False))
 
