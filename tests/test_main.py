@@ -60,12 +60,18 @@ TEST_ZIP = (
 # Hex for a UTF-16 encoded text file containing "śÛ"
 TEST_UTF16LE = "FFFE5B01DB00"
 
+TEST_F4SE_LOG = r"""plugin directory = tests\Data\F4SE\Plugins\
+scanning plugin directory tests\Fallout 4\Data\F4SE\Plugins\
+"""
+
 RUNTIME_FILES = (
     "CLASSIC Settings.yaml",
     "CLASSIC Ignore.yaml",
     "CLASSIC Journal.log",
     "CLASSIC Data/CLASSIC Data.zip",
     "CLASSIC Data/CLASSIC Fallout4 Local.yaml",
+    "CLASSIC Data/CLASSIC Skyrim Local.yaml",
+    "CLASSIC Data/CLASSIC Starfield Local.yaml",
     "CLASSIC Backup",
 )
 
@@ -454,9 +460,11 @@ async def test_classic_update_check(yaml_cache: CLASSIC_Main.YamlSettingsCache) 
         last_mod_time = yaml_path.stat().st_mtime
         yaml_cache.file_mod_times[yaml_path] = last_mod_time
 
+    game = CLASSIC_Main.gamevars["game"]
+
     yaml_cache.cache[yaml_path] = ruamel.yaml.CommentedMap({
         "CLASSIC_Info": {"version": LATEST_VERSION},
-        "CLASSIC_Interface": {"update_warning_Fallout4": "", "update_unable_Fallout4": ""},
+        "CLASSIC_Interface": {f"update_warning_{game}": "", f"update_unable_{game}": ""},
     })
 
     return_value = await CLASSIC_Main.classic_update_check(quiet=False, gui_request=True)
@@ -487,7 +495,7 @@ def test_docs_path_find(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
     game = CLASSIC_Main.gamevars["game"]
 
     # Fake the YAML cache to prevent loading real values.
-    yaml_path = Path("CLASSIC Data/databases/CLASSIC Fallout4.yaml")
+    yaml_path = Path(f"CLASSIC Data/databases/CLASSIC {game}.yaml")
     if yaml_path.exists():
         last_mod_time = yaml_path.stat().st_mtime
         yaml_cache.file_mod_times[yaml_path] = last_mod_time
@@ -500,6 +508,50 @@ def test_docs_path_find(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
     assert not yaml_local_path.exists(), f"{yaml_local_path} existed before testing"
 
     CLASSIC_Main.docs_path_find()
+
+    assert yaml_local_path.is_file(), f"{yaml_local_path} was not created"
+    assert yaml_local_path.stat().st_size > 0, f"{yaml_local_path} was not written to"
+
+
+@pytest.mark.usefixtures("_move_user_files", "_gamevars")
+def test_game_path_find(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
+    """Test CLASSIC_Main's `game_path_find()`."""
+    if CLASSIC_Main.game_path_gui is None:
+        game_path_gui_backup = None
+    else:
+        game_path_gui_backup = CLASSIC_Main.game_path_gui
+        CLASSIC_Main.game_path_gui = None
+
+    pytest.raises(TypeError, CLASSIC_Main.game_path_find)
+
+    if game_path_gui_backup is None:
+        CLASSIC_Main.game_path_gui = CLASSIC_Main.GamePathEntry()
+    else:
+        CLASSIC_Main.game_path_gui = game_path_gui_backup
+
+    game = CLASSIC_Main.gamevars["game"] = "Fallout4"
+    XSE_Acronym = "F4SE"
+    Main_Root_Name = "Fallout 4"
+    xse_log_path = Path(f"tests/{XSE_Acronym.lower()}.log")
+
+    # Fake the YAML cache to prevent loading real values.
+    yaml_local_path = Path(f"CLASSIC Data/CLASSIC {game} Local.yaml")
+    yaml_path = Path(f"CLASSIC Data/databases/CLASSIC {game}.yaml")
+    if yaml_path.exists():
+        last_mod_time = yaml_path.stat().st_mtime
+        yaml_cache.file_mod_times[yaml_path] = last_mod_time
+
+    yaml_cache.cache[yaml_local_path] = ruamel.yaml.CommentedMap({"Game_Info": {"Docs_File_XSE": str(xse_log_path)}})
+    yaml_cache.cache[yaml_path] = ruamel.yaml.CommentedMap({
+        "Game_Info": {"Main_Docs_Name": game, "XSE_Acronym": XSE_Acronym, "Main_Root_Name": Main_Root_Name},
+    })
+
+    xse_log_path.unlink(missing_ok=True)
+    with xse_log_path.open("w") as f:
+        f.write(TEST_F4SE_LOG)
+
+    CLASSIC_Main.game_path_find()
+    xse_log_path.unlink(missing_ok=True)
 
     assert yaml_local_path.is_file(), f"{yaml_local_path} was not created"
     assert yaml_local_path.stat().st_size > 0, f"{yaml_local_path} was not written to"
