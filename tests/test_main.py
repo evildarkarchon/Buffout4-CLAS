@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TypeAliasType, get_args
 
 import pytest
+import ruamel.yaml
 
 import CLASSIC_Main
 
@@ -439,3 +440,27 @@ def test_open_file_with_encoding() -> None:
     assert encoding == "UTF-16", "Failed to detect file encoding"
 
     utf16_path.unlink(missing_ok=True)
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("_gamevars")
+async def test_classic_update_check(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
+    """Test CLASSIC_Main's `classic_update_check()`."""
+    # Fake the YAML cache to prevent loading real values.
+    yaml_path = Path("CLASSIC Data/databases/CLASSIC Main.yaml")
+    if yaml_path.exists():
+        last_mod_time = yaml_path.stat().st_mtime
+        yaml_cache.file_mod_times[yaml_path] = last_mod_time
+
+    yaml_cache.cache[yaml_path] = ruamel.yaml.CommentedMap({
+        "CLASSIC_Info": {"version": "CLASSIC v7.30.2"},
+        "CLASSIC_Interface": {"update_warning_Fallout4": "", "update_unable_Fallout4": ""},
+    })
+
+    return_value = await CLASSIC_Main.classic_update_check(quiet=False, gui_request=True)
+    assert return_value is True, "classic_update_check() should return True"
+
+    yaml_cache.cache[yaml_path]["CLASSIC_Info"]["version"] = "CLASSIC v7.25.1"
+
+    return_value = await CLASSIC_Main.classic_update_check(quiet=False, gui_request=True)
+    assert return_value is False, "classic_update_check() should return False"
