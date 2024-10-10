@@ -185,8 +185,9 @@ def test_file_text() -> Generator[Path]:
     test_file_path.touch(exist_ok=True)
     assert test_file_path.is_file(), f"failed to create {test_file_path}"
     yield test_file_path
-    test_file_path.chmod(stat.S_IWRITE)
-    test_file_path.unlink(missing_ok=True)
+    if test_file_path.exists():
+        test_file_path.chmod(stat.S_IWRITE)
+        test_file_path.unlink(missing_ok=True)
     assert not test_file_path.exists(), f"failed to delete {test_file_path}"
 
 
