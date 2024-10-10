@@ -16,6 +16,7 @@ RUNTIME_FILES = (
     "CLASSIC Data/CLASSIC Skyrim Local.yaml",
     "CLASSIC Data/CLASSIC Starfield Local.yaml",
     "CLASSIC Backup",
+    "CLASSIC Pastebin",
 )
 
 
