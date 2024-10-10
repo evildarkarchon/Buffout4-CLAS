@@ -54,6 +54,9 @@ TEST_ZIP = (
     "05060000000002000200C9000000610000000000"
 )
 
+# Hex for a UTF-16 encoded text file containing "śÛ"
+TEST_UTF16LE = "FFFE5B01DB00"
+
 RUNTIME_FILES = (
     "CLASSIC Settings.yaml",
     "CLASSIC Ignore.yaml",
@@ -417,3 +420,22 @@ def test_classic_data_extract() -> None:
 
     zip_path.unlink(missing_ok=True)
     assert not zip_path.exists(), f"Failed to delete {zip_path}"
+
+
+def test_open_file_with_encoding() -> None:
+    """Test CLASSIC_Main's `open_file_with_encoding()`."""
+    utf16_path = Path("tests/utf16le.txt")
+    utf16_path.unlink(missing_ok=True)
+
+    with utf16_path.open("wb") as f:
+        f.write(binascii.unhexlify(TEST_UTF16LE))
+
+    with CLASSIC_Main.open_file_with_encoding(str(utf16_path)) as f:
+        pass
+
+    with CLASSIC_Main.open_file_with_encoding(utf16_path) as f:
+        encoding = f.encoding
+
+    assert encoding == "UTF-16", "Failed to detect file encoding"
+
+    utf16_path.unlink(missing_ok=True)
