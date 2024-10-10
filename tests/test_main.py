@@ -205,6 +205,17 @@ def test_file_yaml() -> Generator[Path]:
 @pytest.mark.xfail(reason="Known issue to be fixed in PR", raises=AssertionError)
 def test_remove_readonly(test_file_text: Path) -> None:
     """Test CLASSIC_Main's `remove_readonly()`."""
+    # Test without read-only
+    assert (
+        test_file_text.stat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY == 0
+    ), f"{test_file_text} should NOT be read-only"
+    return_value = CLASSIC_Main.remove_readonly(test_file_text)  # type: ignore[func-returns-value]
+    assert return_value is None, "remove_readonly() unexpectedly returned a value"
+    assert (
+        test_file_text.stat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY == 0
+    ), f"{test_file_text} should NOT be read-only"
+
+    # Test with read-only
     test_file_text.chmod(~stat.S_IWRITE)
     assert (
         test_file_text.stat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY == 1
@@ -214,6 +225,12 @@ def test_remove_readonly(test_file_text: Path) -> None:
     assert (
         test_file_text.stat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY == 0
     ), f"{test_file_text} should NOT be read-only"
+
+    # Test with missing file
+    test_file_text.unlink(missing_ok=True)
+    assert not test_file_text.exists(), f"failed to delete {test_file_text}"
+    return_value = CLASSIC_Main.remove_readonly(test_file_text)  # type: ignore[func-returns-value]
+    assert return_value is None, "remove_readonly() unexpectedly returned a value"
 
 
 @pytest.fixture(scope="module")
