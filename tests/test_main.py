@@ -53,6 +53,10 @@ RUNTIME_FILES = (
 
 @pytest.fixture(scope="session", autouse=True)
 def _move_user_files() -> Generator[None]:
+    """Automatically moves all of CLASSIC's runtime-generated files into `test_temp/` during testing and restores them after.
+
+    Any files created during testing are deleted.
+    """
     temp_path = Path("test_temp")
     temp_path.mkdir(exist_ok=True)
     assert temp_path.is_dir(), f"Failed to create {temp_path}"
@@ -91,11 +95,19 @@ def _move_user_files() -> Generator[None]:
 
 @pytest.fixture
 def _initialize_main() -> None:
+    """Initialize CLASSIC_Main's globals."""
     CLASSIC_Main.initialize()
 
 
 @pytest.fixture(scope="session")
 def yaml_cache() -> CLASSIC_Main.YamlSettingsCache:
+    """Initialize CLASSIC_Main's YAML Cache.
+
+    This is required for any test that entails calls to:
+    - `yaml_settings()`
+    - `get_setting()`
+    - `classic_settings()`
+    """
     CLASSIC_Main.yaml_cache = CLASSIC_Main.YamlSettingsCache()
     assert isinstance(CLASSIC_Main.yaml_cache.cache, dict), "cache dict not created"
     assert isinstance(CLASSIC_Main.yaml_cache.file_mod_times, dict), "file_mod_times dict not created"
@@ -104,6 +116,7 @@ def yaml_cache() -> CLASSIC_Main.YamlSettingsCache:
 
 @pytest.fixture
 def _gamevars() -> None:
+    """Initialize CLASSIC_Main's gamevars global and validate its types."""
     assert isinstance(CLASSIC_Main.gamevars, dict), "CLASSIC_Main.gamevars should be initialized to dict"
     assert len(CLASSIC_Main.gamevars) > 0, "CLASSIC_Main.gamevars should contain default values"
     assert isinstance(CLASSIC_Main.GameID, TypeAliasType), "CLASSIC_Main.GameID type is unexpected"
@@ -118,6 +131,7 @@ def _gamevars() -> None:
 
 @pytest.fixture
 def test_file_text() -> Generator[Path]:
+    """Create an empty file `tests/test_file.txt` for the duration of the test."""
     test_file_path = Path("tests/test_file.txt")
     test_file_path.touch(exist_ok=True)
     assert test_file_path.is_file(), f"failed to create {test_file_path}"
@@ -128,6 +142,7 @@ def test_file_text() -> Generator[Path]:
 
 @pytest.fixture(scope="module")
 def test_file_yaml() -> Generator[Path]:
+    """Create a test YAML file `tests/test_settings.yaml` containing `TEST_YAML_TEXT` for the duration of the test."""
     test_file_path = Path("tests/test_settings.yaml")
     with test_file_path.open("w") as f:
         f.write(TEST_YAML_TEXT)
@@ -139,6 +154,7 @@ def test_file_yaml() -> Generator[Path]:
 
 @pytest.mark.skip(reason="Known issue to be fixed in PR")
 def test_remove_readonly(test_file_text: Path) -> None:
+    """Test CLASSIC_Main's `remove_readonly()`."""
     test_file_text.chmod(~stat.S_IWRITE)
     assert (
         test_file_text.stat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY == 1
@@ -152,6 +168,7 @@ def test_remove_readonly(test_file_text: Path) -> None:
 
 @pytest.fixture(scope="module")
 def test_load_yaml(test_file_yaml: Path, yaml_cache: CLASSIC_Main.YamlSettingsCache) -> CLASSIC_Main.YamlSettingsCache:
+    """Test CLASSIC_Main's `YamlSettingsCache`.`load_yaml()`."""
     fake_path = Path("Non-existant file")
     loaded_data_1 = yaml_cache.load_yaml(fake_path)
     assert isinstance(loaded_data_1, dict), "load_yaml() should always return a dict"
@@ -165,6 +182,7 @@ def test_load_yaml(test_file_yaml: Path, yaml_cache: CLASSIC_Main.YamlSettingsCa
 
 
 def test_YamlSettingsCache_get_setting(test_file_yaml: Path, test_load_yaml: CLASSIC_Main.YamlSettingsCache) -> None:
+    """Test CLASSIC_Main's `YamlSettingsCache`.`get_setting()`."""
     game = test_load_yaml.get_setting(test_file_yaml, "Section 1.Game Name")
     assert isinstance(game, str), "Section 1.Game Name should be a string"
     assert game == "Elder Scrolls VI", "Section 1.Game Name should equal 'Elder Scrolls VI'"
@@ -262,6 +280,7 @@ def test_YamlSettingsCache_get_setting(test_file_yaml: Path, test_load_yaml: CLA
 
 
 def test_yaml_settings(test_file_yaml: Path, test_load_yaml: CLASSIC_Main.YamlSettingsCache) -> None:
+    """Test CLASSIC_Main's `yaml_settings()`."""
     assert isinstance(test_load_yaml, CLASSIC_Main.YamlSettingsCache), "yaml cache should be initialized"
     game = CLASSIC_Main.yaml_settings(str(test_file_yaml), "Section 1.Game Name")
     assert isinstance(game, str), "Section 1.Game Name should be a string"
@@ -270,6 +289,7 @@ def test_yaml_settings(test_file_yaml: Path, test_load_yaml: CLASSIC_Main.YamlSe
 
 @pytest.mark.usefixtures("_move_user_files", "yaml_cache")
 def test_classic_settings() -> None:
+    """Test CLASSIC_Main's `classic_settings()`."""
     settings_path = Path("CLASSIC Settings.yaml")
     return_value = CLASSIC_Main.classic_settings()
     assert return_value is None, "classic_settings() should return None when no setting is specified"
@@ -279,6 +299,7 @@ def test_classic_settings() -> None:
 
 @pytest.mark.usefixtures("_move_user_files", "_gamevars", "yaml_cache")
 def test_classic_generate_files() -> None:
+    """Test CLASSIC_Main's `classic_generate_files()`."""
     ignore_path = Path("CLASSIC Ignore.yaml")
     local_path = Path(f"CLASSIC Data/CLASSIC {CLASSIC_Main.gamevars["game"]} Local.yaml")
     assert not ignore_path.is_file(), f"{ignore_path} existed before testing"
@@ -290,6 +311,7 @@ def test_classic_generate_files() -> None:
 
 @pytest.fixture(scope="session")
 def _test_configure_logging(_move_user_files: None) -> Generator[None]:
+    """Test CLASSIC_Main's `configure_logging()` and make its logger available during testing."""
     log_path = Path("CLASSIC Journal.log")
     assert not log_path.is_file(), f"{log_path} existed before testing"
     assert "CLASSIC" not in logging.Logger.manager.loggerDict, "Logger configured before testing"
@@ -306,6 +328,7 @@ def _test_configure_logging(_move_user_files: None) -> Generator[None]:
 
 @pytest.mark.usefixtures("_move_user_files", "_test_configure_logging")
 def test_classic_logging() -> None:
+    """Test CLASSIC_Main's `classic_logging()`."""
     log_path = Path("CLASSIC Journal.log")
     assert log_path.is_file(), f"{log_path} does not exist"
     new_time = (datetime.datetime.now() - datetime.timedelta(days=8)).timestamp()
