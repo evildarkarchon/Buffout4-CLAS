@@ -587,3 +587,5 @@ def test_game_path_find(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
 
     assert yaml_local_path.is_file(), f"{yaml_local_path} was not created"
     assert yaml_local_path.stat().st_size > 0, f"{yaml_local_path} was not written to"
+    yaml_local_path.unlink(missing_ok=True)
+    assert not yaml_local_path.exists(), f"{yaml_local_path} was not deleted"
