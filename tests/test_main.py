@@ -376,6 +376,10 @@ def test_classic_generate_files() -> None:
     assert return_value is None, "classic_generate_files() unexpectedly returned a value"
     assert ignore_path.is_file(), f"{ignore_path} was not created"
     assert local_path.is_file(), f"{local_path} was not created"
+    ignore_path.unlink(missing_ok=True)
+    local_path.unlink(missing_ok=True)
+    assert not ignore_path.exists(), f"{local_path} was not deleted"
+    assert not local_path.exists(), f"{local_path} was not deleted"
 
 
 @pytest.fixture(scope="session")
@@ -528,6 +532,8 @@ def test_docs_path_find(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
 
     assert yaml_local_path.is_file(), f"{yaml_local_path} was not created"
     assert yaml_local_path.stat().st_size > 0, f"{yaml_local_path} was not written to"
+    yaml_local_path.unlink(missing_ok=True)
+    assert not yaml_local_path.exists(), f"{yaml_local_path} was not deleted"
 
 
 @pytest.mark.usefixtures("_move_user_files", "_gamevars")
