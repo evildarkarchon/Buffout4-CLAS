@@ -27,3 +27,19 @@ def test_pastebin_fetch() -> None:
     assert contents[0].name.startswith("crash-"), "Created file not prefixed with `crash-`"
     assert contents[0].suffix == ".log", "Created file doesn't have the extension `.log`"
     assert contents[0].stat().st_size > 0, "Created file is empty"
+
+
+def test_get_entry() -> None:
+    """Test CLASSIC_ScanLogs's `get_entry()`."""
+
+
+def test_crashlogs_get_files() -> None:
+    """Test CLASSIC_ScanLogs's `crashlogs_get_files()`."""
+
+
+def test_crashlogs_reformat() -> None:
+    """Test CLASSIC_ScanLogs's `crashlogs_reformat()`."""
+
+
+def test_crashlogs_scan() -> None:
+    """Test CLASSIC_ScanLogs's `crashlogs_scan()`."""
