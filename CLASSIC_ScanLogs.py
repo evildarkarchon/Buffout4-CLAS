@@ -61,16 +61,18 @@ def crashlogs_get_files() -> list[Path]:
     """Get paths of all available crash logs."""
     logging.debug("- - - INITIATED CRASH LOG FILE LIST GENERATION")
     CLASSIC_folder = Path.cwd()
+    CLASSIC_logs = CLASSIC_folder / "CLASSIC Logs"
     CUSTOM_folder = Path(str(CMain.classic_settings("SCAN Custom Path")))
     XSE_folder = Path(str(CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", "Game_Info.Docs_Folder_XSE")))
-
+    if not CLASSIC_logs.is_dir():
+        CLASSIC_logs.mkdir(parents=True, exist_ok=True)
     if XSE_folder.is_dir():
         for crash_file in XSE_folder.glob("crash-*.log"):
-            destination_file = CLASSIC_folder / crash_file.name
+            destination_file = CLASSIC_logs / crash_file.name
             if not Path(destination_file).is_file():
                 shutil.copy2(crash_file, destination_file)
 
-    crash_files = list(CLASSIC_folder.glob("crash-*.log"))
+    crash_files = list(CLASSIC_logs.glob("crash-*.log"))
     if CUSTOM_folder.is_dir():
         crash_files.extend(Path(CUSTOM_folder).glob("crash-*.log"))
 
