@@ -430,15 +430,15 @@ def game_path_find() -> None:
             path, _ = winreg.QueryValueEx(reg_key, "installed path") # type: ignore
             winreg.CloseKey(reg_key) # type: ignore
             outpath = Path(path) if path else None
-
-            if outpath and outpath.is_dir() and outpath.joinpath(f"{gamevars['game']}{gamevars['vr']}.exe").exists():
-                return outpath
-            else:  # noqa: RET505
-                return None
         except (UnboundLocalError, FileNotFoundError, OSError):
             return None
+        else:
+            return outpath
 
     game_path = get_game_registry_path()
+
+    if game_path and game_path.is_dir() and game_path.joinpath(f"{gamevars['game']}{gamevars['vr']}.exe").is_file():
+        return
 
     if game_path_gui is None:
         raise TypeError("CMain not initialized")
