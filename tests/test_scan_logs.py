@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 from requests import HTTPError
 
+import CLASSIC_Main
 import CLASSIC_ScanLogs
 
 
@@ -29,8 +30,36 @@ def test_pastebin_fetch() -> None:
     assert contents[0].stat().st_size > 0, "Created file is empty"
 
 
+@pytest.mark.usefixtures("_gamevars")
 def test_get_entry() -> None:
     """Test CLASSIC_ScanLogs's `get_entry()`."""
+    #- Form ID: 0000003C | [Fallout4.esm] | Commonwealth | 2
+    game = "Fallout4"
+    db_path_main = Path(f"CLASSIC Data/databases/{game} FormIDs Main.db")
+    db_path_local = Path(f"CLASSIC Data/databases/{game} FormIDs Local.db")
+    test_formid = "00003C"
+    test_plugin = "Fallout4.esm"
+
+    assert db_path_main.is_file(), f"{db_path_main} does not exist"
+    assert db_path_local.is_file(), f"{db_path_local} does not exist"
+    assert isinstance(CLASSIC_ScanLogs.query_cache, dict), "query_cache is expected to be a dict"
+    return_value_1 = CLASSIC_ScanLogs.get_entry("FFFFFF", "XXXXXXXX.esm")
+    assert return_value_1 is None, "get_entry() should return None when no entry found"
+
+    initial_cache_size = len(CLASSIC_ScanLogs.query_cache)
+    return_value_2 = CLASSIC_ScanLogs.get_entry(test_formid, test_plugin)
+    assert return_value_2 is not None, f"get_entry() should always find {test_plugin} FormIDs"
+    assert isinstance(return_value_2, str), "get_entry() should return str"
+    assert len(CLASSIC_ScanLogs.query_cache) == initial_cache_size + 1, "query_cache size did not increase by 1"
+    cache_key = next(k for k in CLASSIC_ScanLogs.query_cache)
+    assert isinstance(cache_key, tuple), "query_cache keys are expected to be tuple"
+    assert len(cache_key) == 2, "query_cache keys are expected to be tuple of length 2"
+    assert all(isinstance(v, str) for v in cache_key), "query_cache keys are expected to contain only str"
+    assert CLASSIC_ScanLogs.query_cache.get((test_formid, test_plugin)) == return_value_2, "result not found in query_cache"
+
+    return_value_3 = CLASSIC_ScanLogs.get_entry(test_formid, test_plugin)
+    assert return_value_3 == return_value_2, "get_entry() should return the previously cached value"
+    assert len(CLASSIC_ScanLogs.query_cache) == initial_cache_size + 1, "query_cache size should not have increased for repeated query"
 
 
 def test_crashlogs_get_files() -> None:
