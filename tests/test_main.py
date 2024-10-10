@@ -541,10 +541,18 @@ def test_game_path_find(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
         last_mod_time = yaml_path.stat().st_mtime
         yaml_cache.file_mod_times[yaml_path] = last_mod_time
 
-    yaml_cache.cache[yaml_local_path] = ruamel.yaml.CommentedMap({"Game_Info": {"Docs_File_XSE": str(xse_log_path)}})
+    yaml_cache.cache[yaml_local_path] = ruamel.yaml.CommentedMap({"Game_Info": {"Docs_File_XSE": "FAKE_PATH"}})
     yaml_cache.cache[yaml_path] = ruamel.yaml.CommentedMap({
         "Game_Info": {"Main_Docs_Name": game, "XSE_Acronym": XSE_Acronym, "Main_Root_Name": Main_Root_Name},
     })
+
+    assert not yaml_local_path.is_file(), f"{yaml_local_path} existed before testing"
+
+    # Test with no XSE log
+    CLASSIC_Main.game_path_find()
+    assert not yaml_local_path.is_file(), f"{yaml_local_path} was unxepectedly created"
+
+    yaml_cache.cache[yaml_local_path]["Game_Info"]["Docs_File_XSE"] = str(xse_log_path)
 
     xse_log_path.unlink(missing_ok=True)
     with xse_log_path.open("w") as f:
