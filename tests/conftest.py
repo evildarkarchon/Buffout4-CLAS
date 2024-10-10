@@ -2,6 +2,7 @@ import logging
 import shutil
 from collections.abc import Generator
 from pathlib import Path
+from typing import TypeAliasType, get_args
 
 import pytest
 
@@ -93,3 +94,20 @@ def _test_configure_logging(_move_user_files: None) -> Generator[None]:
         if isinstance(h, logging.FileHandler):
             h.close()
     assert log_path.stat().st_size > 0, "Log file was not written to"
+
+
+@pytest.fixture(scope="session")
+def _gamevars() -> None:
+    """Initialize CLASSIC_Main's gamevars global and validate its types."""
+    assert isinstance(CLASSIC_Main.gamevars, dict), "CLASSIC_Main.gamevars should be initialized to dict"
+    assert len(CLASSIC_Main.gamevars) > 0, "CLASSIC_Main.gamevars should contain default values"
+    assert isinstance(CLASSIC_Main.GameID, TypeAliasType), "CLASSIC_Main.GameID type is unexpected"
+    assert (
+        CLASSIC_Main.GameVars.__annotations__["game"] is CLASSIC_Main.GameID
+    ), "CLASSIC_Main.GameVars type is unexpected"
+    game_ids = get_args(CLASSIC_Main.GameVars.__annotations__["game"].__value__)
+    vr_values = get_args(CLASSIC_Main.GameVars.__annotations__["vr"])
+    assert len(game_ids) > 0, "CLASSIC_Main.GameID type is unexpected"
+    assert all(isinstance(g, str) for g in game_ids), "CLASSIC_Main.GameID type is unexpected"
+    assert CLASSIC_Main.gamevars.get("game") in game_ids, "CLASSIC_Main.gamevars['game'] not initialized"
+    assert CLASSIC_Main.gamevars.get("vr") in vr_values, "CLASSIC_Main.gamevars['vr'] not initialized"
