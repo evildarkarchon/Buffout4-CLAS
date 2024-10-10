@@ -155,7 +155,9 @@ def _gamevars() -> None:
     assert isinstance(CLASSIC_Main.gamevars, dict), "CLASSIC_Main.gamevars should be initialized to dict"
     assert len(CLASSIC_Main.gamevars) > 0, "CLASSIC_Main.gamevars should contain default values"
     assert isinstance(CLASSIC_Main.GameID, TypeAliasType), "CLASSIC_Main.GameID type is unexpected"
-    assert (CLASSIC_Main.GameVars.__annotations__["game"] is CLASSIC_Main.GameID), "CLASSIC_Main.GameVars type is unexpected"
+    assert (
+        CLASSIC_Main.GameVars.__annotations__["game"] is CLASSIC_Main.GameID
+    ), "CLASSIC_Main.GameVars type is unexpected"
     game_ids = get_args(CLASSIC_Main.GameVars.__annotations__["game"].__value__)
     vr_values = get_args(CLASSIC_Main.GameVars.__annotations__["vr"])
     assert len(game_ids) > 0, "CLASSIC_Main.GameID type is unexpected"
@@ -333,6 +335,7 @@ def test_classic_settings() -> None:
     update_check = CLASSIC_Main.classic_settings("Update Check")
     assert update_check is True or update_check is False, "update_check must be bool"
 
+
 @pytest.mark.usefixtures("_move_user_files", "_gamevars", "yaml_cache")
 def test_classic_generate_files() -> None:
     """Test CLASSIC_Main's `classic_generate_files()`."""
@@ -344,6 +347,7 @@ def test_classic_generate_files() -> None:
     assert return_value is None, "classic_generate_files() unexpectedly returned a value"
     assert ignore_path.is_file(), f"{ignore_path} was not created"
     assert local_path.is_file(), f"{local_path} was not created"
+
 
 @pytest.fixture(scope="session")
 def _test_configure_logging(_move_user_files: None) -> Generator[None]:
@@ -362,6 +366,7 @@ def _test_configure_logging(_move_user_files: None) -> Generator[None]:
             h.close()
     assert log_path.stat().st_size > 0, "Log file was not written to"
 
+
 @pytest.mark.xfail(reason="Known issue to be fixed in PR", raises=AssertionError)
 @pytest.mark.usefixtures("_move_user_files", "_test_configure_logging")
 def test_classic_logging() -> None:
@@ -373,6 +378,7 @@ def test_classic_logging() -> None:
     assert log_path.stat().st_mtime == new_time, f"Timestamps not updated on {log_path}"
     CLASSIC_Main.classic_logging()
     assert log_path.stat().st_size == 0, f"{log_path} was not regenerated"
+
 
 @pytest.fixture
 def _move_zip_files() -> Generator[None]:
