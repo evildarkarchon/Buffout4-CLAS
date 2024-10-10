@@ -701,8 +701,6 @@ def main_files_backup() -> None:
 
     backup_list: list[str] = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_AutoBackup")  # type: ignore
     game_path: str | None = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Game")  # type: ignore
-    yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.XSE_Acronym")  # type: ignore
-    yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", "Game_Info.XSE_Acronym")  # type: ignore
     xse_log_file: str | None = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Docs_File_XSE")  # type: ignore
     xse_ver_latest: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.XSE_Ver_Latest")  # type: ignore
     with open_file_with_encoding(xse_log_file) as xse_log: # type: ignore
