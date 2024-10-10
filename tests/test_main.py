@@ -295,8 +295,8 @@ def test_classic_generate_files() -> None:
     """Test CLASSIC_Main's `classic_generate_files()`."""
     ignore_path = Path("CLASSIC Ignore.yaml")
     local_path = Path(f"CLASSIC Data/CLASSIC {CLASSIC_Main.gamevars["game"]} Local.yaml")
-    assert not ignore_path.is_file(), f"{ignore_path} existed before testing"
-    assert not local_path.is_file(), f"{local_path} existed before testing"
+    assert not ignore_path.exists(), f"{ignore_path} existed before testing"
+    assert not local_path.exists(), f"{local_path} existed before testing"
     return_value = CLASSIC_Main.classic_generate_files()  # type: ignore[func-returns-value]
     assert return_value is None, "classic_generate_files() unexpectedly returned a value"
     assert ignore_path.is_file(), f"{ignore_path} was not created"
@@ -476,7 +476,7 @@ def test_game_path_find(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
         "Game_Info": {"Main_Docs_Name": game, "XSE_Acronym": XSE_Acronym, "Main_Root_Name": Main_Root_Name},
     })
 
-    assert not yaml_local_path.is_file(), f"{yaml_local_path} existed before testing"
+    assert not yaml_local_path.exists(), f"{yaml_local_path} existed before testing"
 
     # Test with no XSE log
     CLASSIC_Main.game_path_find()
