@@ -203,7 +203,6 @@ def test_file_yaml() -> Generator[Path]:
     assert not test_file_path.exists(), f"failed to delete {test_file_path}"
 
 
-@pytest.mark.xfail(reason="Known issue to be fixed in PR", raises=AssertionError)
 def test_remove_readonly(test_file_text: Path) -> None:
     """Test CLASSIC_Main's `remove_readonly()`."""
     # Test without read-only
