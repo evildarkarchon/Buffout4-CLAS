@@ -60,3 +60,4 @@ test.*
 *.7z
 Archive/
 Release/
+Crash Logs/
