@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import ruamel.yaml
 from requests import HTTPError
 
 import CLASSIC_Main
@@ -62,8 +63,50 @@ def test_get_entry() -> None:
     assert len(CLASSIC_ScanLogs.query_cache) == initial_cache_size + 1, "query_cache size should not have increased for repeated query"
 
 
-def test_crashlogs_get_files() -> None:
+@pytest.mark.usefixtures("_gamevars")
+def test_crashlogs_get_files(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
     """Test CLASSIC_ScanLogs's `crashlogs_get_files()`."""
+    # Fake the YAML cache to prevent loading real values.
+    game = CLASSIC_Main.gamevars["game"]
+    yaml_path = Path(f"CLASSIC Data/CLASSIC {game} Local.yaml")
+    yaml_path.touch()
+    last_mod_time = yaml_path.stat().st_mtime
+    yaml_cache.file_mod_times[yaml_path] = last_mod_time
+
+    yaml_cache.cache[yaml_path] = ruamel.yaml.CommentedMap({
+        "Game_Info": {"Docs_Folder_XSE": "tests/"},
+    })
+
+    settings_path = Path("CLASSIC Settings.yaml")
+    settings_path.touch()
+    last_mod_time = settings_path.stat().st_mtime
+    yaml_cache.file_mod_times[settings_path] = last_mod_time
+
+    yaml_cache.cache[settings_path] = ruamel.yaml.CommentedMap({
+        "CLASSIC_Settings": {"SCAN Custom Path": "tests/"},
+    })
+
+    test_logs = [
+        Path.cwd() / "tests/crash-TEST_1.log",
+        Path.cwd() / "tests/crash-TEST_2.log",
+    ]
+    for f in test_logs:
+        copy_destination = Path.cwd() / f.name
+        assert not copy_destination.exists(), f"{copy_destination} existed before testing"
+        f.touch()
+        assert f.is_file(), f"{f} was not created"
+
+    return_value = CLASSIC_ScanLogs.crashlogs_get_files()
+    assert isinstance(return_value, list), "crashlogs_get_files() is expected to return a list"
+    assert len(return_value) == 4, "crashlogs_get_files() is expected to find 4 test logs"
+    assert all(r.name.startswith("crash-TEST_") for r in return_value), "Non-test logs were included in results"
+
+    for q in test_logs:
+        copy_destination = Path.cwd() / q.name
+        assert copy_destination.exists(), f"{q.name} was not copied to CLASSIC's folder"
+    for s in return_value:
+        s.unlink(missing_ok=True)
+        assert not s.exists(), f"{s} was not deleted"
 
 
 def test_crashlogs_reformat() -> None:
