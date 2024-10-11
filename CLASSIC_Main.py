@@ -81,7 +81,6 @@ class GamePathEntry(QObject):
 @contextlib.contextmanager
 def open_file_with_encoding(file_path: Path | str | os.PathLike) -> Iterator[TextIOWrapper]:
     """Read only file open with encoding detection. Only for text files."""
-
     if not isinstance(file_path, Path):
         file_path = Path(file_path)
     with file_path.open("rb") as f:
@@ -260,8 +259,8 @@ def classic_data_extract() -> None:
         exe = sys.executable if getattr(sys, "frozen", False) else __file__
         exedir = Path(exe).parent
 
-        if datafile := tuple(exedir.rglob("CLASSIC Data.zip", case_sensitive=False)):
-            return zipfile.ZipFile(str(datafile[0]), "r")
+        if datafile := next(exedir.rglob("CLASSIC Data.zip", case_sensitive=False), None):
+            return zipfile.ZipFile(str(datafile))
         raise FileNotFoundError
     try:
         if not Path("CLASSIC Data/databases/CLASSIC Main.yaml").exists():
@@ -274,7 +273,7 @@ def classic_data_extract() -> None:
 
 async def classic_update_check(quiet: bool = False, gui_request: bool = True) -> bool:
     logger.debug("- - - INITIATED UPDATE CHECK")
-    if classic_settings("Update Check") or gui_request:
+    if gui_request or classic_settings("Update Check"):
         classic_local: str = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_Info.version")  # type: ignore
         if not quiet:
             print("❓ (Needs internet connection) CHECKING FOR NEW CLASSIC VERSIONS...")
