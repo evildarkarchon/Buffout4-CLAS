@@ -114,14 +114,16 @@ def configure_logging() -> None:
             except (ValueError, OSError) as err:
                 print(f"An error occurred while deleting {journal_path.name}: {err}")
 
-    logger = logging.getLogger("CLASSIC")
-    logger.setLevel(logging.INFO)
-    handler = logging.FileHandler(
-        filename="CLASSIC Journal.log",
-        mode="a",
-    )
-    handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(message)s"))
-    logger.addHandler(handler)
+    # Make sure we only configure the handler once
+    if "CLASSIC" not in logging.Logger.manager.loggerDict:
+        logger = logging.getLogger("CLASSIC")
+        logger.setLevel(logging.INFO)
+        handler = logging.FileHandler(
+            filename="CLASSIC Journal.log",
+            mode="a",
+        )
+        handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(message)s"))
+        logger.addHandler(handler)
 
 
 # ================================================

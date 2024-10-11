@@ -1,5 +1,6 @@
 import binascii
 import datetime
+import logging
 import os
 import random
 import shutil
@@ -128,7 +129,7 @@ def test_remove_readonly(monkeypatch: pytest.MonkeyPatch, test_file_text: Path) 
 
     # Mock OSError
     with monkeypatch.context() as m:
-        m.setattr(Path, "chmod", (lambda *_, **__: exec("raise OSError")))
+        m.setattr(Path, "chmod", lambda *_, **__: exec("raise OSError"))
         CLASSIC_Main.remove_readonly(test_file_text)
 
     assert (
@@ -296,17 +297,40 @@ def test_classic_generate_files() -> None:
     assert not local_path.exists(), f"{local_path} was not deleted"
 
 
-@pytest.mark.xfail(reason="Known issue to be fixed in PR", raises=AssertionError)
-@pytest.mark.usefixtures("_test_configure_logging")
-def test_classic_logging() -> None:
-    """Test CLASSIC_Main's `classic_logging()`."""
+def test_configure_logging(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test CLASSIC_Main's `configure_logging()`."""
     log_path = Path("CLASSIC Journal.log")
-    assert log_path.is_file(), f"{log_path} does not exist"
+    assert not log_path.is_file(), f"{log_path} existed before testing"
+    assert "CLASSIC" not in logging.Logger.manager.loggerDict, "Logger configured before testing"
+
+    with log_path.open("w") as f:
+        f.write(string.ascii_letters)
+    assert log_path.is_file(), f"{log_path} was not created"
+    inode = int(log_path.stat().st_ino)
+    assert log_path.stat().st_size != 0, f"{log_path} was not written to"
     new_time = (datetime.datetime.now() - datetime.timedelta(days=8)).timestamp()
     os.utime(log_path, (new_time, new_time))
     assert log_path.stat().st_mtime == new_time, f"Timestamps not updated on {log_path}"
-    CLASSIC_Main.classic_logging()
-    assert log_path.stat().st_size == 0, f"{log_path} was not regenerated"
+
+    # Mock OSError
+    with monkeypatch.context() as m:
+        m.setattr(Path, "unlink", lambda *_, **__: exec("raise OSError"))
+        # Fake the logger already being configured so we don't create a log file lock
+        logging.Logger.manager.loggerDict["CLASSIC"] = logging.getLogger()
+        CLASSIC_Main.configure_logging()
+        # Remove the fake logger
+        del logging.Logger.manager.loggerDict["CLASSIC"]
+    assert log_path.is_file(), f"{log_path} was deleted"
+
+    CLASSIC_Main.configure_logging()
+    assert CLASSIC_Main.logger.name == "CLASSIC", "A logger named CLASSIC was not configured"
+    assert log_path.stat().st_ino != inode, f"{log_path} was not regenerated"
+    CLASSIC_Main.logger.info("Logger test")
+
+    for h in CLASSIC_Main.logger.handlers:
+        if isinstance(h, logging.FileHandler):
+            h.close()
+    assert log_path.stat().st_size > 0, "Log file was not written to"
 
 
 @pytest.fixture

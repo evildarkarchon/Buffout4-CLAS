@@ -1,4 +1,3 @@
-import logging
 import shutil
 from collections.abc import Generator
 from pathlib import Path
@@ -76,24 +75,6 @@ def yaml_cache() -> CLASSIC_Main.YamlSettingsCache:
     assert isinstance(CLASSIC_Main.yaml_cache.cache, dict), "cache dict not created"
     assert isinstance(CLASSIC_Main.yaml_cache.file_mod_times, dict), "file_mod_times dict not created"
     return CLASSIC_Main.yaml_cache
-
-
-@pytest.fixture(scope="session")
-def _test_configure_logging(_move_user_files: None) -> Generator[None]:
-    """Test CLASSIC_Main's `configure_logging()` and make its logger available during testing."""
-    log_path = Path("CLASSIC Journal.log")
-    assert not log_path.is_file(), f"{log_path} existed before testing"
-    assert "CLASSIC" not in logging.Logger.manager.loggerDict, "Logger configured before testing"
-    return_value = CLASSIC_Main.configure_logging()  # type: ignore[func-returns-value]
-    assert return_value is None, "configure_logging() unexpectedly returned a value"
-    assert CLASSIC_Main.logger.name == "CLASSIC", "A logger named CLASSIC was not configured"
-    assert log_path.is_file(), f"{log_path} was not created"
-    CLASSIC_Main.logger.info("Logger test")
-    yield
-    for h in CLASSIC_Main.logger.handlers:
-        if isinstance(h, logging.FileHandler):
-            h.close()
-    assert log_path.stat().st_size > 0, "Log file was not written to"
 
 
 @pytest.fixture(scope="session")
