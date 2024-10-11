@@ -268,7 +268,7 @@ def test_yaml_settings(test_file_yaml: Path, test_load_yaml: CLASSIC_Main.YamlSe
     assert game == "Elder Scrolls VI", "Section 1.Game Name should equal 'Elder Scrolls VI'"
 
 
-@pytest.mark.usefixtures("_move_user_files", "yaml_cache")
+@pytest.mark.usefixtures("yaml_cache")
 def test_classic_settings() -> None:
     """Test CLASSIC_Main's `classic_settings()`."""
     settings_path = Path("CLASSIC Settings.yaml")
@@ -279,7 +279,7 @@ def test_classic_settings() -> None:
     assert update_check is True or update_check is False, "update_check must be bool"
 
 
-@pytest.mark.usefixtures("_move_user_files", "_gamevars", "yaml_cache")
+@pytest.mark.usefixtures("_gamevars", "yaml_cache")
 def test_classic_generate_files() -> None:
     """Test CLASSIC_Main's `classic_generate_files()`."""
     ignore_path = Path("CLASSIC Ignore.yaml")
@@ -297,7 +297,7 @@ def test_classic_generate_files() -> None:
 
 
 @pytest.mark.xfail(reason="Known issue to be fixed in PR", raises=AssertionError)
-@pytest.mark.usefixtures("_move_user_files", "_test_configure_logging")
+@pytest.mark.usefixtures("_test_configure_logging")
 def test_classic_logging() -> None:
     """Test CLASSIC_Main's `classic_logging()`."""
     log_path = Path("CLASSIC Journal.log")
@@ -393,7 +393,7 @@ async def test_classic_update_check(yaml_cache: CLASSIC_Main.YamlSettingsCache) 
     assert return_value is False, "classic_update_check() should return False"
 
 
-@pytest.mark.usefixtures("_move_user_files", "_gamevars")
+@pytest.mark.usefixtures("_gamevars")
 def test_docs_path_find(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
     """Test CLASSIC_Main's `docs_path_find()`."""
     if CLASSIC_Main.manual_docs_gui is None:
@@ -432,7 +432,7 @@ def test_docs_path_find(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
     assert not yaml_local_path.exists(), f"{yaml_local_path} was not deleted"
 
 
-@pytest.mark.usefixtures("_move_user_files", "_gamevars")
+@pytest.mark.usefixtures("_gamevars")
 def test_game_path_find(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
     """Test CLASSIC_Main's `game_path_find()`."""
     if CLASSIC_Main.game_path_gui is None:
