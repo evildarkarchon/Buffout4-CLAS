@@ -110,8 +110,9 @@ def test_file_yaml() -> Generator[Path]:
     assert not test_file_path.exists(), f"failed to delete {test_file_path}"
 
 
-def test_remove_readonly(test_file_text: Path) -> None:
+def test_remove_readonly(monkeypatch: pytest.MonkeyPatch, test_file_text: Path) -> None:
     """Test CLASSIC_Main's `remove_readonly()`."""
+
     # Test without read-only
     assert (
         test_file_text.stat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY == 0
@@ -124,6 +125,12 @@ def test_remove_readonly(test_file_text: Path) -> None:
 
     # Test with read-only
     test_file_text.chmod(~stat.S_IWRITE)
+
+    # Mock OSError
+    with monkeypatch.context() as m:
+        m.setattr(Path, "chmod", (lambda *_, **__: exec("raise OSError")))
+        CLASSIC_Main.remove_readonly(test_file_text)
+
     assert (
         test_file_text.stat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY == 1
     ), f"{test_file_text} should be read-only"

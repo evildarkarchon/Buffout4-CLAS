@@ -6,6 +6,7 @@ import logging
 import os
 import platform
 import shutil
+import stat
 import sys
 import zipfile
 from collections.abc import Iterator
@@ -112,24 +113,29 @@ def configure_logging() -> None:
 # DEFINE FILE / YAML FUNCTIONS
 # ================================================
 def remove_readonly(file_path: Path) -> None:
+    """Remove the read-only flag from a given file, if present."""
     try:
-        # Get current file permissions.
-        permissions = file_path.stat().st_mode if platform.system() == "Windows" else file_path.stat().st_mode & 0o777
-        # Remove file permissions if needed.
-        if permissions & (os.O_RDONLY | os.O_WRONLY):
-            if platform.system() == "Windows":
-                file_path.chmod(permissions & ~0o400)
+        if platform.system() == "Windows":
+            if file_path.stat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY == 1:
+                file_path.chmod(stat.S_IWRITE)
+                logger.debug(f"- - - '{file_path}' is no longer Read-Only.")
             else:
-                file_path.chmod(permissions | 0o200)
-
-            logger.debug(f"- - - '{file_path}' is no longer Read-Only.")
+                logger.debug(f"- - - '{file_path}' is not set to Read-Only.")
         else:
-            logger.debug(f"- - - '{file_path}' is not set to Read-Only.")
+            # Get current file permissions.
+            permissions = file_path.stat().st_mode & 0o777
+            if permissions & (os.O_RDONLY | os.O_WRONLY):
+                # Remove file permissions if needed.
+                file_path.chmod(permissions | 0o200)
+                logger.debug(f"- - - '{file_path}' is no longer Read-Only.")
+            else:
+                logger.debug(f"- - - '{file_path}' is not set to Read-Only.")
 
     except FileNotFoundError:
         logger.error(f"> > > ERROR (remove_readonly) : '{file_path}' not found.")
     except (ValueError, OSError) as err:
         logger.error(f"> > > ERROR (remove_readonly) : {err}")
+
 
 class YamlSettingsCache:
     def __init__(self) -> None:
