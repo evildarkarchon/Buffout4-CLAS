@@ -449,6 +449,9 @@ def test_game_path_find(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
     # Fake the YAML cache to prevent loading real values.
     yaml_local_path = Path(f"CLASSIC Data/CLASSIC {game} Local.yaml")
     yaml_path = Path(f"CLASSIC Data/databases/CLASSIC {game}.yaml")
+    if yaml_local_path.exists():
+        last_mod_time = yaml_local_path.stat().st_mtime
+        yaml_cache.file_mod_times[yaml_local_path] = last_mod_time
     if yaml_path.exists():
         last_mod_time = yaml_path.stat().st_mtime
         yaml_cache.file_mod_times[yaml_path] = last_mod_time
