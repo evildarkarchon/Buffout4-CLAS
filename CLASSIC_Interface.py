@@ -299,7 +299,7 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
 
-        CMain.initialize()
+        CMain.initialize(is_gui=True)
 
         self.setWindowTitle(
             f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings('CLASSIC Data/databases/CLASSIC Main.yaml', 'CLASSIC_Info.version')}"
