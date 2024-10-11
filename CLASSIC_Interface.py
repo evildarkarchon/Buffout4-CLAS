@@ -10,6 +10,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import Any, Literal
 
+import regex as re
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtMultimedia import QSoundEffect
@@ -299,6 +300,8 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
 
+        self.pastebin_url_regex: re.Pattern = re.compile(r"^https?://pastebin\.com/(\w+)$")
+
         CMain.initialize(is_gui=True)
 
         self.setWindowTitle(
@@ -430,6 +433,34 @@ class MainWindow(QMainWindow):
                     raise Exception("This is a test exception")"""
         return super().eventFilter(watched, event)
 
+    def setup_pastebin_elements(self, layout: QVBoxLayout) -> None:
+        """Set up the Pastebin fetch UI elements."""
+        pastebin_layout = QHBoxLayout()
+
+        self.pastebin_id_input = QLineEdit(self)
+        self.pastebin_id_input.setPlaceholderText("Enter Pastebin URL or ID")
+        pastebin_layout.addWidget(self.pastebin_id_input)
+
+        self.pastebin_fetch_button = QPushButton("Fetch Log", self)
+        self.pastebin_fetch_button.clicked.connect(self.fetch_pastebin_log)
+        pastebin_layout.addWidget(self.pastebin_fetch_button)
+
+        # Add the layout to the main layout (add it to an appropriate tab or section)
+        layout.addLayout(pastebin_layout)
+
+    def fetch_pastebin_log(self) -> None:
+        """Fetch the log from Pastebin and scan it."""
+        input_text = self.pastebin_id_input.text().strip()
+
+        # Regular expression to check if the input is a full URL
+        pastebin_url = input_text if self.pastebin_url_regex.match(input_text) else f"https://pastebin.com/{input_text}"
+
+        try:
+            CLogs.pastebin_fetch(pastebin_url)  # Fetch the log file from Pastebin
+            QMessageBox.information(self, "Success", f"Log fetched from: {pastebin_url}")
+        except Exception as e:  # noqa: BLE001
+            QMessageBox.warning(self, "Error", f"Failed to fetch log: {e!s}")
+
     def show_manual_docs_path_dialog(self) -> None:
         dialog = ManualPathDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -529,6 +560,8 @@ class MainWindow(QMainWindow):
         self.scan_folder_edit = self.setup_folder_section(
             layout, "CUSTOM SCAN FOLDER", "Box_SelectedScan", self.select_folder_scan
         )
+
+        self.setup_pastebin_elements(layout)
 
         # Add first separator
         layout.addWidget(self.create_separator())
