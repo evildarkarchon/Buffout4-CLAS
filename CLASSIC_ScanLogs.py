@@ -22,7 +22,7 @@ def pastebin_fetch(url: str) -> None:
     if urlparse(url).netloc == "pastebin.com" and "/raw" not in url:
         url = url.replace("pastebin.com", "pastebin.com/raw")
     response = requests.get(url)
-    if response.status_code in requests.codes.ok:
+    if response.status_code == requests.codes.ok:
         pastebin_path = Path("Crash Logs/Pastebin")
         if not pastebin_path.is_dir():
             pastebin_path.mkdir(parents=True, exist_ok=True)
