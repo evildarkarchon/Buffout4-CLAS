@@ -432,7 +432,7 @@ def game_path_find() -> None:
             path, _ = winreg.QueryValueEx(reg_key, "installed path") # type: ignore
             winreg.CloseKey(reg_key) # type: ignore
             outpath = Path(path) if path else None
-        except (UnboundLocalError, FileNotFoundError, OSError):
+        except (UnboundLocalError, OSError):
             return None
         else:
             return outpath
