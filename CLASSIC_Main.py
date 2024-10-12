@@ -426,61 +426,62 @@ def docs_generate_paths() -> None:
 
 # =========== CHECK DOCUMENTS XSE FILE -> GET GAME ROOT FOLDER PATH ===========
 def game_path_find() -> None:
-    def get_game_registry_path() -> Path | None:
-        try:
-            # Open the registry key
-            reg_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, rf"SOFTWARE\WOW6432Node\Bethesda Softworks\{gamevars['game']}{gamevars['vr']}")  # type: ignore
-            # Query the 'installed path' value
-            path, _ = winreg.QueryValueEx(reg_key, "installed path") # type: ignore
-            winreg.CloseKey(reg_key) # type: ignore
-            outpath = Path(path) if path else None
-        except (UnboundLocalError, OSError):
-            return None
-        else:
-            return outpath
+    logger.debug("- - - INITIATED GAME PATH CHECK")
 
-    game_path = get_game_registry_path()
+    try:
+        # Open the registry key
+        reg_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, rf"SOFTWARE\WOW6432Node\Bethesda Softworks\{gamevars['game']}{gamevars['vr']}")  # type: ignore
+        # Query the 'installed path' value
+        path, _ = winreg.QueryValueEx(reg_key, "installed path") # type: ignore
+        winreg.CloseKey(reg_key) # type: ignore
+    except (UnboundLocalError, OSError):
+        game_path = None
+    else:
+        game_path = Path(path) if path else None
 
-    if game_path and game_path.is_dir() and game_path.joinpath(f"{gamevars['game']}{gamevars['vr']}.exe").is_file():
+    exe_name = f"{gamevars["game"]}{gamevars["vr"]}.exe"
+
+    if game_path and game_path.is_dir() and game_path.joinpath(exe_name).is_file():
         yaml_settings(f"CLASSIC Data/CLASSIC {gamevars['game']} Local.yaml", f"Game{gamevars['vr']}_Info.Root_Folder_Game", str(game_path))
         return
 
-    logger.debug("- - - INITIATED GAME PATH CHECK")
     xse_file: str | None = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Docs_File_XSE")  # type: ignore
     xse_acronym: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.XSE_Acronym")  # type: ignore
     xse_acronym_base: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", "Game_Info.XSE_Acronym")  # type: ignore
     game_name: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.Main_Root_Name")  # type: ignore
 
-    if not game_path and xse_file and Path(xse_file).is_file():
-        with open_file_with_encoding(xse_file) as LOG_Check:
-            Path_Check = LOG_Check.readlines()
-            for logline in Path_Check:
-                if not logline.startswith("plugin directory"):
-                    continue
-
-                logline = logline.split("=", maxsplit=1)[1].strip().replace(f"\\Data\\{xse_acronym_base}\\Plugins", "").replace("\n", "")
-                game_path = Path(logline)
-                if logline and game_path.exists():
-                    continue
-
-                if gui_mode:
-                    if game_path_gui is None:
-                        raise TypeError("CMain not initialized")
-                    game_path_gui.game_path_signal.emit()
-                    if not game_path.joinpath(f"{gamevars['game']}{gamevars['vr']}.exe").exists():
-                        print(f"❌ ERROR : NO {gamevars['game']}{gamevars['vr']}.exe FILE FOUND IN '{game_path}'! Please try again.")
-                        game_path_gui.game_path_signal.emit()
-                else:
-                    print(f"> > PLEASE ENTER THE FULL DIRECTORY PATH WHERE YOUR {game_name} IS LOCATED < <")
-                    path_input = input(fr"(EXAMPLE: C:\Steam\steamapps\common\{game_name} | Press ENTER to confirm.)\n> ")
-                    print(f"You entered: {path_input} | This path will be automatically added to CLASSIC Settings.yaml")
-                    game_path = Path(path_input.strip())
-
-                yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Game", str(game_path))
-    elif not game_path and xse_file and not Path(xse_file).is_file():
+    if not xse_file or not Path(xse_file).is_file():
         print(f"❌ CAUTION : THE {xse_acronym.lower()}.log FILE IS MISSING FROM YOUR GAME DOCUMENTS FOLDER! \n")
         print(f"   You need to run the game at least once with {xse_acronym.lower()}_loader.exe \n")
         print("    After that, try running CLASSIC again! \n-----\n")
+        return
+
+    with open_file_with_encoding(xse_file) as LOG_Check:
+        Path_Check = LOG_Check.readlines()
+    for logline in Path_Check:
+        if logline.startswith("plugin directory"):
+            logline = logline.split("=", maxsplit=1)[1].strip().replace(f"\\Data\\{xse_acronym_base}\\Plugins", "").replace("\n", "")
+            game_path = Path(logline)
+            break
+    if game_path and game_path.is_dir() and game_path.joinpath(exe_name).is_file():
+        yaml_settings(f"CLASSIC Data/CLASSIC {gamevars['game']} Local.yaml", f"Game{gamevars['vr']}_Info.Root_Folder_Game", str(game_path))
+        return
+
+    if gui_mode:
+        if game_path_gui is None:
+            raise TypeError("CMain not initialized")
+        game_path_gui.game_path_signal.emit()
+        return
+
+    while True:
+        print(f"> > PLEASE ENTER THE FULL DIRECTORY PATH WHERE YOUR {game_name} IS LOCATED < <")
+        path_input = input(fr"(EXAMPLE: C:\Steam\steamapps\common\{game_name} | Press ENTER to confirm.)\n> ")
+        print(f"You entered: {path_input} | This path will be automatically added to CLASSIC Settings.yaml")
+        game_path = Path(path_input.strip())
+        if game_path and game_path.joinpath(exe_name).is_file():
+            yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Game", str(game_path))
+            return
+        print(f"❌ ERROR : NO {gamevars['game']}{gamevars['vr']}.exe FILE FOUND IN '{game_path}'! Please try again.")
 
 
 def game_generate_paths() -> None:
