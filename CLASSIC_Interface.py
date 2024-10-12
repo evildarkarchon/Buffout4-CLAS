@@ -424,14 +424,10 @@ class MainWindow(QMainWindow):
         # Set up the QTimer for periodic updates
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_output_text_box_papyrus_watcher)
-        if CMain.manual_docs_gui is not None:
-            CMain.manual_docs_gui.manual_docs_path_signal.connect(self.show_manual_docs_path_dialog)
-        else:
+        if CMain.manual_docs_gui is None or CMain.game_path_gui is None:
             raise TypeError("CMain not initialized")
-        if CMain.game_path_gui is not None:
-            CMain.game_path_gui.game_path_signal.connect(self.show_game_path_dialog)
-        else:
-            raise TypeError("CMain not initialized")
+        CMain.manual_docs_gui.manual_docs_path_signal.connect(self.show_manual_docs_path_dialog)
+        CMain.game_path_gui.game_path_signal.connect(self.show_game_path_dialog)
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         """if event.type() == QEvent.KeyPress:
