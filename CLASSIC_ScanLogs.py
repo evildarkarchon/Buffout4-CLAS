@@ -61,13 +61,13 @@ def crashlogs_get_files() -> list[Path]:
     CMain.logger.debug("- - - INITIATED CRASH LOG FILE LIST GENERATION")
     CLASSIC_folder = Path.cwd()
     CLASSIC_logs = CLASSIC_folder / "Crash Logs"
-    # CLASSIC_pastebin = CLASSIC_logs / "Pastebin"
+    CLASSIC_pastebin = CLASSIC_logs / "Pastebin"
     CUSTOM_folder = Path(str(CMain.classic_settings("SCAN Custom Path")))
     XSE_folder = Path(str(CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", "Game_Info.Docs_Folder_XSE")))
     if not CLASSIC_logs.is_dir():
         CLASSIC_logs.mkdir(parents=True, exist_ok=True)
-    # if not CLASSIC_pastebin.is_dir():
-    #     CLASSIC_pastebin.mkdir(parents=True, exist_ok=True)
+    if not CLASSIC_pastebin.is_dir():
+        CLASSIC_pastebin.mkdir(parents=True, exist_ok=True)
     for file in CLASSIC_folder.glob("crash-*.log"):
         destination_file = CLASSIC_logs / file.name
         if not Path(destination_file).is_file():
@@ -85,7 +85,7 @@ def crashlogs_get_files() -> list[Path]:
                 shutil.copy2(crash_file, destination_file)
 
     crash_files = list(CLASSIC_logs.glob("crash-*.log"))
-    # crash_files.extend(list(CLASSIC_pastebin.glob("crash-*.log")))
+    crash_files.extend(list(CLASSIC_pastebin.glob("crash-*.log")))
     if CUSTOM_folder.is_dir():
         crash_files.extend(Path(CUSTOM_folder).glob("crash-*.log"))
 
