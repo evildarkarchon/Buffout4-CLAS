@@ -63,9 +63,10 @@ TEST_F4SE_LOG = r"""plugin directory = tests\Data\F4SE\Plugins\
 scanning plugin directory tests\Fallout 4\Data\F4SE\Plugins\
 """
 
-type MockYamlType = dict[str, str | int | bool | None]
-MOCK_YAML:dict[str, str | int] = {
+MOCK_YAML: dict[str, str | int] = {
+    "Root_Folder_Game": r"C:\Program Files (x86)\Steam\steamapps\common\Fallout 4",
     "Root_Folder_Docs": str(Path.home() / "Documents/My Games/Fallout4"),
+    "Docs_File_XSE": "tests/f4se.log",
     "Main_Root_Name": "Fallout 4",
     "Main_Docs_Name": "Fallout4",
     "Main_SteamID": 377160,
@@ -79,28 +80,69 @@ MOCK_YAML:dict[str, str | int] = {
 }
 
 
+class MockYAML:
+    def __init__(self) -> None:
+        self._saved_yaml_settings: dict[str, str | int | bool | None] = {}
+
+    def __getitem__(self, key: str) -> str | int | bool | None:
+        if key in self._saved_yaml_settings:
+            return self._saved_yaml_settings[key]
+        if key in MOCK_YAML:
+            return MOCK_YAML[key]
+        msg = f"Mock YAML Key: {key}"
+        raise NotImplementedError(msg)
+
+    def __setitem__(self, key: str, value: str | int | bool | None) -> str | int | bool | None:
+        if value is not None:
+            self._saved_yaml_settings[key] = value
+        return value
+
+    def mock_set(self, key: str, value: str | int | bool | None) -> None:
+        self._saved_yaml_settings[key] = value
+
+    def clear(self) -> None:
+        self._saved_yaml_settings.clear()
+
+
 @pytest.fixture
-def mock_yaml(monkeypatch: pytest.MonkeyPatch) -> MockYamlType:
+def mock_yaml(monkeypatch: pytest.MonkeyPatch) -> MockYAML:
     """MonkeyPatch YAML settings to minimize test variables.
 
     No real YAML will be loaded or saved. "Saved" values dict is yielded.
     """
-    saved_yaml_settings: MockYamlType = {}
+    saved_yaml_settings = MockYAML()
 
     def mock_yaml_settings(_yaml_path: str, key_path: str, new_value: str | None = None) -> str | int | None:
         key = key_path.rsplit(".", maxsplit=1)[-1]
         if new_value is not None:
             saved_yaml_settings[key] = new_value
             return new_value
-        if key in saved_yaml_settings:
-            return saved_yaml_settings[key]
-        if key in MOCK_YAML:
-            return MOCK_YAML[key]
-        msg = f"Mock YAML Key: {key}"
-        raise NotImplementedError(msg)
+        return saved_yaml_settings[key]
 
     monkeypatch.setattr(CLASSIC_Main, "yaml_settings", mock_yaml_settings)
     return saved_yaml_settings
+
+
+def test_mock_yaml(mock_yaml: MockYAML) -> None:
+    """Test the MockYAML class and mock_yaml fixture."""
+    # None must be set using mock_set, otherwise ignored.
+    mock_yaml["Root_Folder_Game"] = None
+    game_path = mock_yaml["Root_Folder_Game"]
+    assert game_path is not None
+    mock_yaml.mock_set("Root_Folder_Game", None)
+    game_path = mock_yaml["Root_Folder_Game"]
+    assert game_path is None
+
+    assert mock_yaml["XSE_Acronym"] == "F4SE"
+    mock_yaml["XSE_Acronym"] = "SKSE"
+    assert mock_yaml["XSE_Acronym"] == "SKSE"
+
+    CLASSIC_Main.yaml_settings("", "XXXX.XSE_Acronym", "SFSE")
+    assert mock_yaml["XSE_Acronym"] == "SFSE"
+    mock_yaml.clear()
+    assert mock_yaml["XSE_Acronym"] == "F4SE"
+    assert CLASSIC_Main.yaml_settings("", "XXXX.Main_SteamID") == 377160
+    pytest.raises(NotImplementedError, lambda: mock_yaml["NotImplemented"])
 
 
 @pytest.fixture
@@ -457,14 +499,14 @@ async def test_classic_update_check(yaml_cache: CLASSIC_Main.YamlSettingsCache) 
 
 
 @pytest.mark.usefixtures("_gamevars")
-def test_docs_path_find(monkeypatch: pytest.MonkeyPatch, mock_yaml: MockYamlType) -> None:
+def test_docs_path_find(monkeypatch: pytest.MonkeyPatch, mock_yaml: MockYAML) -> None:
     """Test CLASSIC_Main's `docs_path_find()`."""
     with monkeypatch.context() as m:
         m.setattr("builtins.input", lambda _: MOCK_YAML["Root_Folder_Docs"])
-        mock_yaml["Root_Folder_Docs"] = None
+        mock_yaml.mock_set("Root_Folder_Docs", None)
         m.setattr(CLASSIC_Main, "gui_mode", False)
         CLASSIC_Main.docs_path_find()
-        docs_path = mock_yaml.get("Root_Folder_Docs")
+        docs_path = mock_yaml["Root_Folder_Docs"]
         assert docs_path is not None, "Documents path not saved to YAML"
         assert isinstance(docs_path, str), "Documents path has unexpected type"
         assert Path(docs_path).is_dir(), "Documents path is invalid"
@@ -472,66 +514,88 @@ def test_docs_path_find(monkeypatch: pytest.MonkeyPatch, mock_yaml: MockYamlType
         # Test for registry key missing
         m.setattr("winreg.QueryValueEx", lambda *_args, **_kwargs: exec("raise OSError"))
         mock_yaml.clear()
-        mock_yaml["Root_Folder_Docs"] = None
+        mock_yaml.mock_set("Root_Folder_Docs", None)
         CLASSIC_Main.docs_path_find()
-        docs_path = mock_yaml.get("Root_Folder_Docs")
+        docs_path = mock_yaml["Root_Folder_Docs"]
         assert docs_path is not None, "Documents path not saved to YAML"
         assert isinstance(docs_path, str), "Documents path has unexpected type"
         assert Path(docs_path).is_dir(), "Documents path is invalid"
 
 
+def assert_game_path_valid(mock_yaml: MockYAML) -> None:
+    game_path = mock_yaml["Root_Folder_Game"]
+    assert game_path is not None, "Game path not saved to YAML"
+    assert isinstance(game_path, str), "Game path has unexpected type"
+    assert Path(game_path).is_dir(), "Game path is invalid"
+
+
+def assert_no_xse_log(mock_yaml: MockYAML) -> None:
+    xse_log_path = Path(MOCK_YAML["Docs_File_XSE"])  # type: ignore  # Needs TypedDict
+    xse_log_path.unlink(missing_ok=True)
+    assert not xse_log_path.exists(), f"{xse_log_path} was not deleted"
+    mock_yaml["Docs_File_XSE"] = str(xse_log_path)
+
+
 @pytest.mark.usefixtures("_gamevars")
-def test_game_path_find(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
-    """Test CLASSIC_Main's `game_path_find()`."""
-    if CLASSIC_Main.game_path_gui is None:
-        game_path_gui_backup = None
-    else:
-        game_path_gui_backup = CLASSIC_Main.game_path_gui
-        CLASSIC_Main.game_path_gui = None
+def test_game_path_find_1(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, mock_yaml: MockYAML
+) -> None:
+    """Test CLASSIC_Main's `game_path_find()`.
 
-    pytest.raises(TypeError, CLASSIC_Main.game_path_find)
+    Tests with real registry and no XSE log.
+    """
+    with monkeypatch.context() as m:
+        m.setattr("builtins.input", lambda _: MOCK_YAML["Root_Folder_Game"])
+        m.setattr(CLASSIC_Main, "gui_mode", False)
 
-    if game_path_gui_backup is None:
-        CLASSIC_Main.game_path_gui = CLASSIC_Main.GamePathEntry()
-    else:
-        CLASSIC_Main.game_path_gui = game_path_gui_backup
+        assert_no_xse_log(mock_yaml)
+        mock_yaml.mock_set("Root_Folder_Game", None)
+        CLASSIC_Main.game_path_find()
+        assert_game_path_valid(mock_yaml)
+        assert "try running CLASSIC again" not in capsys.readouterr().out
 
-    game = CLASSIC_Main.gamevars["game"] = "Fallout4"
-    XSE_Acronym = "F4SE"
-    Main_Root_Name = "Fallout 4"
-    xse_log_path = Path(f"tests/{XSE_Acronym.lower()}.log")
 
-    # Fake the YAML cache to prevent loading real values.
-    yaml_local_path = Path(f"CLASSIC Data/CLASSIC {game} Local.yaml")
-    yaml_path = Path(f"CLASSIC Data/databases/CLASSIC {game}.yaml")
-    if yaml_local_path.exists():
-        last_mod_time = yaml_local_path.stat().st_mtime
-        yaml_cache.file_mod_times[yaml_local_path] = last_mod_time
-    if yaml_path.exists():
-        last_mod_time = yaml_path.stat().st_mtime
-        yaml_cache.file_mod_times[yaml_path] = last_mod_time
+@pytest.mark.usefixtures("_gamevars")
+def test_game_path_find_2(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, mock_yaml: MockYAML
+) -> None:
+    """Test CLASSIC_Main's `game_path_find()`.
 
-    yaml_cache.cache[yaml_local_path] = ruamel.yaml.CommentedMap({"Game_Info": {"Docs_File_XSE": "FAKE_PATH"}})
-    yaml_cache.cache[yaml_path] = ruamel.yaml.CommentedMap({
-        "Game_Info": {"Main_Docs_Name": game, "XSE_Acronym": XSE_Acronym, "Main_Root_Name": Main_Root_Name},
-    })
+    Tests with registry key missing and no XSE log.
+    """
+    with monkeypatch.context() as m:
+        m.setattr("builtins.input", lambda _: MOCK_YAML["Root_Folder_Game"])
+        m.setattr(CLASSIC_Main, "gui_mode", False)
 
-    assert not yaml_local_path.exists(), f"{yaml_local_path} existed before testing"
+        m.setattr("winreg.QueryValueEx", lambda *_args, **_kwargs: exec("raise OSError"))
+        mock_yaml.mock_set("Root_Folder_Game", None)
+        CLASSIC_Main.game_path_find()
+        game_path = mock_yaml["Root_Folder_Game"]
+        assert game_path is None, "Unexpected YAML write"
+        assert "try running CLASSIC again" in capsys.readouterr().out
 
-    # Test with no XSE log
-    CLASSIC_Main.game_path_find()
-    assert not yaml_local_path.is_file(), f"{yaml_local_path} was unxepectedly created"
 
-    yaml_cache.cache[yaml_local_path]["Game_Info"]["Docs_File_XSE"] = str(xse_log_path)
+@pytest.mark.usefixtures("_gamevars")
+def test_game_path_find_3(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, mock_yaml: MockYAML
+) -> None:
+    """Test CLASSIC_Main's `game_path_find()`.
 
-    xse_log_path.unlink(missing_ok=True)
-    with xse_log_path.open("w") as f:
-        f.write(TEST_F4SE_LOG)
+    Tests with registry key missing and XSE log present.
+    """
 
-    CLASSIC_Main.game_path_find()
-    xse_log_path.unlink(missing_ok=True)
+    with monkeypatch.context() as m:
+        m.setattr("builtins.input", lambda _: MOCK_YAML["Root_Folder_Game"])
+        m.setattr(CLASSIC_Main, "gui_mode", False)
 
-    assert yaml_local_path.is_file(), f"{yaml_local_path} was not created"
-    assert yaml_local_path.stat().st_size > 0, f"{yaml_local_path} was not written to"
-    yaml_local_path.unlink(missing_ok=True)
-    assert not yaml_local_path.exists(), f"{yaml_local_path} was not deleted"
+        m.setattr("winreg.QueryValueEx", lambda *_args, **_kwargs: exec("raise OSError"))
+        mock_yaml.mock_set("Root_Folder_Game", None)
+        xse_log_path = Path(MOCK_YAML["Docs_File_XSE"])  # type: ignore  # Needs TypedDict
+        with xse_log_path.open("w") as f:
+            f.write(TEST_F4SE_LOG)
+        CLASSIC_Main.game_path_find()
+        assert_game_path_valid(mock_yaml)
+        assert "try running CLASSIC again" not in capsys.readouterr().out
+
+        xse_log_path.unlink(missing_ok=True)
+        assert not xse_log_path.exists(), f"{xse_log_path} was not deleted"
