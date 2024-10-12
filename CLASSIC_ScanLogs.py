@@ -37,8 +37,8 @@ def get_entry(formid: str, plugin: str) -> str | None:
 
     # Define paths for both Main and Local databases
     db_paths = [
-        Path(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars['game']} Main.db"),
-        Path(f"CLASSIC Data/databases/CLASSIC {CMain.gamevars['game']} Local.db")
+        Path(f"CLASSIC Data/databases/{CMain.gamevars['game']} FormIDs Main.db"),
+        Path(f"CLASSIC Data/databases/{CMain.gamevars['game']} FormIDs Local.db")
     ]
 
     for db_path in db_paths:
@@ -61,13 +61,23 @@ def crashlogs_get_files() -> list[Path]:
     CMain.logger.debug("- - - INITIATED CRASH LOG FILE LIST GENERATION")
     CLASSIC_folder = Path.cwd()
     CLASSIC_logs = CLASSIC_folder / "Crash Logs"
-    CLASSIC_pastebin = CLASSIC_logs / "Pastebin"
+    # CLASSIC_pastebin = CLASSIC_logs / "Pastebin"
     CUSTOM_folder = Path(str(CMain.classic_settings("SCAN Custom Path")))
     XSE_folder = Path(str(CMain.yaml_settings(f"CLASSIC Data/CLASSIC {CMain.gamevars["game"]} Local.yaml", "Game_Info.Docs_Folder_XSE")))
     if not CLASSIC_logs.is_dir():
         CLASSIC_logs.mkdir(parents=True, exist_ok=True)
-    if not CLASSIC_pastebin.is_dir():
-        CLASSIC_pastebin.mkdir(parents=True, exist_ok=True)
+    # if not CLASSIC_pastebin.is_dir():
+    #     CLASSIC_pastebin.mkdir(parents=True, exist_ok=True)
+    for file in CLASSIC_folder.glob("crash-*.log"):
+        destination_file = CLASSIC_logs / file.name
+        if not Path(destination_file).is_file():
+            shutil.copy2(file, destination_file)
+        file.unlink()
+    for file in CLASSIC_folder.glob("crash-*-AUTOSCAN.md"):
+        destination_file = CLASSIC_logs / file.name
+        if not Path(destination_file).is_file():
+            shutil.copy2(file, destination_file)
+        file.unlink()
     if XSE_folder.is_dir():
         for crash_file in XSE_folder.glob("crash-*.log"):
             destination_file = CLASSIC_logs / crash_file.name
@@ -75,7 +85,7 @@ def crashlogs_get_files() -> list[Path]:
                 shutil.copy2(crash_file, destination_file)
 
     crash_files = list(CLASSIC_logs.glob("crash-*.log"))
-    crash_files.extend(list(CLASSIC_pastebin.glob("crash-*.log")))
+    # crash_files.extend(list(CLASSIC_pastebin.glob("crash-*.log")))
     if CUSTOM_folder.is_dir():
         crash_files.extend(Path(CUSTOM_folder).glob("crash-*.log"))
 
@@ -623,30 +633,16 @@ def crashlogs_scan() -> None:
                 for plugin, plugin_id in crashlog_plugins.items():
                     if len(formid_split) >= 2 and str(plugin_id) == str(formid_split[1][:2]):
                         if CMain.classic_settings("Show FormID Values"):
-                            if Path(f"CLASSIC Data/databases/{CMain.gamevars['game']} FormIDs.db").exists():
+                            if Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs Main.db").exists() or Path(f"CLASSIC Data/databases/{CMain.gamevars['game']} FormIDs Local.db").exists():
                                 report = get_entry(formid_split[1][2:], plugin)
                                 if report:
                                     autoscan_report.append(f"- {formid_full} | [{plugin}] | {report} | {count}\n")
                                 else:
                                     autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
                                     break
-                            """else:
-                                fid_main_path = Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FID Main.txt")
-                                fid_mods_path = Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FID Mods.txt")
-                                with fid_main_path.open(encoding="utf-8", errors="ignore") as fid_main, fid_mods_path.open(encoding="utf-8", errors="ignore") as fid_mods:
-                                    line_match_main = next((line for line in fid_main if str(formid_split[1][2:]) in line and plugin.lower() in line.lower()), None)
-                                    line_match_mods = next((line for line in fid_mods if str(formid_split[1][2:]) in line and plugin.lower() in line.lower()), None)
-                                    if line_match_main:
-                                        line_split = line_match_main.split(" | ")
-                                        fid_report = line_split[2].strip()  # 0 - Plugin | 1 - FormID | 2 - FID Value
-                                        autoscan_report.append(f"- {formid_full} | [{plugin}] | {fid_report} | {count}\n")
-                                    elif line_match_mods:
-                                        line_split = line_match_mods.split(" | ")
-                                        fid_report = line_split[2].strip()  # 0 - Plugin | 1 - FormID | 2 - FID Value
-                                        autoscan_report.append(f"- {formid_full} | [{plugin}] | {fid_report} | {count}\n")
-                                    else:
-                                        autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
-                                        break"""
+                            else:
+                                autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
+                                break
                         else:
                             autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
                             break

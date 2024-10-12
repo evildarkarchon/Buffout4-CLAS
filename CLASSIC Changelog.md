@@ -1,6 +1,13 @@
 =====================================================================================================
 # CLASSIC CHANGELOG #
 
+7.30.3
+*CHANGES*
+- Now queries the registry for the game's install directory first before falling back to parsing the F4SE log
+- Add the ability to toggle the audio notifications, also now uses Qt's built-in sound effect library so we no longer need to bundle NumPy (which was a dependency of the old audio library)
+- Logs copied from F4SE directory now go into a new "Crash Logs" folder (which is automatically created if it doesn't exist). Existing logs in the main CLASSIC directory will be moved to this folder.
+- No longer automatically checks for latest F4SE version since it is obsolete because F4SE is now doing new releases on Nexus.
+
 7.30.2
 *CHANGES*
 - Game installation directory is now properly saved to the local data file.

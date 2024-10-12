@@ -16,9 +16,7 @@ from typing import Literal, TypedDict
 import aiohttp
 import chardet
 import ruamel.yaml
-import urllib3
 from PySide6.QtCore import QObject, Signal
-from urllib3.exceptions import InsecureRequestWarning
 
 with contextlib.suppress(ImportError):
     import winreg
@@ -700,8 +698,6 @@ def docs_check_ini(ini_name: str) -> str:
 # =========== GENERATE FILE BACKUPS ===========
 def main_files_backup() -> None:
     # Got an expired certificate warning after a few tries, maybe there's a better way?
-    urllib3.disable_warnings(category=InsecureRequestWarning)
-
     backup_list: list[str] = yaml_settings("CLASSIC Data/databases/CLASSIC Main.yaml", "CLASSIC_AutoBackup")  # type: ignore
     game_path: str | None = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Game")  # type: ignore
     xse_log_file: str | None = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Docs_File_XSE")  # type: ignore

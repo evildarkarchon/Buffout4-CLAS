@@ -74,9 +74,10 @@ class AudioPlayer(QObject):
         self.notify_sound.setVolume(1.0)  # Set max volume
 
         # Connect signals to respective slots
-        self.play_error_signal.connect(self.play_error_sound)
-        self.play_notify_signal.connect(self.play_notify_sound)
-        self.play_custom_signal.connect(lambda file: self.play_custom_sound(file))  # Use custom path
+        if self.audio_enabled:
+            self.play_error_signal.connect(self.play_error_sound)
+            self.play_notify_signal.connect(self.play_notify_sound)
+            self.play_custom_signal.connect(lambda file: self.play_custom_sound(file))  # Use custom path
 
     def play_error_sound(self) -> None:
         if self.audio_enabled and self.error_sound.isLoaded():
@@ -94,6 +95,14 @@ class AudioPlayer(QObject):
 
     def toggle_audio(self, state: bool) -> None:
         self.audio_enabled = state
+        if not state:
+            self.play_notify_signal.disconnect()
+            self.play_error_signal.disconnect()
+            self.play_custom_signal.disconnect()
+        else:
+            self.play_notify_signal.connect(self.play_notify_sound)
+            self.play_error_signal.connect(self.play_error_sound)
+            self.play_custom_signal.connect(lambda file: self.play_custom_sound(file))
 
 class ManualPathDialog(QDialog):
     def __init__(self, parent: QMainWindow | None = None) -> None:
@@ -561,7 +570,7 @@ class MainWindow(QMainWindow):
             layout, "CUSTOM SCAN FOLDER", "Box_SelectedScan", self.select_folder_scan
         )
 
-        self.setup_pastebin_elements(layout)
+        # self.setup_pastebin_elements(layout)
 
         # Add first separator
         layout.addWidget(self.create_separator())
@@ -889,7 +898,7 @@ class MainWindow(QMainWindow):
                 "CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}", bool(state) # type: ignore
             )
         )
-        if setting == "AUDIO NOTIFICATIONS":
+        if setting == "Audio Notifications":
             checkbox.stateChanged.connect(
                 lambda state: self.audio_player.toggle_audio(state)
             )
