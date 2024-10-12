@@ -322,9 +322,6 @@ async def classic_update_check(quiet: bool = False, gui_request: bool = True) ->
 # ================================================
 # =========== CHECK DOCUMENTS FOLDER PATH -> GET GAME DOCUMENTS FOLDER ===========
 def docs_path_find() -> None:
-    if manual_docs_gui is None:
-        raise TypeError("CMain not initialized")
-
     logger.debug("- - - INITIATED DOCS PATH CHECK")
     docs_name: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.Main_Docs_Name")  # type: ignore
 
@@ -358,12 +355,6 @@ def docs_path_find() -> None:
                     yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs", str(linux_docs))
 
     def get_manual_docs_path() -> None:
-        if manual_docs_gui is None:
-            raise TypeError("CMain not initialized")
-
-        if gui_mode:
-            manual_docs_gui.manual_docs_path_signal.emit()
-            return
         print(f"> > > PLEASE ENTER THE FULL DIRECTORY PATH WHERE YOUR {docs_name}.ini IS LOCATED < < <")
         while True:
             input_str = input(f"(EXAMPLE: C:/Users/Zen/Documents/My Games/{docs_name} | Press ENTER to confirm.)\n> ").strip()
@@ -376,22 +367,24 @@ def docs_path_find() -> None:
             print(f"'{input_str}' is not a valid or existing directory path. Please try again.")
 
     # =========== CHECK IF GAME DOCUMENTS FOLDER PATH WAS GENERATED AND FOUND ===========
-    docs_path: str | None = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs")  # type: ignore
+    docs_path = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs")
+    if not isinstance(docs_path, str):
+        docs_path = None
+
     if docs_path is None:
         if platform.system() == "Windows":
             get_windows_docs_path()
         else:
             get_linux_docs_path()
 
-    docs_path = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs")  # type: ignore
-    try:  # In case .exists() complains about checking a None value.
-        if docs_path and not Path(docs_path).exists():
-            if gui_mode:
-                manual_docs_gui.manual_docs_path_signal.emit()
-            else:
-                get_manual_docs_path()
-    except (ValueError, OSError):
+    docs_path = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs")
+    if not isinstance(docs_path, str):
+        docs_path = None
+
+    if docs_path and not Path(docs_path).is_dir():
         if gui_mode:
+            if manual_docs_gui is None:
+                raise TypeError("CMain not initialized")
             manual_docs_gui.manual_docs_path_signal.emit()
         else:
             get_manual_docs_path()
