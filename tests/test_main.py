@@ -63,6 +63,45 @@ TEST_F4SE_LOG = r"""plugin directory = tests\Data\F4SE\Plugins\
 scanning plugin directory tests\Fallout 4\Data\F4SE\Plugins\
 """
 
+type MockYamlType = dict[str, str | int | bool | None]
+MOCK_YAML:dict[str, str | int] = {
+    "Root_Folder_Docs": str(Path.home() / "Documents/My Games/Fallout4"),
+    "Main_Root_Name": "Fallout 4",
+    "Main_Docs_Name": "Fallout4",
+    "Main_SteamID": 377160,
+    "CRASHGEN_Acronym": "BO4",
+    "CRASHGEN_LogName": "Buffout 4",
+    "CRASHGEN_DLL_File": "buffout4.dll",
+    "XSE_Acronym": "F4SE",
+    "XSE_FullName": "Fallout 4 Script Extender (F4SE)",
+    "XSE_Ver_Latest": "0.6.23",
+    "XSE_FileCount": 29,
+}
+
+
+@pytest.fixture
+def mock_yaml(monkeypatch: pytest.MonkeyPatch) -> MockYamlType:
+    """MonkeyPatch YAML settings to minimize test variables.
+
+    No real YAML will be loaded or saved. "Saved" values dict is yielded.
+    """
+    saved_yaml_settings: MockYamlType = {}
+
+    def mock_yaml_settings(_yaml_path: str, key_path: str, new_value: str | None = None) -> str | int | None:
+        key = key_path.rsplit(".", maxsplit=1)[-1]
+        if new_value is not None:
+            saved_yaml_settings[key] = new_value
+            return new_value
+        if key in saved_yaml_settings:
+            return saved_yaml_settings[key]
+        if key in MOCK_YAML:
+            return MOCK_YAML[key]
+        msg = f"Mock YAML Key: {key}"
+        raise NotImplementedError(msg)
+
+    monkeypatch.setattr(CLASSIC_Main, "yaml_settings", mock_yaml_settings)
+    return saved_yaml_settings
+
 
 @pytest.fixture
 def _move_data_files() -> Generator[None]:
@@ -418,42 +457,27 @@ async def test_classic_update_check(yaml_cache: CLASSIC_Main.YamlSettingsCache) 
 
 
 @pytest.mark.usefixtures("_gamevars")
-def test_docs_path_find(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
+def test_docs_path_find(monkeypatch: pytest.MonkeyPatch, mock_yaml: MockYamlType) -> None:
     """Test CLASSIC_Main's `docs_path_find()`."""
-    if CLASSIC_Main.manual_docs_gui is None:
-        manual_docs_gui_backup = None
-    else:
-        manual_docs_gui_backup = CLASSIC_Main.manual_docs_gui
-        CLASSIC_Main.manual_docs_gui = None
+    with monkeypatch.context() as m:
+        m.setattr("builtins.input", lambda _: MOCK_YAML["Root_Folder_Docs"])
+        mock_yaml["Root_Folder_Docs"] = None
+        m.setattr(CLASSIC_Main, "gui_mode", False)
+        CLASSIC_Main.docs_path_find()
+        docs_path = mock_yaml.get("Root_Folder_Docs")
+        assert docs_path is not None, "Documents path not saved to YAML"
+        assert isinstance(docs_path, str), "Documents path has unexpected type"
+        assert Path(docs_path).is_dir(), "Documents path is invalid"
 
-    pytest.raises(TypeError, CLASSIC_Main.docs_path_find)
-
-    if manual_docs_gui_backup is None:
-        CLASSIC_Main.manual_docs_gui = CLASSIC_Main.ManualDocsPath()
-    else:
-        CLASSIC_Main.manual_docs_gui = manual_docs_gui_backup
-
-    game = CLASSIC_Main.gamevars["game"]
-
-    # Fake the YAML cache to prevent loading real values.
-    yaml_path = Path(f"CLASSIC Data/databases/CLASSIC {game}.yaml")
-    if yaml_path.exists():
-        last_mod_time = yaml_path.stat().st_mtime
-        yaml_cache.file_mod_times[yaml_path] = last_mod_time
-
-    yaml_cache.cache[yaml_path] = ruamel.yaml.CommentedMap({
-        "Game_Info": {"Main_Docs_Name": game},
-    })
-
-    yaml_local_path = Path(f"CLASSIC Data/CLASSIC {game} Local.yaml")
-    assert not yaml_local_path.exists(), f"{yaml_local_path} existed before testing"
-
-    CLASSIC_Main.docs_path_find()
-
-    assert yaml_local_path.is_file(), f"{yaml_local_path} was not created"
-    assert yaml_local_path.stat().st_size > 0, f"{yaml_local_path} was not written to"
-    yaml_local_path.unlink(missing_ok=True)
-    assert not yaml_local_path.exists(), f"{yaml_local_path} was not deleted"
+        # Test for registry key missing
+        m.setattr("winreg.QueryValueEx", lambda *_args, **_kwargs: exec("raise OSError"))
+        mock_yaml.clear()
+        mock_yaml["Root_Folder_Docs"] = None
+        CLASSIC_Main.docs_path_find()
+        docs_path = mock_yaml.get("Root_Folder_Docs")
+        assert docs_path is not None, "Documents path not saved to YAML"
+        assert isinstance(docs_path, str), "Documents path has unexpected type"
+        assert Path(docs_path).is_dir(), "Documents path is invalid"
 
 
 @pytest.mark.usefixtures("_gamevars")
