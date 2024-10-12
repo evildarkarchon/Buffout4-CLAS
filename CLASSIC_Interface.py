@@ -1,4 +1,4 @@
-import asyncio
+import asyncio  # noqa: I001
 import multiprocessing
 import multiprocessing.synchronize
 import queue
@@ -39,9 +39,43 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-import CLASSIC_Main as CMain
-import CLASSIC_ScanGame as CGame
-import CLASSIC_ScanLogs as CLogs
+class ErrorDialog(QDialog):
+    def __init__(self, error_text: str) -> None:
+        super().__init__()
+        self.setWindowTitle("Error")
+        self.setMinimumSize(600, 400)
+        layout = QVBoxLayout(self)
+
+        self.text_edit = QPlainTextEdit(self)
+        self.text_edit.setReadOnly(True)
+        self.text_edit.setPlainText(error_text)
+        layout.addWidget(self.text_edit)
+
+        copy_button = QPushButton("Copy to Clipboard", self)
+        copy_button.clicked.connect(self.copy_to_clipboard)
+        layout.addWidget(copy_button)
+
+    def copy_to_clipboard(self) -> None:
+        QApplication.clipboard().setText(self.text_edit.toPlainText())
+
+
+def show_exception_box(error_text: str) -> None:
+    dialog = ErrorDialog(error_text)
+    dialog.show()
+    dialog.exec()
+
+
+def custom_excepthook(exc_type: type[BaseException], exc_value: BaseException, exc_traceback: TracebackType | None) -> Any:
+    error_text = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+    print(error_text)  # Still print to console
+    show_exception_box(error_text)
+
+
+sys.excepthook = custom_excepthook
+
+import CLASSIC_Main as CMain  # noqa: E402
+import CLASSIC_ScanGame as CGame  # noqa: E402
+import CLASSIC_ScanLogs as CLogs  # noqa: E402
 
 # nuitka-project: --enable-plugin=pyside6
 # nuitka-project: --unstripped
@@ -210,41 +244,6 @@ class PapyrusLogProcessor(QThread):
 
     def stop(self) -> None:
         self.is_running = False
-
-
-class ErrorDialog(QDialog):
-    def __init__(self, error_text: str) -> None:
-        super().__init__()
-        self.setWindowTitle("Error")
-        self.setMinimumSize(600, 400)
-        layout = QVBoxLayout(self)
-
-        self.text_edit = QPlainTextEdit(self)
-        self.text_edit.setReadOnly(True)
-        self.text_edit.setPlainText(error_text)
-        layout.addWidget(self.text_edit)
-
-        copy_button = QPushButton("Copy to Clipboard", self)
-        copy_button.clicked.connect(self.copy_to_clipboard)
-        layout.addWidget(copy_button)
-
-    def copy_to_clipboard(self) -> None:
-        QApplication.clipboard().setText(self.text_edit.toPlainText())
-
-
-def show_exception_box(error_text: str) -> None:
-    dialog = ErrorDialog(error_text)
-    dialog.show()
-    dialog.exec()
-
-
-def custom_excepthook(exc_type: type[BaseException], exc_value: BaseException, exc_traceback: TracebackType | None) -> Any:
-    error_text = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-    print(error_text)  # Still print to console
-    show_exception_box(error_text)
-
-
-sys.excepthook = custom_excepthook
 
 
 def papyrus_worker(q: multiprocessing.Queue, stop_event: multiprocessing.synchronize.Event) -> None:
