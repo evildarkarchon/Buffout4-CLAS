@@ -570,7 +570,7 @@ class MainWindow(QMainWindow):
             layout, "CUSTOM SCAN FOLDER", "Box_SelectedScan", self.select_folder_scan
         )
 
-        # self.setup_pastebin_elements(layout)
+        self.setup_pastebin_elements(layout)
 
         # Add first separator
         layout.addWidget(self.create_separator())

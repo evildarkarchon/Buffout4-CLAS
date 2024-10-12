@@ -68,16 +68,6 @@ def crashlogs_get_files() -> list[Path]:
         CLASSIC_logs.mkdir(parents=True, exist_ok=True)
     if not CLASSIC_pastebin.is_dir():
         CLASSIC_pastebin.mkdir(parents=True, exist_ok=True)
-    for file in CLASSIC_folder.glob("crash-*.log"):
-        destination_file = CLASSIC_logs / file.name
-        if not Path(destination_file).is_file():
-            shutil.copy2(file, destination_file)
-        file.unlink()
-    for file in CLASSIC_folder.glob("crash-*-AUTOSCAN.md"):
-        destination_file = CLASSIC_logs / file.name
-        if not Path(destination_file).is_file():
-            shutil.copy2(file, destination_file)
-        file.unlink()
     if XSE_folder.is_dir():
         for crash_file in XSE_folder.glob("crash-*.log"):
             destination_file = CLASSIC_logs / crash_file.name
