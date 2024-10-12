@@ -445,9 +445,6 @@ def game_path_find() -> None:
         yaml_settings(f"CLASSIC Data/CLASSIC {gamevars['game']} Local.yaml", f"Game{gamevars['vr']}_Info.Root_Folder_Game", str(game_path))
         return
 
-    if game_path_gui is None:
-        raise TypeError("CMain not initialized")
-
     logger.debug("- - - INITIATED GAME PATH CHECK")
     xse_file: str | None = yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Docs_File_XSE")  # type: ignore
     xse_acronym: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.XSE_Acronym")  # type: ignore
@@ -463,6 +460,8 @@ def game_path_find() -> None:
                     game_path = Path(logline)
                     if not logline or not game_path.exists():
                         if gui_mode:
+                            if game_path_gui is None:
+                                raise TypeError("CMain not initialized")
                             game_path_gui.game_path_signal.emit()
                             if not game_path.joinpath(f"{gamevars['game']}{gamevars['vr']}.exe").exists():
                                 print(f"❌ ERROR : NO {gamevars['game']}{gamevars['vr']}.exe FILE FOUND IN '{game_path}'! Please try again.")
