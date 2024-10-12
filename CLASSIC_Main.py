@@ -323,7 +323,9 @@ async def classic_update_check(quiet: bool = False, gui_request: bool = True) ->
 # =========== CHECK DOCUMENTS FOLDER PATH -> GET GAME DOCUMENTS FOLDER ===========
 def docs_path_find() -> None:
     logger.debug("- - - INITIATED DOCS PATH CHECK")
-    docs_name: str = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.Main_Docs_Name")  # type: ignore
+    docs_name = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.Main_Docs_Name")
+    if not isinstance(docs_name, str):
+        docs_name = gamevars["game"]
 
     def get_windows_docs_path() -> None:
         try:
@@ -334,10 +336,10 @@ def docs_path_find() -> None:
             documents_path = Path.home() / "Documents"
 
         # Construct the full path
-        win_docs = documents_path / "My Games" / docs_name
+        win_docs = str(documents_path / "My Games" / docs_name)
 
         # Update the YAML settings (assuming this function exists)
-        yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs", str(win_docs))
+        yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Docs", win_docs)
 
     def get_linux_docs_path() -> None:
         game_sid: int = yaml_settings(f"CLASSIC Data/databases/CLASSIC {gamevars["game"]}.yaml", f"Game{gamevars["vr"]}_Info.Main_SteamID")  # type: ignore
