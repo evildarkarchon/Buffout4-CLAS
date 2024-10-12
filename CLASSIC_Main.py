@@ -455,22 +455,23 @@ def game_path_find() -> None:
         with open_file_with_encoding(xse_file) as LOG_Check:
             Path_Check = LOG_Check.readlines()
             for logline in Path_Check:
-                if logline.startswith("plugin directory"):
-                    logline = logline.split("=", maxsplit=1)[1].strip().replace(f"\\Data\\{xse_acronym_base}\\Plugins", "").replace("\n", "")
-                    game_path = Path(logline)
-                    if not logline or not game_path.exists():
-                        if gui_mode:
-                            if game_path_gui is None:
-                                raise TypeError("CMain not initialized")
+                if not logline.startswith("plugin directory"):
+                    continue
+                logline = logline.split("=", maxsplit=1)[1].strip().replace(f"\\Data\\{xse_acronym_base}\\Plugins", "").replace("\n", "")
+                game_path = Path(logline)
+                if not logline or not game_path.exists():
+                    if gui_mode:
+                        if game_path_gui is None:
+                            raise TypeError("CMain not initialized")
+                        game_path_gui.game_path_signal.emit()
+                        if not game_path.joinpath(f"{gamevars['game']}{gamevars['vr']}.exe").exists():
+                            print(f"❌ ERROR : NO {gamevars['game']}{gamevars['vr']}.exe FILE FOUND IN '{game_path}'! Please try again.")
                             game_path_gui.game_path_signal.emit()
-                            if not game_path.joinpath(f"{gamevars['game']}{gamevars['vr']}.exe").exists():
-                                print(f"❌ ERROR : NO {gamevars['game']}{gamevars['vr']}.exe FILE FOUND IN '{game_path}'! Please try again.")
-                                game_path_gui.game_path_signal.emit()
-                        else:
-                            print(f"> > PLEASE ENTER THE FULL DIRECTORY PATH WHERE YOUR {game_name} IS LOCATED < <")
-                            path_input = input(fr"(EXAMPLE: C:\Steam\steamapps\common\{game_name} | Press ENTER to confirm.)\n> ")
-                            print(f"You entered: {path_input} | This path will be automatically added to CLASSIC Settings.yaml")
-                            game_path = Path(path_input.strip())
+                    else:
+                        print(f"> > PLEASE ENTER THE FULL DIRECTORY PATH WHERE YOUR {game_name} IS LOCATED < <")
+                        path_input = input(fr"(EXAMPLE: C:\Steam\steamapps\common\{game_name} | Press ENTER to confirm.)\n> ")
+                        print(f"You entered: {path_input} | This path will be automatically added to CLASSIC Settings.yaml")
+                        game_path = Path(path_input.strip())
 
                     yaml_settings(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml", f"Game{gamevars["vr"]}_Info.Root_Folder_Game", str(game_path))
     elif not game_path and xse_file and not Path(xse_file).is_file(): # type: ignore
