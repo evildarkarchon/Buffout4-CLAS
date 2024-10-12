@@ -79,7 +79,7 @@ def yaml_cache() -> CLASSIC_Main.YamlSettingsCache:
 
 @pytest.fixture(scope="session")
 def _gamevars() -> None:
-    """Initialize CLASSIC_Main's gamevars global and validate its types."""
+    """Ensure CLASSIC_Main's gamevars global is initialized and validate its types."""
     assert isinstance(CLASSIC_Main.gamevars, dict), "CLASSIC_Main.gamevars should be initialized to dict"
     assert len(CLASSIC_Main.gamevars) > 0, "CLASSIC_Main.gamevars should contain default values"
     assert isinstance(CLASSIC_Main.GameID, TypeAliasType), "CLASSIC_Main.GameID type is unexpected"
