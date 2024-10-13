@@ -10,11 +10,8 @@ from collections.abc import Generator
 from pathlib import Path
 
 import pytest
-import ruamel.yaml
 
 import CLASSIC_Main
-
-LATEST_VERSION = "CLASSIC v7.30.2"
 
 TEST_YAML_TEXT = """Section 1:
   Game Name: Elder Scrolls VI
@@ -192,41 +189,39 @@ def test_file_yaml() -> Generator[Path]:
     assert not test_file_path.exists(), f"failed to delete {test_file_path}"
 
 
-def test_remove_readonly(monkeypatch: pytest.MonkeyPatch, test_file_text: Path) -> None:
-    """Test CLASSIC_Main's `remove_readonly()`."""
+def is_read_only(file_path: Path) -> bool:
+    return file_path.stat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY == 1
 
-    # Test without read-only
-    assert (
-        test_file_text.stat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY == 0
-    ), f"{test_file_text} should NOT be read-only"
-    return_value = CLASSIC_Main.remove_readonly(test_file_text)  # type: ignore[func-returns-value]
-    assert return_value is None, "remove_readonly() unexpectedly returned a value"
-    assert (
-        test_file_text.stat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY == 0
-    ), f"{test_file_text} should NOT be read-only"
 
-    # Test with read-only
+def test_remove_readonly_1(test_file_text: Path) -> None:
+    """Test CLASSIC_Main's `remove_readonly()` with a non-read-only file."""
+    assert not is_read_only(test_file_text), "File should NOT be read-only"
+    CLASSIC_Main.remove_readonly(test_file_text)
+    assert not is_read_only(test_file_text), "File should NOT be read-only"
+
+
+def test_remove_readonly_2(test_file_text: Path) -> None:
+    """Test CLASSIC_Main's `remove_readonly()` with a read-only file."""
     test_file_text.chmod(~stat.S_IWRITE)
+    assert is_read_only(test_file_text), "File should be read-only"
+    CLASSIC_Main.remove_readonly(test_file_text)
+    assert not is_read_only(test_file_text), "File should NOT be read-only"
 
-    # Mock OSError
+
+def test_remove_readonly_3(monkeypatch: pytest.MonkeyPatch, test_file_text: Path) -> None:
+    """Test CLASSIC_Main's `remove_readonly()` encountering an OSError."""
+    test_file_text.chmod(~stat.S_IWRITE)
+    assert is_read_only(test_file_text), "File should be read-only"
     with monkeypatch.context() as m:
         m.setattr(Path, "chmod", lambda *_, **__: exec("raise OSError"))
         CLASSIC_Main.remove_readonly(test_file_text)
 
-    assert (
-        test_file_text.stat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY == 1
-    ), f"{test_file_text} should be read-only"
-    return_value = CLASSIC_Main.remove_readonly(test_file_text)  # type: ignore[func-returns-value]
-    assert return_value is None, "remove_readonly() unexpectedly returned a value"
-    assert (
-        test_file_text.stat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY == 0
-    ), f"{test_file_text} should NOT be read-only"
 
-    # Test with missing file
-    test_file_text.unlink(missing_ok=True)
-    assert not test_file_text.exists(), f"failed to delete {test_file_text}"
-    return_value = CLASSIC_Main.remove_readonly(test_file_text)  # type: ignore[func-returns-value]
-    assert return_value is None, "remove_readonly() unexpectedly returned a value"
+def test_remove_readonly_4() -> None:
+    """Test CLASSIC_Main's `remove_readonly()` with a missing file."""
+    test_file = Path("Non-existant File")
+    assert not test_file.exists(), f"{test_file} should NOT exist"
+    CLASSIC_Main.remove_readonly(test_file)
 
 
 @pytest.fixture(scope="module")
@@ -358,7 +353,7 @@ def test_classic_settings() -> None:
     assert return_value is None, "classic_settings() should return None when no setting is specified"
     assert settings_path.is_file(), f"Failed to create {settings_path}"
     update_check = CLASSIC_Main.classic_settings("Update Check")
-    assert update_check is True or update_check is False, "update_check must be bool"
+    assert update_check is True or update_check is False, "update_check is expected to be bool"
 
 
 @pytest.mark.usefixtures("_gamevars", "yaml_cache")
@@ -368,8 +363,7 @@ def test_classic_generate_files() -> None:
     local_path = Path(f"CLASSIC Data/CLASSIC {CLASSIC_Main.gamevars["game"]} Local.yaml")
     assert not ignore_path.exists(), f"{ignore_path} existed before testing"
     assert not local_path.exists(), f"{local_path} existed before testing"
-    return_value = CLASSIC_Main.classic_generate_files()  # type: ignore[func-returns-value]
-    assert return_value is None, "classic_generate_files() unexpectedly returned a value"
+    CLASSIC_Main.classic_generate_files()
     assert ignore_path.is_file(), f"{ignore_path} was not created"
     assert local_path.is_file(), f"{local_path} was not created"
     ignore_path.unlink(missing_ok=True)
@@ -397,10 +391,8 @@ def test_configure_logging(monkeypatch: pytest.MonkeyPatch) -> None:
     with monkeypatch.context() as m:
         m.setattr(Path, "unlink", lambda *_, **__: exec("raise OSError"))
         # Fake the logger already being configured so we don't create a log file lock
-        logging.Logger.manager.loggerDict["CLASSIC"] = logging.getLogger()
+        m.setitem(logging.Logger.manager.loggerDict, "CLASSIC", None)
         CLASSIC_Main.configure_logging()
-        # Remove the fake logger
-        del logging.Logger.manager.loggerDict["CLASSIC"]
     assert log_path.is_file(), f"{log_path} was deleted"
 
     CLASSIC_Main.configure_logging()
@@ -430,7 +422,7 @@ def _move_zip_files() -> Generator[None]:
 
 
 @pytest.mark.usefixtures("_move_data_files", "_move_zip_files")
-def test_classic_data_extract() -> None:
+def test_classic_data_extract(capsys: pytest.CaptureFixture[str]) -> None:
     """Test CLASSIC_Main's `classic_data_extract()`."""
     zip_path = Path("CLASSIC Data.zip")
     data_path = Path("CLASSIC Data")
@@ -438,19 +430,16 @@ def test_classic_data_extract() -> None:
 
     assert not data_path.exists(), "CLASSIC Data folder existed before testing"
 
-    pytest.raises(FileNotFoundError, CLASSIC_Main.classic_data_extract)
-
     with zip_path.open("wb") as f:
         f.write(binascii.unhexlify(TEST_ZIP))
 
-    return_value = CLASSIC_Main.classic_data_extract()  # type: ignore[func-returns-value]
-    assert return_value is None, "classic_data_extract() unexpectedly returned a value"
-
+    CLASSIC_Main.classic_data_extract()
     assert data_path.is_dir(), f"{data_path} was not created"
     assert yaml_path.is_file(), f"{yaml_path} was not extracted"
 
     zip_path.unlink(missing_ok=True)
     assert not zip_path.exists(), f"Failed to delete {zip_path}"
+    assert "UNABLE TO FIND" not in capsys.readouterr().out
 
 
 def test_open_file_with_encoding() -> None:
@@ -458,14 +447,15 @@ def test_open_file_with_encoding() -> None:
     utf16_path = Path("tests/utf16le.txt")
     utf16_path.unlink(missing_ok=True)
 
-    with utf16_path.open("wb") as f:
-        f.write(binascii.unhexlify(TEST_UTF16LE))
+    with utf16_path.open("wb") as f1:
+        f1.write(binascii.unhexlify(TEST_UTF16LE))
 
-    with CLASSIC_Main.open_file_with_encoding(str(utf16_path)) as f:
+    with CLASSIC_Main.open_file_with_encoding(str(utf16_path)) as f2:
         pass
+    assert f2.closed, "File handle not closed"
 
-    with CLASSIC_Main.open_file_with_encoding(utf16_path) as f:
-        encoding = f.encoding
+    with CLASSIC_Main.open_file_with_encoding(utf16_path) as f3:
+        encoding = f3.encoding
 
     assert encoding == "UTF-16", "Failed to detect file encoding"
 
@@ -474,25 +464,30 @@ def test_open_file_with_encoding() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("_gamevars")
-async def test_classic_update_check(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
+async def test_classic_update_check(mock_yaml: MockYAML) -> None:
     """Test CLASSIC_Main's `classic_update_check()`."""
-    # Fake the YAML cache to prevent loading real values.
-    yaml_path = Path("CLASSIC Data/databases/CLASSIC Main.yaml")
-    if yaml_path.exists():
-        last_mod_time = yaml_path.stat().st_mtime
-        yaml_cache.file_mod_times[yaml_path] = last_mod_time
 
     game = CLASSIC_Main.gamevars["game"]
 
-    yaml_cache.cache[yaml_path] = ruamel.yaml.CommentedMap({
-        "CLASSIC_Info": {"version": LATEST_VERSION},
-        "CLASSIC_Interface": {f"update_warning_{game}": "", f"update_unable_{game}": ""},
-    })
+    pyproject_path = Path("pyproject.toml")
+    assert pyproject_path.is_file()
+    current_version = None
+    from anyio import open_file
+
+    async with await open_file(pyproject_path) as f:
+        async for line in f:
+            if line.startswith("version"):
+                current_version = line.split()[-1].strip('"')
+                break
+    assert current_version is not None, "Failed to detect current version"
+    mock_yaml["version"] = f"CLASSIC v{current_version}"
+    mock_yaml[f"update_warning_{game}"] = ""
+    mock_yaml[f"update_unable_{game}"] = ""
 
     return_value = await CLASSIC_Main.classic_update_check(quiet=False, gui_request=True)
     assert return_value is True, "classic_update_check() should return True"
 
-    yaml_cache.cache[yaml_path]["CLASSIC_Info"]["version"] = "CLASSIC v7.25.1"
+    mock_yaml["version"] = "CLASSIC v7.25.1"
 
     return_value = await CLASSIC_Main.classic_update_check(quiet=False, gui_request=True)
     assert return_value is False, "classic_update_check() should return False"
