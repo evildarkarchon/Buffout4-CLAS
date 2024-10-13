@@ -43,6 +43,15 @@ class GameVars:
     game: GameID = field(default="Fallout4")
     vr: GameVR = field(default="")
 
+    def __post_init__(self) -> None:
+        isvr = "VR" if classic_settings("VR Mode") else ""
+        if yaml_cache is None:
+            raise TypeError("CMain not initialized")
+        if classic_settings("Game") and classic_settings("Game") != self.game:
+            self.game = classic_settings("Game")# type: ignore
+        if isvr != self.vr: # type: ignore
+            self.vr = isvr
+
 gamevars: dict[str, GameID | GameVR] = asdict(GameVars())
 
 @dataclass
