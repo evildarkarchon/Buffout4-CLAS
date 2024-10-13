@@ -312,11 +312,8 @@ class MainWindow(QMainWindow):
 
         CMain.initialize(is_gui=True)
 
-        if CMain.classicvars is None:
-            raise TypeError("CMain not initialized") # Only for keeping the type checkers happy.
-
         self.setWindowTitle(
-            f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.classicvars.version}"
+            f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings('CLASSIC Data/databases/CLASSIC Main.yaml', 'CLASSIC_Info.version')}"
         )
         self.setWindowIcon(QIcon("CLASSIC Data/graphics/CLASSIC.ico"))
         dark_style = """
@@ -334,11 +331,11 @@ class MainWindow(QMainWindow):
         }
 
         QCheckBox::indicator:unchecked {
-            image: url('CLASSIC Data/graphics/unchecked.png');
+            image: url('unchecked.png');
         }
 
         QCheckBox::indicator:checked {
-            image: url('CLASSIC Data/graphics/checked.png');
+            image: url('checked.png');
         }
 
         QTabWidget::pane {
@@ -448,15 +445,8 @@ class MainWindow(QMainWindow):
         """Set up the Pastebin fetch UI elements."""
         pastebin_layout = QHBoxLayout()
 
-        self.pastebin_label = QLabel("PASTEBIN LOG FETCH", self)
-        self.pastebin_label.setToolTip("Fetch a log file from Pastebin (Can be used more than once).")
-        pastebin_layout.addWidget(self.pastebin_label)
-
-        pastebin_layout.addSpacing(50)
-
         self.pastebin_id_input = QLineEdit(self)
         self.pastebin_id_input.setPlaceholderText("Enter Pastebin URL or ID")
-        self.pastebin_id_input.setToolTip("Enter the Pastebin URL or ID to fetch the log. Can be used more than once.")
         pastebin_layout.addWidget(self.pastebin_id_input)
 
         self.pastebin_fetch_button = QPushButton("Fetch Log", self)
@@ -475,8 +465,7 @@ class MainWindow(QMainWindow):
 
         try:
             CLogs.pastebin_fetch(pastebin_url)  # Fetch the log file from Pastebin
-            print(f"✔️ Log successfully fetched from: {pastebin_url}")
-            QMessageBox.information(self, "Success", f"Log successfully fetched from: {pastebin_url}")
+            QMessageBox.information(self, "Success", f"Log fetched from: {pastebin_url}")
         except Exception as e:  # noqa: BLE001
             QMessageBox.warning(self, "Error", f"Failed to fetch log: {e!s}")
 
@@ -540,15 +529,13 @@ class MainWindow(QMainWindow):
             self.update_check_timer.stop()  # Ensure the timer is always stopped
 
     def show_update_result(self, is_up_to_date: bool) -> None:
-        if CMain.classicvars is None:
-            raise TypeError("CMain not initialized")
         if is_up_to_date:
             QMessageBox.information(
                 self, "CLASSIC UPDATE", "You have the latest version of CLASSIC!"
             )
         else:
             update_popup_text: str = CMain.yaml_settings(
-                str(CMain.classicvars.main_yaml),
+                "CLASSIC Data/databases/CLASSIC Main.yaml",
                 "CLASSIC_Interface.update_popup_text",
             ) # type: ignore
             result = QMessageBox.question(
@@ -1166,10 +1153,8 @@ class MainWindow(QMainWindow):
         QMessageBox.about(self, "About CLASSIC", about_text)
 
     def help_popup_main(self) -> None:
-        if CMain.classicvars is None:
-            raise TypeError("CMain not initialized")
         help_popup_text: str = CMain.yaml_settings(
-            str(CMain.classicvars.main_yaml),
+            "CLASSIC Data/databases/CLASSIC Main.yaml",
             "CLASSIC_Interface.help_popup_main",
         ) # type: ignore
         QMessageBox.information(self, "NEED HELP?", help_popup_text)
