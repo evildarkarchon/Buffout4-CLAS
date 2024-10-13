@@ -1,11 +1,11 @@
 [project]
 name = "classic-fallout4"
-version = "7.30"
+version = "7.30.3"
 requires-python = ">=3.12"
 
 [tool.poetry]
 name = "classic-fallout4"
-version = "7.30"
+version = "7.30.3"
 description = "Crash Log Auto-Scanner for Buffout 4."
 authors = ["Poet", "evildarkarchon"]
 readme = "CLASSIC - Readme.pdf"
@@ -18,7 +18,7 @@ ruamel-yaml = ">=0.18.6"
 tomlkit = ">=0.13.2"
 urllib3 = ">=2.2.3"
 chardet = "^5.2.0"
-aiohttp = "^3.10.9"
+aiohttp = "^3.10.10"
 regex = "^2024.9.11"
 iniparse = "^0.5"
 pyside6 = ">=6.7.0"
