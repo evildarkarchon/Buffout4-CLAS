@@ -26,40 +26,27 @@ def _move_user_files() -> Generator[None]:
 
     Any files created during testing are deleted.
     """
-    temp_path = Path("test_temp")
-    temp_path.mkdir(exist_ok=True)
-    assert temp_path.is_dir(), f"Failed to create {temp_path}"
-    assert not any(temp_path.iterdir()), f"{temp_path} is not empty"
     for file in RUNTIME_FILES:
         file_path = Path(file)
-        backup_path = temp_path / file_path
         if file_path.exists():
-            if len(file_path.parts) > 1:
-                backup_path.parent.mkdir(parents=True, exist_ok=True)
+            backup_path = file_path.with_name(f"test_temp-{file_path.name}")
             file_path.rename(backup_path)
-            assert backup_path.exists(), f"Failed to move {file_path} to {backup_path}"
-        assert not file_path.exists(), f"Failed to remove {file_path}"
+            assert backup_path.exists(), f"Failed to rename {file_path.name} to {backup_path.name}"
+        assert not file_path.exists(), f"Failed to rename {file_path.name}"
+
     yield
+
     for file in RUNTIME_FILES:
         file_path = Path(file)
         if file_path.is_file():
             file_path.unlink()
         elif file_path.is_dir():
             shutil.rmtree(file_path)
-        backup_path = temp_path / file_path
+        backup_path = file_path.with_name(f"test_temp-{file_path.name}")
         if backup_path.exists():
             backup_path.rename(file_path)
-            assert file_path.exists(), f"Failed to move {backup_path} to {file_path}"
-        assert not backup_path.exists(), f"Failed to remove {backup_path}"
-    for current, dirs, files in temp_path.walk(top_down=False):
-        assert not files, f"{current} has unexpected new files"
-        for d in dirs:
-            subdir = current / d
-            assert not any(subdir.iterdir()), f"{subdir} has unexpected contents"
-            subdir.rmdir()
-            assert not subdir.exists(), f"Failed to delete {subdir}"
-    temp_path.rmdir()
-    assert not temp_path.exists(), f"Failed to delete {temp_path}"
+            assert file_path.exists(), f"Failed to rename {backup_path.name} to {file_path.name}"
+        assert not backup_path.exists(), f"Failed to remove {backup_path.name}"
 
 
 @pytest.fixture(scope="session")
