@@ -37,6 +37,9 @@ def test_get_entry() -> None:
     game = "Fallout4"
     db_path_main = Path(f"CLASSIC Data/databases/{game} FormIDs Main.db")
     db_path_local = Path(f"CLASSIC Data/databases/{game} FormIDs Local.db")
+    db_found = db_path_main.is_file() and db_path_local.is_file()
+    assert db_found is True, "DB files not found"
+
     test_formid = "00003C"
     test_plugin = "Fallout4.esm"
 

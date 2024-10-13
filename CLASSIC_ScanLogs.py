@@ -38,7 +38,7 @@ def get_entry(formid: str, plugin: str) -> str | None:
     # Define paths for both Main and Local databases
     db_paths = [
         Path(f"CLASSIC Data/databases/{CMain.gamevars['game']} FormIDs Main.db"),
-        Path(f"CLASSIC Data/databases/{CMain.gamevars['game']} FormIDs Local.db")
+        Path(f"CLASSIC Data/databases/{CMain.gamevars['game']} FormIDs Local.db"),
     ]
 
     for db_path in db_paths:
