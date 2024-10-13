@@ -445,8 +445,15 @@ class MainWindow(QMainWindow):
         """Set up the Pastebin fetch UI elements."""
         pastebin_layout = QHBoxLayout()
 
+        self.pastebin_label = QLabel("PASTEBIN LOG FETCH", self)
+        self.pastebin_label.setToolTip("Fetch a log file from Pastebin. Can be used more than once.")
+        pastebin_layout.addWidget(self.pastebin_label)
+
+        pastebin_layout.addSpacing(50)
+
         self.pastebin_id_input = QLineEdit(self)
         self.pastebin_id_input.setPlaceholderText("Enter Pastebin URL or ID")
+        self.pastebin_id_input.setToolTip("Enter the Pastebin URL or ID to fetch the log. Can be used more than once.")
         pastebin_layout.addWidget(self.pastebin_id_input)
 
         self.pastebin_fetch_button = QPushButton("Fetch Log", self)
@@ -457,7 +464,7 @@ class MainWindow(QMainWindow):
         layout.addLayout(pastebin_layout)
 
     def fetch_pastebin_log(self) -> None:
-        """Fetch the log from Pastebin and scan it."""
+        """Fetch the log from Pastebin"""
         input_text = self.pastebin_id_input.text().strip()
 
         # Regular expression to check if the input is a full URL
@@ -465,9 +472,11 @@ class MainWindow(QMainWindow):
 
         try:
             CLogs.pastebin_fetch(pastebin_url)  # Fetch the log file from Pastebin
-            QMessageBox.information(self, "Success", f"Log fetched from: {pastebin_url}")
         except Exception as e:  # noqa: BLE001
             QMessageBox.warning(self, "Error", f"Failed to fetch log: {e!s}")
+        else:
+            print(f"✔️ Log successfully fetched from: {pastebin_url}")
+            QMessageBox.information(self, "Success", f"Log successfully fetched from: {pastebin_url}")
 
     def show_manual_docs_path_dialog(self) -> None:
         dialog = ManualPathDialog(self)

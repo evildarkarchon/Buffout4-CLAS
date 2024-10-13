@@ -9,9 +9,10 @@ import shutil
 import sys
 import zipfile
 from collections.abc import Iterator
+from dataclasses import asdict, dataclass, field
 from io import TextIOWrapper
 from pathlib import Path
-from typing import Literal, TypedDict
+from typing import Literal
 
 import aiohttp
 import chardet
@@ -34,16 +35,15 @@ with contextlib.suppress(ImportError):
 
 type YAMLValue = dict[str, list[str] | str | int] | list[str] | str | int
 type YAMLValueOptional = YAMLValue | None
-type GameID = Literal["Fallout4", "Skyrim", "Starfield"] # Entries must correspond to the game's My Games folder name.
+type GameID = Literal["Fallout4", "Skyrim", "Starfield"] | str # Entries must correspond to the game's My Games folder name.
+type GameVR = Literal["VR", ""] | str
 
-class GameVars(TypedDict):
-    game: GameID
-    vr: Literal["VR", ""]
+@dataclass
+class GameVars:
+    game: GameID = field(default="Fallout4")
+    vr: GameVR = field(default="")
 
-gamevars: GameVars = {
-    "game": "Fallout4",
-    "vr": ""
-}
+gamevars: dict[str, GameID | GameVR] = asdict(GameVars())
 
 logger = logging.getLogger()
 
