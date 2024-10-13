@@ -16,8 +16,74 @@ RUNTIME_FILES = (
     "CLASSIC Data/CLASSIC Skyrim Local.yaml",
     "CLASSIC Data/CLASSIC Starfield Local.yaml",
     "CLASSIC Backup",
+    "CLASSIC Logs",
     "CLASSIC Pastebin",
 )
+
+MOCK_YAML: dict[str, str | int] = {
+    "Root_Folder_Game": r"C:\Program Files (x86)\Steam\steamapps\common\Fallout 4",
+    "Root_Folder_Docs": str(Path.home() / "Documents/My Games/Fallout4"),
+    "Docs_File_XSE": "tests/f4se.log",
+    "Main_Root_Name": "Fallout 4",
+    "Main_Docs_Name": "Fallout4",
+    "Main_SteamID": 377160,
+    "CRASHGEN_Acronym": "BO4",
+    "CRASHGEN_LogName": "Buffout 4",
+    "CRASHGEN_DLL_File": "buffout4.dll",
+    "XSE_Acronym": "F4SE",
+    "XSE_FullName": "Fallout 4 Script Extender (F4SE)",
+    "XSE_Ver_Latest": "0.6.23",
+    "XSE_FileCount": 29,
+}
+
+
+class MockYAML:
+    def __init__(self) -> None:
+        self._saved_yaml_settings: dict[str, str | int | bool | None] = {}
+
+    def __getitem__(self, key: str) -> str | int | bool | None:
+        if key in self._saved_yaml_settings:
+            return self._saved_yaml_settings[key]
+        if key in MOCK_YAML:
+            return MOCK_YAML[key]
+        msg = f"Mock YAML Key: {key}"
+        raise NotImplementedError(msg)
+
+    def __setitem__(self, key: str, value: str | int | bool | None) -> str | int | bool | None:
+        if value is not None:
+            self._saved_yaml_settings[key] = value
+        return value
+
+    def mock_set(self, key: str, value: str | int | bool | None) -> None:
+        self._saved_yaml_settings[key] = value
+
+    def clear(self) -> None:
+        self._saved_yaml_settings.clear()
+
+
+@pytest.fixture
+def mock_yaml(monkeypatch: pytest.MonkeyPatch) -> MockYAML:
+    """MonkeyPatch YAML settings to minimize test variables.
+
+    No real YAML will be loaded or saved. "Saved" values dict is yielded.
+    """
+    saved_yaml_settings = MockYAML()
+
+    def mock_yaml_settings(_yaml_path: str, key_path: str, new_value: str | None = None) -> str | int | None:
+        key = key_path.rsplit(".", maxsplit=1)[-1]
+        if new_value is not None:
+            saved_yaml_settings[key] = new_value
+            return new_value
+        return saved_yaml_settings[key]
+
+    def mock_classic_settings(setting: str | None) -> str | int | bool | None:
+        if setting is None:
+            return None
+        return mock_yaml_settings("", setting)
+
+    monkeypatch.setattr(CLASSIC_Main, "yaml_settings", mock_yaml_settings)
+    monkeypatch.setattr(CLASSIC_Main, "classic_settings", mock_classic_settings)
+    return saved_yaml_settings
 
 
 @pytest.fixture(scope="session", autouse=True)
