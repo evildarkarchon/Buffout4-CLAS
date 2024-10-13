@@ -162,8 +162,8 @@ class ManualPathDialog(QDialog):
         inputlayout.addWidget(browse_button)
         layout.addLayout(inputlayout)
 
-        # Create standard OK/Cancel buttons
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self) # type: ignore
+        # Create standard OK button
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok, self) # type: ignore
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -201,8 +201,8 @@ class GamePathDialog(QDialog):
         inputlayout.addWidget(browse_button)
         layout.addLayout(inputlayout)
 
-        # Create standard OK/Cancel buttons
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self) # type: ignore
+        # Create standard OK button
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok, self) # type: ignore
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
