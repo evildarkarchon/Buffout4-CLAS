@@ -33,7 +33,10 @@ with contextlib.suppress(ImportError):
     ❓ We're going to have to special-case (or disable) Starfield Script Extender update checks because it's on Nexus, not silverlock.org.
 """
 
-type YAMLValue = dict[str, list[str] | str | int] | list[str] | str | int
+type YAMLLiteral = str | int | bool
+type YAMLSequence = list[str]
+type YAMLMapping = dict[str, "YAMLValue"]
+type YAMLValue = YAMLMapping | YAMLSequence | YAMLLiteral
 type YAMLValueOptional = YAMLValue | None
 type GameID = Literal["Fallout4", "Skyrim", "Starfield"] # Entries must correspond to the game's My Games folder name.
 
@@ -156,10 +159,10 @@ def remove_readonly(file_path: Path) -> None:
 
 class YamlSettingsCache:
     def __init__(self) -> None:
-        self.cache: dict[Path, ruamel.yaml.CommentedMap] = {}
+        self.cache: dict[Path, YAMLMapping] = {}
         self.file_mod_times: dict[Path, float] = {}
 
-    def load_yaml(self, yaml_path: str | os.PathLike) -> dict[str, YAMLValue]:
+    def load_yaml(self, yaml_path: str | os.PathLike) -> YAMLMapping:
         # Use pathlib for file handling and caching
         yaml_path = Path(yaml_path)
         if yaml_path.exists():
@@ -187,8 +190,16 @@ class YamlSettingsCache:
 
         # If new_value is provided, update the value
         if new_value is not None:
+            # Each key in the path represents a dict,
+            # except the last which is the index for our setting
             for key in keys[:-1]:
-                value: dict[str, YAMLValue] = value.setdefault(key, {}) # type: ignore
+                default_value: YAMLMapping = {}
+                #assert isinstance(value, dict)
+                next_value = value.get(key, default_value)
+                assert isinstance(next_value, dict)
+                value = next_value
+
+            assert isinstance(value, dict)
             value[keys[-1]] = new_value
 
             # Write changes back to the YAML file
@@ -199,18 +210,23 @@ class YamlSettingsCache:
                 yaml.dump(data, yaml_file)
 
             # Update the cache
-            self.cache[yaml_path] = data # type: ignore
+            self.cache[yaml_path] = data
             return new_value
 
         # Traverse YAML structure to get value
-        for key in keys:
+        for key in keys[-1]:
+            assert isinstance(value, dict)
             if key in value:
-                value = value[key] # type: ignore
+                # Hacky way to tell the IDE value is a YAMLMapping; isinstance doesn't accept TypeAliases
+                next_value = value[key]
+                assert isinstance(next_value, dict)
+                assert isinstance(next(iter(next_value.keys())), str)
+                value = next_value
             else:
                 return None  # Key not found
-        if value is None and "Path" not in key_path:  # type: ignore  # Error me if I mistype or screw up the value grab.
-            print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'") # Despite what the type checker says, this code is reachable.
-        return value # type: ignore
+        if value is None and "Path" not in key_path:
+            print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'")
+        return value
 
 # Function compatible with the old interface
 def yaml_settings(yaml_path: str, key_path: str, new_value: str | bool | None = None) -> YAMLValue | None:
