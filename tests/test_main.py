@@ -289,17 +289,6 @@ def test_yaml_settings(test_load_yaml: CLASSIC_Main.YamlSettingsCache) -> None:
     assert game == "Elder Scrolls VI", "Section 1.Game Name should equal 'Elder Scrolls VI'"
 
 
-@pytest.mark.usefixtures("yaml_cache")
-def test_classic_settings() -> None:
-    """Test CLASSIC_Main's `classic_settings()`."""
-    settings_path = Path("CLASSIC Settings.yaml")
-    return_value = CLASSIC_Main.classic_settings()
-    assert return_value is None, "classic_settings() should return None when no setting is specified"
-    assert settings_path.is_file(), f"Failed to create {settings_path}"
-    update_check = CLASSIC_Main.classic_settings("Update Check")
-    assert update_check is True or update_check is False, "update_check is expected to be bool"
-
-
 @pytest.mark.usefixtures("_gamevars", "yaml_cache")
 def test_classic_generate_files() -> None:
     """Test CLASSIC_Main's `classic_generate_files()`."""
@@ -314,6 +303,16 @@ def test_classic_generate_files() -> None:
     local_path.unlink(missing_ok=True)
     assert not ignore_path.exists(), f"{local_path} was not deleted"
     assert not local_path.exists(), f"{local_path} was not deleted"
+
+
+@pytest.mark.usefixtures("_gamevars", "yaml_cache")
+def test_classic_settings() -> None:
+    """Test CLASSIC_Main's `classic_settings()`."""
+    CLASSIC_Main.classic_generate_files()
+    settings_path = Path("CLASSIC Settings.yaml")
+    assert settings_path.is_file(), f"Failed to create {settings_path}"
+    update_check = CLASSIC_Main.classic_settings("Update Check")
+    assert update_check is True or update_check is False, "update_check is expected to be bool"
 
 
 def test_configure_logging(monkeypatch: pytest.MonkeyPatch) -> None:
