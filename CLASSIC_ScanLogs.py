@@ -75,13 +75,11 @@ def crashlogs_get_files() -> list[Path]:
     for file in CLASSIC_folder.glob("crash-*.log"):
         destination_file = CLASSIC_logs / file.name
         if not Path(destination_file).is_file():
-            shutil.copy2(file, destination_file)
-        file.unlink()
+            file.rename(destination_file)
     for file in CLASSIC_folder.glob("crash-*-AUTOSCAN.md"):
         destination_file = CLASSIC_logs / file.name
         if not Path(destination_file).is_file():
-            shutil.copy2(file, destination_file)
-        file.unlink()
+            file.rename(destination_file)
     if XSE_folder and XSE_folder.is_dir():
         for crash_file in XSE_folder.glob("crash-*.log"):
             destination_file = CLASSIC_logs / crash_file.name
