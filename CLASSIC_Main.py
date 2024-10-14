@@ -11,6 +11,7 @@ import sys
 import zipfile
 from collections.abc import Iterator
 from enum import Enum, auto
+from functools import reduce
 from io import TextIOWrapper
 from pathlib import Path
 from typing import Literal, TypedDict
@@ -166,6 +167,13 @@ def remove_readonly(file_path: Path) -> None:
         logger.error(f"> > > ERROR (remove_readonly) : {err}")
 
 
+SETTINGS_IGNORE_NONE = {
+    "SCAN Custom Path",
+    "MODS Folder Path",
+    "Root_Folder_Game",
+    "Root_Folder_Docs",
+}
+
 class YamlSettingsCache:
     def __init__(self) -> None:
         self.cache: dict[Path, YAMLMapping] = {}
@@ -213,21 +221,20 @@ class YamlSettingsCache:
         #assert yaml_path.is_file()
         data = self.load_yaml(yaml_path)
         keys = key_path.split(".")
-        value = data
+
+        def setdefault(d: dict[str, YAMLValue], k: str) -> dict[str, YAMLValue]:
+            if k not in d:
+                d[k] = {}
+            next_value = d[k]
+            if not isinstance(next_value, dict):
+                raise TypeError
+            return next_value
+
+        setting_container = reduce(setdefault, keys[:-1], data)
 
         # If new_value is provided, update the value
         if new_value is not None:
-            # Each key in the path represents a dict,
-            # except the last which is the index for our setting
-            for key in keys[:-1]:
-                default_value: YAMLMapping = {}
-                #assert isinstance(value, dict)
-                next_value = value.get(key, default_value)
-                assert isinstance(next_value, dict)
-                value = next_value
-
-            assert isinstance(value, dict)
-            value[keys[-1]] = new_value
+            setting_container[keys[-1]] = new_value
 
             # Write changes back to the YAML file
             with yaml_path.open("w", encoding="utf-8") as yaml_file:
@@ -241,19 +248,10 @@ class YamlSettingsCache:
             return new_value
 
         # Traverse YAML structure to get value
-        for key in keys[:-1]:
-            assert isinstance(value, dict)
-            if key not in value:
-                return None
-            # Hacky way to tell the IDE value is a YAMLMapping; isinstance doesn't accept TypeAliases
-            next_value = value[key]
-            assert isinstance(next_value, dict)
-            assert isinstance(next(iter(next_value.keys())), str)
-            value = next_value
-        setting = value[keys[-1]]
-        if setting is None and "Path" not in key_path:
+        setting_value = setting_container.get(keys[-1])
+        if setting_value is None and keys[-1] not in SETTINGS_IGNORE_NONE:
             print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'")
-        return setting
+        return setting_value
 
 # Function compatible with the old interface
 def yaml_settings(yaml_store: YAML, key_path: str, new_value: str | bool | None = None) -> YAMLValueOptional:
