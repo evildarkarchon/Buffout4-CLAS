@@ -95,7 +95,7 @@ class AudioPlayer(QObject):
         super().__init__()
         self.audio_enabled = CMain.classic_settings("Audio Notifications")
         if self.audio_enabled is None:
-            CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.Audio Notifications", True)
+            CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.Audio Notifications", True)
             self.audio_enabled = True
 
         # Setup QSoundEffect objects for the preset sounds
@@ -313,7 +313,7 @@ class MainWindow(QMainWindow):
         CMain.initialize(is_gui=True)
 
         self.setWindowTitle(
-            f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings('CLASSIC Data/databases/CLASSIC Main.yaml', 'CLASSIC_Info.version')}"
+            f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings(CMain.YAML.Main, 'CLASSIC_Info.version')}"
         )
         self.setWindowIcon(QIcon("CLASSIC Data/graphics/CLASSIC.ico"))
         dark_style = """
@@ -530,10 +530,7 @@ class MainWindow(QMainWindow):
                 self, "CLASSIC UPDATE", "You have the latest version of CLASSIC!"
             )
         else:
-            update_popup_text: str = CMain.yaml_settings(
-                "CLASSIC Data/databases/CLASSIC Main.yaml",
-                "CLASSIC_Interface.update_popup_text",
-            ) # type: ignore
+            update_popup_text: str = CMain.yaml_settings(CMain.YAML.Main, "CLASSIC_Interface.update_popup_text")  # type: ignore
             result = QMessageBox.question(
                 self,
                 "CLASSIC UPDATE",
@@ -756,10 +753,7 @@ class MainWindow(QMainWindow):
             )
 
     def help_popup_backup(self) -> None:
-        help_popup_text: str = CMain.yaml_settings(
-            "CLASSIC Data/databases/CLASSIC Main.yaml",
-            "CLASSIC_Interface.help_popup_backup",
-        ) # type: ignore
+        help_popup_text: str = CMain.yaml_settings(CMain.YAML.Main, "CLASSIC_Interface.help_popup_backup")  # type: ignore
         QMessageBox.information(self, "NEED HELP?", help_popup_text)
 
     @staticmethod
@@ -891,13 +885,11 @@ class MainWindow(QMainWindow):
         if CMain.classic_settings(setting) is not None:
             checkbox.setChecked(CMain.classic_settings(setting)) # type: ignore
         else:
-            CMain.yaml_settings("CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}", False)
+            CMain.yaml_settings(CMain.YAML.Settings, f"CLASSIC_Settings.{setting}", False)
             checkbox.setChecked(False)
 
         checkbox.stateChanged.connect(
-            lambda state: CMain.yaml_settings(
-                "CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}", bool(state) # type: ignore
-            )
+            lambda state: CMain.yaml_settings(CMain.YAML.Settings, f"CLASSIC_Settings.{setting}", bool(state))
         )
         if setting == "Audio Notifications":
             checkbox.stateChanged.connect(
@@ -1155,10 +1147,7 @@ class MainWindow(QMainWindow):
         QMessageBox.about(self, "About CLASSIC", about_text)
 
     def help_popup_main(self) -> None:
-        help_popup_text: str = CMain.yaml_settings(
-            "CLASSIC Data/databases/CLASSIC Main.yaml",
-            "CLASSIC_Interface.help_popup_main",
-        ) # type: ignore
+        help_popup_text: str = CMain.yaml_settings(CMain.YAML.Main, "CLASSIC_Interface.help_popup_main")  # type: ignore
         QMessageBox.information(self, "NEED HELP?", help_popup_text)
 
     @staticmethod
@@ -1213,17 +1202,13 @@ class MainWindow(QMainWindow):
         folder = QFileDialog.getExistingDirectory(self, "Select Custom Scan Folder")
         if folder:
             self.scan_folder_edit.setText(folder)
-            CMain.yaml_settings(
-                "CLASSIC Settings.yaml", "CLASSIC_Settings.SCAN Custom Path", folder
-            )
+            CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.SCAN Custom Path", folder)
 
     def select_folder_mods(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Select Staging Mods Folder")
         if folder:
             self.mods_folder_edit.setText(folder)
-            CMain.yaml_settings(
-                "CLASSIC Settings.yaml", "CLASSIC_Settings.MODS Folder Path", folder
-            )
+            CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.MODS Folder Path", folder)
 
     def initialize_folder_paths(self) -> None:
         scan_folder: str = CMain.classic_settings("SCAN Custom Path") # type: ignore
@@ -1237,12 +1222,8 @@ class MainWindow(QMainWindow):
     def select_folder_ini(self) -> None:
         folder = QFileDialog.getExistingDirectory(self)
         if folder:
-            CMain.yaml_settings(
-                "CLASSIC Settings.yaml", "CLASSIC_Settings.INI Folder Path", folder
-            )
-            QMessageBox.information(
-                self, "New INI Path Set", f"You have set the new path to: \n{folder}"
-            )
+            CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.INI Folder Path", folder)
+            QMessageBox.information(self, "New INI Path Set", f"You have set the new path to: \n{folder}")
 
     @staticmethod
     def open_settings() -> None:
