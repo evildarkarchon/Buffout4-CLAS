@@ -148,7 +148,7 @@ class ManualPathDialog(QDialog):
         layout = QVBoxLayout(self)
 
         # Add a label
-        label = QLabel(f"Enter the path for the {CMain.gamevars["game"]} INI files directory (Example: c:\\users\\<name>\\Documents\\My Games\\{CMain.gamevars['game']})", self)
+        label = QLabel(f"Enter the path for the {CMain.gamevars["game"]} INI files directory (Example: c:\\users\\<name>\\Documents\\My Games\\{CMain.gamevars["game"]})", self)
         layout.addWidget(label)
 
         inputlayout = QHBoxLayout()
@@ -313,7 +313,7 @@ class MainWindow(QMainWindow):
         CMain.initialize(is_gui=True)
 
         self.setWindowTitle(
-            f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings(CMain.YAML.Main, 'CLASSIC_Info.version')}"
+            f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings(CMain.YAML.Main, "CLASSIC_Info.version")}"
         )
         self.setWindowIcon(QIcon("CLASSIC Data/graphics/CLASSIC.ico"))
         dark_style = """

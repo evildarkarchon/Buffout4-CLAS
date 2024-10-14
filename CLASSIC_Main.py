@@ -70,7 +70,7 @@ class ManualDocsPath(QObject):
         if Path(path).is_dir():
             print(f"You entered: '{path}' | This path will be automatically added to CLASSIC Settings.yaml")
             manual_docs = Path(path.strip())
-            yaml_settings(YAML.Game_Local, f"Game{gamevars['vr']}_Info.Root_Folder_Docs", str(manual_docs))
+            yaml_settings(YAML.Game_Local, f"Game{gamevars["vr"]}_Info.Root_Folder_Docs", str(manual_docs))
         else:
             print(f"'{path}' is not a valid or existing directory path. Please try again.")
             self.manual_docs_path_signal.emit()
@@ -85,7 +85,7 @@ class GamePathEntry(QObject):
         if Path(path).is_dir():
             print(f"You entered: '{path}' | This path will be automatically added to CLASSIC Settings.yaml")
             game_path = Path(path.strip())
-            yaml_settings(YAML.Game_Local, f"Game{gamevars['vr']}_Info.Root_Folder_Game", str(game_path))
+            yaml_settings(YAML.Game_Local, f"Game{gamevars["vr"]}_Info.Root_Folder_Game", str(game_path))
         else:
             print(f"'{path}' is not a valid or existing directory path. Please try again.")
             self.game_path_signal.emit()
@@ -441,14 +441,14 @@ def get_manual_docs_path_gui(path: str) -> None:
     if Path(path).is_dir():
         file_found: bool = False
         for file in Path(path).rglob("*.ini"):
-            if f"{gamevars['game']}.ini" in file.name:
+            if f"{gamevars["game"]}.ini" in file.name:
                 print(f"You entered: '{path}' | This path will be automatically added to CLASSIC Settings.yaml")
                 manual_docs = Path(path)
                 yaml_settings(YAML.Game_Local, f"Game{gamevars["vr"]}_Info.Root_Folder_Docs", str(manual_docs))
                 file_found = True
                 break
         if not file_found:
-            print(f"❌ ERROR : NO {gamevars['game']}.ini FILE FOUND IN '{path}'! Please try again.")
+            print(f"❌ ERROR : NO {gamevars["game"]}.ini FILE FOUND IN '{path}'! Please try again.")
             manual_docs_gui.manual_docs_path_signal.emit()
     else:
         print(f"'{path}' is not a valid or existing directory path. Please try again.")
@@ -472,7 +472,7 @@ def game_path_find() -> None:
 
     try:
         # Open the registry key
-        reg_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, rf"SOFTWARE\WOW6432Node\Bethesda Softworks\{gamevars['game']}{gamevars['vr']}")  # type: ignore
+        reg_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, rf"SOFTWARE\WOW6432Node\Bethesda Softworks\{gamevars["game"]}{gamevars["vr"]}")  # type: ignore
         # Query the 'installed path' value
         path, _ = winreg.QueryValueEx(reg_key, "installed path") # type: ignore
         winreg.CloseKey(reg_key) # type: ignore
@@ -484,7 +484,7 @@ def game_path_find() -> None:
     exe_name = f"{gamevars["game"]}{gamevars["vr"]}.exe"
 
     if game_path and game_path.is_dir() and game_path.joinpath(exe_name).is_file():
-        yaml_settings(YAML.Game_Local, f"Game{gamevars['vr']}_Info.Root_Folder_Game", str(game_path))
+        yaml_settings(YAML.Game_Local, f"Game{gamevars["vr"]}_Info.Root_Folder_Game", str(game_path))
         return
 
     xse_file: str | None = yaml_settings(YAML.Game_Local, f"Game{gamevars["vr"]}_Info.Docs_File_XSE")  # type: ignore
@@ -506,7 +506,7 @@ def game_path_find() -> None:
             game_path = Path(logline)
             break
     if game_path and game_path.is_dir() and game_path.joinpath(exe_name).is_file():
-        yaml_settings(YAML.Game_Local, f"Game{gamevars['vr']}_Info.Root_Folder_Game", str(game_path))
+        yaml_settings(YAML.Game_Local, f"Game{gamevars["vr"]}_Info.Root_Folder_Game", str(game_path))
         return
 
     if gui_mode:
@@ -523,7 +523,7 @@ def game_path_find() -> None:
         if game_path and game_path.joinpath(exe_name).is_file():
             yaml_settings(YAML.Game_Local, f"Game{gamevars["vr"]}_Info.Root_Folder_Game", str(game_path))
             return
-        print(f"❌ ERROR : NO {gamevars['game']}{gamevars['vr']}.exe FILE FOUND IN '{game_path}'! Please try again.")
+        print(f"❌ ERROR : NO {gamevars["game"]}{gamevars["vr"]}.exe FILE FOUND IN '{game_path}'! Please try again.")
 
 
 def game_generate_paths() -> None:

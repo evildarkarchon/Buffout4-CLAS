@@ -37,15 +37,15 @@ def get_entry(formid: str, plugin: str) -> str | None:
 
     # Define paths for both Main and Local databases
     db_paths = [
-        Path(f"CLASSIC Data/databases/{CMain.gamevars['game']} FormIDs Main.db"),
-        Path(f"CLASSIC Data/databases/{CMain.gamevars['game']} FormIDs Local.db"),
+        Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs Main.db"),
+        Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs Local.db"),
     ]
 
     for db_path in db_paths:
         if db_path.is_file():
             with sqlite3.connect(db_path) as conn:
                 c = conn.cursor()
-                c.execute(f"SELECT entry FROM {CMain.gamevars['game']} WHERE formid=? AND plugin=? COLLATE nocase", (formid, plugin))
+                c.execute(f"SELECT entry FROM {CMain.gamevars["game"]} WHERE formid=? AND plugin=? COLLATE nocase", (formid, plugin))
                 entry = c.fetchone()
                 if entry:
                     query_cache[(formid, plugin)] = entry[0]
@@ -633,7 +633,7 @@ def crashlogs_scan() -> None:
                 for plugin, plugin_id in crashlog_plugins.items():
                     if len(formid_split) >= 2 and str(plugin_id) == str(formid_split[1][:2]):
                         if CMain.classic_settings("Show FormID Values"):
-                            if Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs Main.db").exists() or Path(f"CLASSIC Data/databases/{CMain.gamevars['game']} FormIDs Local.db").exists():
+                            if Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs Main.db").exists() or Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs Local.db").exists():
                                 report = get_entry(formid_split[1][2:], plugin)
                                 if report:
                                     autoscan_report.append(f"- {formid_full} | [{plugin}] | {report} | {count}\n")
