@@ -1401,17 +1401,17 @@ class MainWindow(QMainWindow):
 
                     # Update or add the Papyrus monitoring section
                     if papyrus_start != -1 and papyrus_end != -1:
-                        updated_lines = (
-                            current_lines[:papyrus_start]
-                            + papyrus_data
-                            + current_lines[papyrus_end:]
-                        )
+                        updated_lines = [
+                            *current_lines[:papyrus_start],
+                            *papyrus_data,
+                            *current_lines[papyrus_end:],
+                        ]
                     else:
-                        updated_lines = (
-                            current_lines  # noqa: RUF005
-                            + ["\n--- Papyrus Monitoring ---"]
-                            + papyrus_data
-                        )
+                        updated_lines = [
+                            *current_lines,
+                            "\n--- Papyrus Monitoring ---",
+                            *papyrus_data,
+                        ]
 
                     new_text = "\n".join(updated_lines)
                     self.output_text_box.setPlainText(new_text)
