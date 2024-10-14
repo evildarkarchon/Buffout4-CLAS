@@ -279,6 +279,9 @@ def test_YamlSettingsCache_get_setting(test_load_yaml: CLASSIC_Main.YamlSettings
         isinstance(v, type(random_list[i])) for i, v in enumerate(return_list_2)
     ), "get_setting() should return the list value exactly as written"
 
+    return_value = test_load_yaml.get_setting(CLASSIC_Main.YAML.Main, "CLASSIC_Info.version")
+    assert return_value == "CLASSIC v7.30.3"
+
 
 @pytest.mark.usefixtures("test_file_yaml")
 def test_yaml_settings(test_load_yaml: CLASSIC_Main.YamlSettingsCache) -> None:
@@ -294,15 +297,24 @@ def test_classic_generate_files() -> None:
     """Test CLASSIC_Main's `classic_generate_files()`."""
     ignore_path = Path("CLASSIC Ignore.yaml")
     local_path = Path(f"CLASSIC Data/CLASSIC {CLASSIC_Main.gamevars["game"]} Local.yaml")
+    settings_path = Path("CLASSIC Settings.yaml")
+
     assert not ignore_path.exists(), f"{ignore_path} existed before testing"
     assert not local_path.exists(), f"{local_path} existed before testing"
+    assert not settings_path.exists(), f"{settings_path} existed before testing"
+
     CLASSIC_Main.classic_generate_files()
     assert ignore_path.is_file(), f"{ignore_path} was not created"
     assert local_path.is_file(), f"{local_path} was not created"
+    assert settings_path.is_file(), f"{settings_path} was not created"
+
     ignore_path.unlink(missing_ok=True)
     local_path.unlink(missing_ok=True)
+    settings_path.unlink(missing_ok=True)
+
     assert not ignore_path.exists(), f"{local_path} was not deleted"
     assert not local_path.exists(), f"{local_path} was not deleted"
+    assert not settings_path.exists(), f"{settings_path} was not deleted"
 
 
 @pytest.mark.usefixtures("_gamevars", "yaml_cache")
