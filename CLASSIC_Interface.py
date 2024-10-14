@@ -565,9 +565,15 @@ class MainWindow(QMainWindow):
         self.mods_folder_edit = self.setup_folder_section(
             layout, "STAGING MODS FOLDER", "Box_SelectedMods", self.select_folder_mods
         )
+        self.mods_folder_edit.setToolTip("Select the folder where you stage your mods.")
+        self.mods_folder_edit.setPlaceholderText("Optional: Select the folder where you stage your mods.")
+        
         self.scan_folder_edit = self.setup_folder_section(
             layout, "CUSTOM SCAN FOLDER", "Box_SelectedScan", self.select_folder_scan
         )
+        self.scan_folder_edit.setToolTip("Select a custom folder to scan for log files.")
+        self.scan_folder_edit.setPlaceholderText("Optional: Select a custom folder to scan for log files.")
+
 
         # self.setup_pastebin_elements(layout)
 
