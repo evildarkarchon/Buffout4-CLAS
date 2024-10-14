@@ -741,8 +741,6 @@ def crashlogs_scan() -> None:
 
 if __name__ == "__main__":
     CMain.initialize()
-    CMain.configure_logging()
-    CMain.main_generate_required()
     import argparse
 
     parser = argparse.ArgumentParser(prog="Crash Log Auto Scanner & Setup Integrity Checker (CLASSIC)", description="All terminal options are saved to the YAML file.")
