@@ -115,6 +115,7 @@ extend-select = [
 	# "FBT",   # Boolean Traps
 	# "G",     # Logging Formatting
 	# "N",     # PEP8 Naming Conventions
+	# "PGH",   # PyGrep Hooks
 	# "PYI",   # Stub Files
 	# "Q",     # Quotes
 	# "S",     # Security Testing
