@@ -163,7 +163,7 @@ class ManualPathDialog(QDialog):
         layout.addLayout(inputlayout)
 
         # Create standard OK button
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok, self) # type: ignore
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok, self)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -202,7 +202,7 @@ class GamePathDialog(QDialog):
         layout.addLayout(inputlayout)
 
         # Create standard OK button
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok, self) # type: ignore
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok, self)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -567,7 +567,7 @@ class MainWindow(QMainWindow):
         )
         self.mods_folder_edit.setToolTip("Select the folder where you stage your mods.")
         self.mods_folder_edit.setPlaceholderText("Optional: Select the folder where you stage your mods.")
-        
+
         self.scan_folder_edit = self.setup_folder_section(
             layout, "CUSTOM SCAN FOLDER", "Box_SelectedScan", self.select_folder_scan
         )
