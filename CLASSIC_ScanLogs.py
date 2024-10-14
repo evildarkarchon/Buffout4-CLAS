@@ -160,6 +160,7 @@ def crashlogs_scan() -> None:
     game_mods_opc2: dict[str, str] = CMain.yaml_settings(CMain.YAML.Game, "Mods_OPC2")  # type: ignore
     game_mods_solu: dict[str, str] = CMain.yaml_settings(CMain.YAML.Game, "Mods_SOLU")  # type: ignore
 
+    ignore_list: list[str] = CMain.yaml_settings(CMain.YAML.Ignore, f"CLASSIC_Ignore_{CMain.gamevars["game"]}")  # type: ignore
     # ================================================
     if CMain.classic_settings("FCX Mode"):
         main_files_check = CMain.main_combined_result()
