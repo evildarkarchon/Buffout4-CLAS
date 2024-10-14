@@ -163,7 +163,7 @@ class ManualPathDialog(QDialog):
         layout.addLayout(inputlayout)
 
         # Create standard OK button
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok, self) # type: ignore
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok, self)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -202,7 +202,7 @@ class GamePathDialog(QDialog):
         layout.addLayout(inputlayout)
 
         # Create standard OK button
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok, self) # type: ignore
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok, self)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
