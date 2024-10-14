@@ -111,7 +111,7 @@ def crashlogs_reformat() -> None:
             if simple_logs and any(string in line for string in remove_list):
                 crash_data.pop(index)  # Remove *useless* lines from crash log if Simplify Logs is enabled.
             elif index > index_plugins:  # Replace all white space chars inside [ ] brackets with the 0 char.
-                formatted_line = re.sub(r'\[(.*?)]', lambda x: "[" + re.sub(r'\s', '0', x.group(1)) + "]", line)
+                formatted_line = re.sub(r"\[(.*?)]", lambda x: "[" + re.sub(r"\s", "0", x.group(1)) + "]", line)
                 crash_data[index] = formatted_line
         with file.open("w", encoding="utf-8", errors="ignore") as crash_log:
             crash_log.writelines(crash_data)
@@ -212,7 +212,7 @@ def crashlogs_scan() -> None:
         gpu_rival = "nvidia" if (crashlog_GPUAMD or crashlog_GPUI) else "amd" if crashlog_GPUNV else None
         for mod_name in yaml_dict:
             mod_warn = yaml_dict.get(mod_name, "")
-            mod_split = mod_name.split(' | ', 1)
+            mod_split = mod_name.split(" | ", 1)
             mod_found = False
             for plugin_name in crashlog_plugins:
                 if mod_split[0].lower() in plugin_name.lower():
@@ -625,7 +625,7 @@ def crashlogs_scan() -> None:
 
         # ================================================
         autoscan_report.append("# LIST OF (POSSIBLE) FORM ID SUSPECTS #\n")
-        formids_matches = [line.replace('0x', '').strip() for line in segment_callstack if "id:" in line.lower() and "0xFF" not in line]
+        formids_matches = [line.replace("0x", "").strip() for line in segment_callstack if "id:" in line.lower() and "0xFF" not in line]
         if formids_matches:
             formids_found = dict(Counter(sorted(formids_matches)))
             for formid_full, count in formids_found.items():
@@ -713,7 +713,7 @@ def crashlogs_scan() -> None:
     scan_invalid_list = list(Path.cwd().glob("crash-*.txt"))
     if scan_failed_list or scan_invalid_list:
         print("❌ NOTICE : CLASSIC WAS UNABLE TO PROPERLY SCAN THE FOLLOWING LOG(S):")
-        print('\n'.join(scan_failed_list))
+        print("\n".join(scan_failed_list))
         if scan_invalid_list:
             for file in scan_invalid_list:
                 print(f"{file}\n")

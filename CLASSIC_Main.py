@@ -184,7 +184,7 @@ class YamlSettingsCache:
                 self.file_mod_times[yaml_path] = last_mod_time
 
                 # Reload the YAML file
-                with yaml_path.open('r', encoding='utf-8') as yaml_file:
+                with yaml_path.open(encoding="utf-8") as yaml_file:
                     yaml = ruamel.yaml.YAML()
                     yaml.indent(offset=2)
                     yaml.width = 300
@@ -210,9 +210,9 @@ class YamlSettingsCache:
             case _:
                 raise NotImplementedError
 
-        assert yaml_path.is_file()
+        #assert yaml_path.is_file()
         data = self.load_yaml(yaml_path)
-        keys = key_path.split('.')
+        keys = key_path.split(".")
         value = data
 
         # If new_value is provided, update the value
