@@ -47,6 +47,7 @@ class YAML(Enum):
     Ignore = auto()
     Game = auto()
     Game_Local = auto()
+    TEST = auto()
 
 class GameVars(TypedDict):
     game: GameID
@@ -204,9 +205,12 @@ class YamlSettingsCache:
                 yaml_path = data_path / f"databases/CLASSIC {gamevars["game"]}.yaml"
             case YAML.Game_Local:
                 yaml_path = data_path / f"CLASSIC {gamevars["game"]} Local.yaml"
+            case YAML.TEST:
+                yaml_path = Path("tests/test_settings.yaml")
             case _:
                 raise NotImplementedError
 
+        assert yaml_path.is_file()
         data = self.load_yaml(yaml_path)
         keys = key_path.split('.')
         value = data
@@ -237,19 +241,19 @@ class YamlSettingsCache:
             return new_value
 
         # Traverse YAML structure to get value
-        for key in keys[-1]:
+        for key in keys[:-1]:
             assert isinstance(value, dict)
-            if key in value:
-                # Hacky way to tell the IDE value is a YAMLMapping; isinstance doesn't accept TypeAliases
-                next_value = value[key]
-                assert isinstance(next_value, dict)
-                assert isinstance(next(iter(next_value.keys())), str)
-                value = next_value
-            else:
-                return None  # Key not found
-        if value is None and "Path" not in key_path:
+            if key not in value:
+                return None
+            # Hacky way to tell the IDE value is a YAMLMapping; isinstance doesn't accept TypeAliases
+            next_value = value[key]
+            assert isinstance(next_value, dict)
+            assert isinstance(next(iter(next_value.keys())), str)
+            value = next_value
+        setting = value[keys[-1]]
+        if setting is None and "Path" not in key_path:
             print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'")
-        return value
+        return setting
 
 # Function compatible with the old interface
 def yaml_settings(yaml_store: YAML, key_path: str, new_value: str | bool | None = None) -> YAMLValueOptional:

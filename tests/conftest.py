@@ -17,7 +17,7 @@ RUNTIME_FILES = (
     "CLASSIC Data/CLASSIC Starfield Local.yaml",
     "CLASSIC Backup",
     "CLASSIC Logs",
-    "CLASSIC Pastebin",
+    "Crash Logs",
 )
 
 MOCK_YAML: dict[str, str | int] = {
@@ -69,7 +69,7 @@ def mock_yaml(monkeypatch: pytest.MonkeyPatch) -> MockYAML:
     """
     saved_yaml_settings = MockYAML()
 
-    def mock_yaml_settings(_yaml_path: str, key_path: str, new_value: str | None = None) -> str | int | None:
+    def mock_yaml_settings(_yaml_store: CLASSIC_Main.YAML, key_path: str, new_value: str | None = None) -> str | int | None:
         key = key_path.rsplit(".", maxsplit=1)[-1]
         if new_value is not None:
             saved_yaml_settings[key] = new_value
@@ -79,7 +79,7 @@ def mock_yaml(monkeypatch: pytest.MonkeyPatch) -> MockYAML:
     def mock_classic_settings(setting: str | None) -> str | int | bool | None:
         if setting is None:
             return None
-        return mock_yaml_settings("", setting)
+        return mock_yaml_settings(CLASSIC_Main.YAML.Settings, setting)
 
     monkeypatch.setattr(CLASSIC_Main, "yaml_settings", mock_yaml_settings)
     monkeypatch.setattr(CLASSIC_Main, "classic_settings", mock_classic_settings)

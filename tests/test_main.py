@@ -76,11 +76,11 @@ def test_mock_yaml(mock_yaml: MockYAML) -> None:
     mock_yaml["XSE_Acronym"] = "SKSE"
     assert mock_yaml["XSE_Acronym"] == "SKSE"
 
-    CLASSIC_Main.yaml_settings("", "XXXX.XSE_Acronym", "SFSE")
+    CLASSIC_Main.yaml_settings(CLASSIC_Main.YAML.Main, "XXXX.XSE_Acronym", "SFSE")
     assert mock_yaml["XSE_Acronym"] == "SFSE"
     mock_yaml.clear()
     assert mock_yaml["XSE_Acronym"] == "F4SE"
-    assert CLASSIC_Main.yaml_settings("", "XXXX.Main_SteamID") == 377160
+    assert CLASSIC_Main.yaml_settings(CLASSIC_Main.YAML.Main, "XXXX.Main_SteamID") == 377160
     pytest.raises(NotImplementedError, lambda: mock_yaml["NotImplemented"])
 
 
@@ -181,47 +181,48 @@ def test_load_yaml(test_file_yaml: Path, yaml_cache: CLASSIC_Main.YamlSettingsCa
     return yaml_cache
 
 
-def test_YamlSettingsCache_get_setting(test_file_yaml: Path, test_load_yaml: CLASSIC_Main.YamlSettingsCache) -> None:
+@pytest.mark.usefixtures("test_file_yaml")
+def test_YamlSettingsCache_get_setting(test_load_yaml: CLASSIC_Main.YamlSettingsCache) -> None:
     """Test CLASSIC_Main's `YamlSettingsCache`.`get_setting()`."""
-    game = test_load_yaml.get_setting(test_file_yaml, "Section 1.Game Name")
+    game = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 1.Game Name")
     assert isinstance(game, str), "Section 1.Game Name should be a string"
     assert game == "Elder Scrolls VI", "Section 1.Game Name should equal 'Elder Scrolls VI'"
 
-    bool_false = test_load_yaml.get_setting(test_file_yaml, "Section 1.False Bool")
+    bool_false = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 1.False Bool")
     assert bool_false is False, "Section 1.False Bool should be False"
 
-    bool_true = test_load_yaml.get_setting(test_file_yaml, "Section 1.True Bool")
+    bool_true = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 1.True Bool")
     assert bool_true is True, "Section 1.True Bool should be True"
 
-    int_positive = test_load_yaml.get_setting(test_file_yaml, "Section 1.Positive Int")
+    int_positive = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 1.Positive Int")
     assert isinstance(int_positive, int), "Section 1.Positive Int should be int"
     assert int_positive == 8675309, "Section 1.Positive Int should equal 8675309"
 
-    int_negative = test_load_yaml.get_setting(test_file_yaml, "Section 1.Negative Int")
+    int_negative = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 1.Negative Int")
     assert isinstance(int_negative, int), "Section 1.Negative Int should be int"
     assert int_negative == -404, "Section 1.Negative Int should equal -404"
 
-    float_positive = test_load_yaml.get_setting(test_file_yaml, "Section 1.Positive Float")
+    float_positive = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 1.Positive Float")
     assert isinstance(float_positive, float), "Section 1.Positive Float should be float"
     assert float_positive == 3.14159, "Section 1.Positive Int Float equal 3.14159"
 
-    float_negative = test_load_yaml.get_setting(test_file_yaml, "Section 1.Negative Float")
+    float_negative = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 1.Negative Float")
     assert isinstance(float_negative, float), "Section 1.Negative Float should be float"
     assert float_negative == -6.66, "Section 1.Negative Float should equal -6.66"
 
-    list_of_str = test_load_yaml.get_setting(test_file_yaml, "Section 1.List of Str")
+    list_of_str = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 1.List of Str")
     assert isinstance(list_of_str, list), "Section 1.List of Str should be list"
     assert all(isinstance(s, str) for s in list_of_str), "Section 1.List of Str should contain only str"
     assert len(list_of_str) == 7, "Section 1.List of Str length should be 7"
     assert list_of_str[1] == "Tuesday", "Section 1.List of Str index 1 should equal 'Tuesday'"
 
-    alt_list_of_int = test_load_yaml.get_setting(test_file_yaml, "Section 1.Alt Syntax List of Int")
+    alt_list_of_int = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 1.Alt Syntax List of Int")
     assert isinstance(alt_list_of_int, list), "Section 1.Alt Syntax List of Int should be list"
     assert all(isinstance(i, int) for i in alt_list_of_int), "Section 1.Alt Syntax List of Int should contain only int"
     assert len(alt_list_of_int) == 3, "Section 1.Alt Syntax List of Int length should be 3"
     assert alt_list_of_int[-1] == 9, "Section 1.Alt Syntax List of Int index -1 should equal 9"
 
-    dict_of_str = test_load_yaml.get_setting(test_file_yaml, "Section 1.Dict of Str")
+    dict_of_str = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 1.Dict of Str")
     assert isinstance(dict_of_str, dict), "Section 1.Dict of Str should be dict"
     assert all(isinstance(i, str) for i in dict_of_str), "Section 1.Dict of Str should contain only str:str"
     assert len(dict_of_str) == 2, "Section 1.Dict of Str length should be 2"
@@ -235,21 +236,21 @@ def test_YamlSettingsCache_get_setting(test_file_yaml: Path, test_load_yaml: CLA
     printable_characters = list(string.printable)
     random.shuffle(printable_characters)
     random_string = "".join(printable_characters + list(reversed(printable_characters)))
-    return_string_1 = test_load_yaml.get_setting(test_file_yaml, "Section 2.Str Write", random_string)
+    return_string_1 = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 2.Str Write", random_string)
     assert return_string_1 == random_string, "get_setting() should return the new str value"
-    return_string_2 = test_load_yaml.get_setting(test_file_yaml, "Section 2.Str Write")
+    return_string_2 = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 2.Str Write")
     assert return_string_2 == random_string, "get_setting() should return the str value exactly as written"
 
     random_int = random.randint(-255, 255)
-    return_int_1 = test_load_yaml.get_setting(test_file_yaml, "Section 2.Int Write", random_int)  # type: ignore
+    return_int_1 = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 2.Int Write", random_int)  # type: ignore
     assert return_int_1 == random_int, "get_setting() should return the new int value"
-    return_int_2 = test_load_yaml.get_setting(test_file_yaml, "Section 2.Int Write")
+    return_int_2 = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 2.Int Write")
     assert return_int_2 == random_int, "get_setting() should return the int value exactly as written"
 
     random_bool = random.random() < 0.5
-    return_bool_1 = test_load_yaml.get_setting(test_file_yaml, "Section 2.Bool Write", random_bool)
+    return_bool_1 = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 2.Bool Write", random_bool)
     assert return_bool_1 is random_bool, "get_setting() should return the new bool value"
-    return_bool_2 = test_load_yaml.get_setting(test_file_yaml, "Section 2.Bool Write")
+    return_bool_2 = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 2.Bool Write")
     assert return_bool_2 is random_bool, "get_setting() should return the bool value exactly as written"
 
     random_dict = {
@@ -257,10 +258,10 @@ def test_YamlSettingsCache_get_setting(test_file_yaml: Path, test_load_yaml: CLA
         random_int: random_bool,
         "Three": 3,
     }
-    return_dict_1 = test_load_yaml.get_setting(test_file_yaml, "Section 2.Dict Write", random_dict)  # type: ignore
+    return_dict_1 = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 2.Dict Write", random_dict)  # type: ignore
     assert isinstance(return_dict_1, dict), "get_setting() should return the new dict value"
     assert return_dict_1 == random_dict, "get_setting() should return the dict value exactly as written"
-    return_dict_2 = test_load_yaml.get_setting(test_file_yaml, "Section 2.Dict Write")
+    return_dict_2 = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 2.Dict Write")
     assert isinstance(return_dict_2, dict), "get_setting() should return the new dict value"
     assert return_dict_2 == random_dict, "get_setting() should return the dict value exactly as written"
     assert list(random_dict.keys()) == list(
@@ -268,10 +269,10 @@ def test_YamlSettingsCache_get_setting(test_file_yaml: Path, test_load_yaml: CLA
     ), "get_setting() should return the dict value exactly as written"
 
     random_list = random.choices(string.printable, k=6) + random.choices((0, 1, 2, 3, 4, 5, 6, 7, 8, 9), k=4)
-    return_list_1 = test_load_yaml.get_setting(test_file_yaml, "Section 2.List Write", random_list)  # type: ignore
+    return_list_1 = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 2.List Write", random_list)  # type: ignore
     assert isinstance(return_list_1, list), "get_setting() should return the new list value"
     assert return_list_1 == random_list, "get_setting() should return the list value exactly as written"
-    return_list_2 = test_load_yaml.get_setting(test_file_yaml, "Section 2.List Write")
+    return_list_2 = test_load_yaml.get_setting(CLASSIC_Main.YAML.TEST, "Section 2.List Write")
     assert isinstance(return_list_2, list), "get_setting() should return the new list value"
     assert return_list_2 == random_list, "get_setting() should return the list value exactly as written"
     assert (
@@ -279,10 +280,11 @@ def test_YamlSettingsCache_get_setting(test_file_yaml: Path, test_load_yaml: CLA
     ), "get_setting() should return the list value exactly as written"
 
 
-def test_yaml_settings(test_file_yaml: Path, test_load_yaml: CLASSIC_Main.YamlSettingsCache) -> None:
+@pytest.mark.usefixtures("test_file_yaml")
+def test_yaml_settings(test_load_yaml: CLASSIC_Main.YamlSettingsCache) -> None:
     """Test CLASSIC_Main's `yaml_settings()`."""
     assert isinstance(test_load_yaml, CLASSIC_Main.YamlSettingsCache), "yaml cache should be initialized"
-    game = CLASSIC_Main.yaml_settings(str(test_file_yaml), "Section 1.Game Name")
+    game = CLASSIC_Main.yaml_settings(CLASSIC_Main.YAML.TEST, "Section 1.Game Name")
     assert isinstance(game, str), "Section 1.Game Name should be a string"
     assert game == "Elder Scrolls VI", "Section 1.Game Name should equal 'Elder Scrolls VI'"
 

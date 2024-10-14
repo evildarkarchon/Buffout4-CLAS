@@ -11,7 +11,7 @@ def test_pastebin_fetch() -> None:
     """Test CLASSIC_ScanLogs's `pastebin_fetch()`."""
     test_url = "https://pastebin.com/7rXpAw8s"
     test_url_fake = "https://pastebin.com/XXXXXXXX"
-    pastebin_path = Path("CLASSIC Pastebin")
+    pastebin_path = Path("Crash Logs/Pastebin")
 
     assert not pastebin_path.exists(), f"{pastebin_path} existed before testing"
 
@@ -68,7 +68,7 @@ def test_get_entry() -> None:
 @pytest.mark.usefixtures("_gamevars")
 def test_crashlogs_get_files(mock_yaml: MockYAML) -> None:
     """Test CLASSIC_ScanLogs's `crashlogs_get_files()`."""
-    CLASSIC_logs = Path.cwd() / "CLASSIC Logs"
+    CLASSIC_logs = Path.cwd() / "Crash Logs"
 
     mock_yaml["Docs_Folder_XSE"] = "tests/"
     mock_yaml["SCAN Custom Path"] = "tests/"
