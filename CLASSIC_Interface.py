@@ -412,7 +412,7 @@ class MainWindow(QMainWindow):
         self.is_update_check_running = False
 
         # Set up Papyrus monitoring
-        self.result_queue: multiprocessing.Queue = multiprocessing.Queue()
+        self.result_queue: multiprocessing.Queue[str] = multiprocessing.Queue()
         self.worker_stop_event = multiprocessing.Event()
         self.worker_process: multiprocessing.Process | None = None
         self.is_worker_running = False
@@ -560,7 +560,7 @@ class MainWindow(QMainWindow):
         )
         self.mods_folder_edit.setToolTip("Select the folder where you stage your mods.")
         self.mods_folder_edit.setPlaceholderText("Optional: Select the folder where you stage your mods.")
-        
+
         self.scan_folder_edit = self.setup_folder_section(
             layout, "CUSTOM SCAN FOLDER", "Box_SelectedScan", self.select_folder_scan
         )
@@ -1296,10 +1296,10 @@ class MainWindow(QMainWindow):
             # Start the worker process for papyrus logs
             self.worker_stop_event = multiprocessing.Event()
             self.worker_process = multiprocessing.Process(
-                target=papyrus_worker, args=(self.result_queue, self.worker_stop_event) # type: ignore
+                target=papyrus_worker, args=(self.result_queue, self.worker_stop_event)
             )
-            self.worker_process.daemon = True # type: ignore
-            self.worker_process.start() # type: ignore
+            self.worker_process.daemon = True
+            self.worker_process.start()
 
             # Start the timer for periodic updates
             self.timer.start(5000)  # Update every 5 seconds
@@ -1365,8 +1365,8 @@ class MainWindow(QMainWindow):
             ):
                 # Split the buffer into lines
                 lines = self.message_buffer.split("\n")
-                papyrus_data = []
-                non_papyrus_data = []
+                papyrus_data: list[str] = []
+                non_papyrus_data: list[str] = []
 
                 # Separate Papyrus monitoring data from other data
                 for line in lines:
