@@ -176,10 +176,11 @@ def crashlogs_scan() -> None:
 
     ignore_list: list[str] = CMain.yaml_settings(CMain.YAML.Ignore, f"CLASSIC_Ignore_{CMain.gamevars["game"]}")  # type: ignore
     xse_acronym = xse_acronym.lower()
+    fcx_mode = CMain.classic_settings("FCX Mode")
     show_formid_values = CMain.classic_settings("Show FormID Values")
     formid_db_exists = any(db.is_file() for db in DB_PATHS)
     # ================================================
-    if CMain.classic_settings("FCX Mode"):
+    if fcx_mode:
         main_files_check = CMain.main_combined_result()
         game_files_check = CGame.game_combined_result()
     else:
@@ -512,7 +513,13 @@ def crashlogs_scan() -> None:
         Has_XCell = any("x-cell-fo4.dll" in elem.lower() for elem in segment_xsemodules)
         Has_BakaScrapHeap = any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules)
 
-        if not CMain.classic_settings("FCX Mode"):
+        if fcx_mode:
+            autoscan_report.extend((
+                "* NOTICE: FCX MODE IS ENABLED. CLASSIC MUST BE RUN BY THE ORIGINAL USER FOR CORRECT DETECTION * \n",
+                "[ To disable mod & game files detection, disable FCX Mode in the exe or CLASSIC Settings.yaml ] \n\n",
+            ))
+
+        else:
             autoscan_report.extend((
                 "* NOTICE: FCX MODE IS DISABLED. YOU CAN ENABLE IT TO DETECT PROBLEMS IN YOUR MOD & GAME FILES * \n",
                 "[ FCX Mode can be enabled in the exe or CLASSIC Settings.yaml located in your CLASSIC folder. ] \n\n",
@@ -615,12 +622,6 @@ def crashlogs_scan() -> None:
                         autoscan_report.append(
                             f"✔️ F4EE (Looks Menu) parameter is correctly configured in your {crashgen_name} settings! \n-----\n",
                         )
-
-        else:
-            autoscan_report.extend((
-                "* NOTICE: FCX MODE IS ENABLED. CLASSIC MUST BE RUN BY THE ORIGINAL USER FOR CORRECT DETECTION * \n",
-                "[ To disable mod & game files detection, disable FCX Mode in the exe or CLASSIC Settings.yaml ] \n\n",
-            ))
 
         autoscan_report.append(main_files_check)
         if game_files_check:
