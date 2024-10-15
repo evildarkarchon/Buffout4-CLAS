@@ -483,11 +483,11 @@ def scan_mods_unpacked() -> str:
                             modscan_list.append(f"[!] CAUTION (DDS-DIMS) : {file_path.as_posix()} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n")
                 # ================================================
                 # DETECT INVALID TEXTURE FILE FORMATS
-                elif file_ext in (".tga", ".png"):
+                elif file_ext in {".tga", ".png"}:
                     modscan_list.append(f"[-] NOTICE (-FORMAT-) : {file_path.as_posix()} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n")
                 # ================================================
                 # DETECT INVALID SOUND FILE FORMATS
-                elif file_ext in (".mp3", ".m4a"):
+                elif file_ext in {".mp3", ".m4a"}:
                     modscan_list.append(f"[-] NOTICE (-FORMAT-) : {root_main} > {filename} > HAS THE WRONG SOUND FORMAT, SHOULD BE XWM OR WAV \n")
                 # ================================================
                 # DETECT MODS WITH SCRIPT EXTENDER FILE COPIES
