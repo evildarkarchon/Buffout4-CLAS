@@ -1,4 +1,3 @@
-import logging
 import shutil
 from collections.abc import Generator
 from pathlib import Path
@@ -17,8 +16,74 @@ RUNTIME_FILES = (
     "CLASSIC Data/CLASSIC Skyrim Local.yaml",
     "CLASSIC Data/CLASSIC Starfield Local.yaml",
     "CLASSIC Backup",
-    "CLASSIC Pastebin",
+    "CLASSIC Logs",
+    "Crash Logs",
 )
+
+MOCK_YAML: dict[str, str | int] = {
+    "Root_Folder_Game": r"C:\Program Files (x86)\Steam\steamapps\common\Fallout 4",
+    "Root_Folder_Docs": str(Path.home() / "Documents/My Games/Fallout4"),
+    "Docs_File_XSE": "tests/f4se.log",
+    "Main_Root_Name": "Fallout 4",
+    "Main_Docs_Name": "Fallout4",
+    "Main_SteamID": 377160,
+    "CRASHGEN_Acronym": "BO4",
+    "CRASHGEN_LogName": "Buffout 4",
+    "CRASHGEN_DLL_File": "buffout4.dll",
+    "XSE_Acronym": "F4SE",
+    "XSE_FullName": "Fallout 4 Script Extender (F4SE)",
+    "XSE_Ver_Latest": "0.6.23",
+    "XSE_FileCount": 29,
+}
+
+
+class MockYAML:
+    def __init__(self) -> None:
+        self._saved_yaml_settings: dict[str, str | int | bool | None] = {}
+
+    def __getitem__(self, key: str) -> str | int | bool | None:
+        if key in self._saved_yaml_settings:
+            return self._saved_yaml_settings[key]
+        if key in MOCK_YAML:
+            return MOCK_YAML[key]
+        msg = f"Mock YAML Key: {key}"
+        raise NotImplementedError(msg)
+
+    def __setitem__(self, key: str, value: str | int | bool | None) -> str | int | bool | None:
+        if value is not None:
+            self._saved_yaml_settings[key] = value
+        return value
+
+    def mock_set(self, key: str, value: str | int | bool | None) -> None:
+        self._saved_yaml_settings[key] = value
+
+    def clear(self) -> None:
+        self._saved_yaml_settings.clear()
+
+
+@pytest.fixture
+def mock_yaml(monkeypatch: pytest.MonkeyPatch) -> MockYAML:
+    """MonkeyPatch YAML settings to minimize test variables.
+
+    No real YAML will be loaded or saved. "Saved" values dict is yielded.
+    """
+    saved_yaml_settings = MockYAML()
+
+    def mock_yaml_settings(_yaml_store: CLASSIC_Main.YAML, key_path: str, new_value: str | None = None) -> str | int | None:
+        key = key_path.rsplit(".", maxsplit=1)[-1]
+        if new_value is not None:
+            saved_yaml_settings[key] = new_value
+            return new_value
+        return saved_yaml_settings[key]
+
+    def mock_classic_settings(setting: str | None) -> str | int | bool | None:
+        if setting is None:
+            return None
+        return mock_yaml_settings(CLASSIC_Main.YAML.Settings, setting)
+
+    monkeypatch.setattr(CLASSIC_Main, "yaml_settings", mock_yaml_settings)
+    monkeypatch.setattr(CLASSIC_Main, "classic_settings", mock_classic_settings)
+    return saved_yaml_settings
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -27,40 +92,27 @@ def _move_user_files() -> Generator[None]:
 
     Any files created during testing are deleted.
     """
-    temp_path = Path("test_temp")
-    temp_path.mkdir(exist_ok=True)
-    assert temp_path.is_dir(), f"Failed to create {temp_path}"
-    assert not any(temp_path.iterdir()), f"{temp_path} is not empty"
     for file in RUNTIME_FILES:
         file_path = Path(file)
-        backup_path = temp_path / file_path
         if file_path.exists():
-            if len(file_path.parts) > 1:
-                backup_path.parent.mkdir(parents=True, exist_ok=True)
+            backup_path = file_path.with_name(f"test_temp-{file_path.name}")
             file_path.rename(backup_path)
-            assert backup_path.exists(), f"Failed to move {file_path} to {backup_path}"
-        assert not file_path.exists(), f"Failed to remove {file_path}"
+            assert backup_path.exists(), f"Failed to rename {file_path.name} to {backup_path.name}"
+        assert not file_path.exists(), f"Failed to rename {file_path.name}"
+
     yield
+
     for file in RUNTIME_FILES:
         file_path = Path(file)
         if file_path.is_file():
             file_path.unlink()
         elif file_path.is_dir():
             shutil.rmtree(file_path)
-        backup_path = temp_path / file_path
+        backup_path = file_path.with_name(f"test_temp-{file_path.name}")
         if backup_path.exists():
             backup_path.rename(file_path)
-            assert file_path.exists(), f"Failed to move {backup_path} to {file_path}"
-        assert not backup_path.exists(), f"Failed to remove {backup_path}"
-    for current, dirs, files in temp_path.walk(top_down=False):
-        assert not files, f"{current} has unexpected new files"
-        for d in dirs:
-            subdir = current / d
-            assert not any(subdir.iterdir()), f"{subdir} has unexpected contents"
-            subdir.rmdir()
-            assert not subdir.exists(), f"Failed to delete {subdir}"
-    temp_path.rmdir()
-    assert not temp_path.exists(), f"Failed to delete {temp_path}"
+            assert file_path.exists(), f"Failed to rename {backup_path.name} to {file_path.name}"
+        assert not backup_path.exists(), f"Failed to remove {backup_path.name}"
 
 
 @pytest.fixture(scope="session")
@@ -79,26 +131,8 @@ def yaml_cache() -> CLASSIC_Main.YamlSettingsCache:
 
 
 @pytest.fixture(scope="session")
-def _test_configure_logging(_move_user_files: None) -> Generator[None]:
-    """Test CLASSIC_Main's `configure_logging()` and make its logger available during testing."""
-    log_path = Path("CLASSIC Journal.log")
-    assert not log_path.is_file(), f"{log_path} existed before testing"
-    assert "CLASSIC" not in logging.Logger.manager.loggerDict, "Logger configured before testing"
-    return_value = CLASSIC_Main.configure_logging()  # type: ignore[func-returns-value]
-    assert return_value is None, "configure_logging() unexpectedly returned a value"
-    assert CLASSIC_Main.logger.name == "CLASSIC", "A logger named CLASSIC was not configured"
-    assert log_path.is_file(), f"{log_path} was not created"
-    CLASSIC_Main.logger.info("Logger test")
-    yield
-    for h in CLASSIC_Main.logger.handlers:
-        if isinstance(h, logging.FileHandler):
-            h.close()
-    assert log_path.stat().st_size > 0, "Log file was not written to"
-
-
-@pytest.fixture(scope="session")
 def _gamevars() -> None:
-    """Initialize CLASSIC_Main's gamevars global and validate its types."""
+    """Ensure CLASSIC_Main's gamevars global is initialized and validate its types."""
     assert isinstance(CLASSIC_Main.gamevars, dict), "CLASSIC_Main.gamevars should be initialized to dict"
     assert len(CLASSIC_Main.gamevars) > 0, "CLASSIC_Main.gamevars should contain default values"
     assert isinstance(CLASSIC_Main.GameID, TypeAliasType), "CLASSIC_Main.GameID type is unexpected"

@@ -11,6 +11,7 @@ from types import TracebackType
 from typing import Any, Literal
 
 import regex as re
+import requests
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtMultimedia import QSoundEffect
@@ -38,6 +39,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
 
 class ErrorDialog(QDialog):
     def __init__(self, error_text: str) -> None:
@@ -95,7 +97,7 @@ class AudioPlayer(QObject):
         super().__init__()
         self.audio_enabled = CMain.classic_settings("Audio Notifications")
         if self.audio_enabled is None:
-            CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.Audio Notifications", True)
+            CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.Audio Notifications", True)
             self.audio_enabled = True
 
         # Setup QSoundEffect objects for the preset sounds
@@ -148,7 +150,7 @@ class ManualPathDialog(QDialog):
         layout = QVBoxLayout(self)
 
         # Add a label
-        label = QLabel(f"Enter the path for the {CMain.gamevars["game"]} INI files directory (Example: c:\\users\\<name>\\Documents\\My Games\\{CMain.gamevars['game']})", self)
+        label = QLabel(f"Enter the path for the {CMain.gamevars["game"]} INI files directory (Example: c:\\users\\<name>\\Documents\\My Games\\{CMain.gamevars["game"]})", self)
         layout.addWidget(label)
 
         inputlayout = QHBoxLayout()
@@ -246,7 +248,7 @@ class PapyrusLogProcessor(QThread):
         self.is_running = False
 
 
-def papyrus_worker(q: multiprocessing.Queue, stop_event: multiprocessing.synchronize.Event) -> None:
+def papyrus_worker(q: multiprocessing.Queue[str], stop_event: multiprocessing.synchronize.Event) -> None:
     while not stop_event.is_set():
         papyrus_result, _ = CGame.papyrus_logging()
         # Ensure the message starts and ends with newlines
@@ -313,7 +315,7 @@ class MainWindow(QMainWindow):
         CMain.initialize(is_gui=True)
 
         self.setWindowTitle(
-            f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings('CLASSIC Data/databases/CLASSIC Main.yaml', 'CLASSIC_Info.version')}"
+            f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings(CMain.YAML.Main, "CLASSIC_Info.version")}"
         )
         self.setWindowIcon(QIcon("CLASSIC Data/graphics/CLASSIC.ico"))
         dark_style = """
@@ -412,7 +414,7 @@ class MainWindow(QMainWindow):
         self.is_update_check_running = False
 
         # Set up Papyrus monitoring
-        self.result_queue: multiprocessing.Queue = multiprocessing.Queue()
+        self.result_queue: multiprocessing.Queue[str] = multiprocessing.Queue()
         self.worker_stop_event = multiprocessing.Event()
         self.worker_process: multiprocessing.Process | None = None
         self.is_worker_running = False
@@ -424,14 +426,10 @@ class MainWindow(QMainWindow):
         # Set up the QTimer for periodic updates
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_output_text_box_papyrus_watcher)
-        if CMain.manual_docs_gui is not None:
-            CMain.manual_docs_gui.manual_docs_path_signal.connect(self.show_manual_docs_path_dialog)
-        else:
+        if CMain.manual_docs_gui is None or CMain.game_path_gui is None:
             raise TypeError("CMain not initialized")
-        if CMain.game_path_gui is not None:
-            CMain.game_path_gui.game_path_signal.connect(self.show_game_path_dialog)
-        else:
-            raise TypeError("CMain not initialized")
+        CMain.manual_docs_gui.manual_docs_path_signal.connect(self.show_manual_docs_path_dialog)
+        CMain.game_path_gui.game_path_signal.connect(self.show_game_path_dialog)
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         """if event.type() == QEvent.KeyPress:
@@ -466,7 +464,7 @@ class MainWindow(QMainWindow):
         try:
             CLogs.pastebin_fetch(pastebin_url)  # Fetch the log file from Pastebin
             QMessageBox.information(self, "Success", f"Log fetched from: {pastebin_url}")
-        except Exception as e:  # noqa: BLE001
+        except (OSError, requests.HTTPError) as e:
             QMessageBox.warning(self, "Error", f"Failed to fetch log: {e!s}")
 
     def show_manual_docs_path_dialog(self) -> None:
@@ -534,10 +532,7 @@ class MainWindow(QMainWindow):
                 self, "CLASSIC UPDATE", "You have the latest version of CLASSIC!"
             )
         else:
-            update_popup_text: str = CMain.yaml_settings(
-                "CLASSIC Data/databases/CLASSIC Main.yaml",
-                "CLASSIC_Interface.update_popup_text",
-            ) # type: ignore
+            update_popup_text: str = CMain.yaml_settings(CMain.YAML.Main, "CLASSIC_Interface.update_popup_text")  # type: ignore
             result = QMessageBox.question(
                 self,
                 "CLASSIC UPDATE",
@@ -760,10 +755,7 @@ class MainWindow(QMainWindow):
             )
 
     def help_popup_backup(self) -> None:
-        help_popup_text: str = CMain.yaml_settings(
-            "CLASSIC Data/databases/CLASSIC Main.yaml",
-            "CLASSIC_Interface.help_popup_backup",
-        ) # type: ignore
+        help_popup_text: str = CMain.yaml_settings(CMain.YAML.Main, "CLASSIC_Interface.help_popup_backup")  # type: ignore
         QMessageBox.information(self, "NEED HELP?", help_popup_text)
 
     @staticmethod
@@ -895,13 +887,11 @@ class MainWindow(QMainWindow):
         if CMain.classic_settings(setting) is not None:
             checkbox.setChecked(CMain.classic_settings(setting)) # type: ignore
         else:
-            CMain.yaml_settings("CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}", False)
+            CMain.yaml_settings(CMain.YAML.Settings, f"CLASSIC_Settings.{setting}", False)
             checkbox.setChecked(False)
 
         checkbox.stateChanged.connect(
-            lambda state: CMain.yaml_settings(
-                "CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}", bool(state) # type: ignore
-            )
+            lambda state: CMain.yaml_settings(CMain.YAML.Settings, f"CLASSIC_Settings.{setting}", bool(state))
         )
         if setting == "Audio Notifications":
             checkbox.stateChanged.connect(
@@ -1159,10 +1149,7 @@ class MainWindow(QMainWindow):
         QMessageBox.about(self, "About CLASSIC", about_text)
 
     def help_popup_main(self) -> None:
-        help_popup_text: str = CMain.yaml_settings(
-            "CLASSIC Data/databases/CLASSIC Main.yaml",
-            "CLASSIC_Interface.help_popup_main",
-        ) # type: ignore
+        help_popup_text: str = CMain.yaml_settings(CMain.YAML.Main, "CLASSIC_Interface.help_popup_main")  # type: ignore
         QMessageBox.information(self, "NEED HELP?", help_popup_text)
 
     @staticmethod
@@ -1217,17 +1204,13 @@ class MainWindow(QMainWindow):
         folder = QFileDialog.getExistingDirectory(self, "Select Custom Scan Folder")
         if folder:
             self.scan_folder_edit.setText(folder)
-            CMain.yaml_settings(
-                "CLASSIC Settings.yaml", "CLASSIC_Settings.SCAN Custom Path", folder
-            )
+            CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.SCAN Custom Path", folder)
 
     def select_folder_mods(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Select Staging Mods Folder")
         if folder:
             self.mods_folder_edit.setText(folder)
-            CMain.yaml_settings(
-                "CLASSIC Settings.yaml", "CLASSIC_Settings.MODS Folder Path", folder
-            )
+            CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.MODS Folder Path", folder)
 
     def initialize_folder_paths(self) -> None:
         scan_folder: str = CMain.classic_settings("SCAN Custom Path") # type: ignore
@@ -1241,12 +1224,8 @@ class MainWindow(QMainWindow):
     def select_folder_ini(self) -> None:
         folder = QFileDialog.getExistingDirectory(self)
         if folder:
-            CMain.yaml_settings(
-                "CLASSIC Settings.yaml", "CLASSIC_Settings.INI Folder Path", folder
-            )
-            QMessageBox.information(
-                self, "New INI Path Set", f"You have set the new path to: \n{folder}"
-            )
+            CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.INI Folder Path", folder)
+            QMessageBox.information(self, "New INI Path Set", f"You have set the new path to: \n{folder}")
 
     @staticmethod
     def open_settings() -> None:
@@ -1319,10 +1298,10 @@ class MainWindow(QMainWindow):
             # Start the worker process for papyrus logs
             self.worker_stop_event = multiprocessing.Event()
             self.worker_process = multiprocessing.Process(
-                target=papyrus_worker, args=(self.result_queue, self.worker_stop_event) # type: ignore
+                target=papyrus_worker, args=(self.result_queue, self.worker_stop_event)
             )
-            self.worker_process.daemon = True # type: ignore
-            self.worker_process.start() # type: ignore
+            self.worker_process.daemon = True
+            self.worker_process.start()
 
             # Start the timer for periodic updates
             self.timer.start(5000)  # Update every 5 seconds
@@ -1388,8 +1367,8 @@ class MainWindow(QMainWindow):
             ):
                 # Split the buffer into lines
                 lines = self.message_buffer.split("\n")
-                papyrus_data = []
-                non_papyrus_data = []
+                papyrus_data: list[str] = []
+                non_papyrus_data: list[str] = []
 
                 # Separate Papyrus monitoring data from other data
                 for line in lines:
@@ -1424,17 +1403,17 @@ class MainWindow(QMainWindow):
 
                     # Update or add the Papyrus monitoring section
                     if papyrus_start != -1 and papyrus_end != -1:
-                        updated_lines = (
-                            current_lines[:papyrus_start]
-                            + papyrus_data
-                            + current_lines[papyrus_end:]
-                        )
+                        updated_lines = [
+                            *current_lines[:papyrus_start],
+                            *papyrus_data,
+                            *current_lines[papyrus_end:],
+                        ]
                     else:
-                        updated_lines = (
-                            current_lines  # noqa: RUF005
-                            + ["\n--- Papyrus Monitoring ---"]
-                            + papyrus_data
-                        )
+                        updated_lines = [
+                            *current_lines,
+                            "\n--- Papyrus Monitoring ---",
+                            *papyrus_data,
+                        ]
 
                     new_text = "\n".join(updated_lines)
                     self.output_text_box.setPlainText(new_text)

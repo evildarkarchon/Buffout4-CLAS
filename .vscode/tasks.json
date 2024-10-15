@@ -1,0 +1,63 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "delete-runtime-files",
+			"type": "shell",
+			"windows": {
+				"options": {
+					"shell": {
+						"executable": "cmd.exe",
+						"args": [
+							"/Q",
+							"/C",
+						]
+					},
+				},
+				"command": "del",
+				"args": [
+					"/F",
+					"/Q",
+					"CLASSIC Journal.log",
+					"CLASSIC Ignore.yaml",
+					"CLASSIC Settings.yaml",
+					"CLASSIC Data\\CLASSIC Fallout4 Local.yaml",
+				],
+			}
+		},
+		{
+			"label": "delete-runtime-folders",
+			"type": "shell",
+			"windows": {
+				"options": {
+					"shell": {
+						"executable": "cmd.exe",
+						"args": [
+							"/Q",
+							"/C",
+						]
+					}
+				},
+				"command": "rmdir",
+				"args": [
+					"/S",
+					"/Q",
+					"Crash Logs",
+					"CLASSIC Backup",
+				],
+			}
+		},
+		{
+			"label": "cleanup",
+			"dependsOn": [ "delete-runtime-files", "delete-runtime-folders" ],
+			"presentation": {
+				"echo": false,
+				"reveal": "never",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true,"close": true
+			}
+		}
+	]
+}

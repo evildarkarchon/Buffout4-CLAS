@@ -1,0 +1,41 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "GUI",
+			"type": "debugpy",
+			"request": "launch",
+			"noDebug": true,
+			"cwd": "${workspaceFolder}",
+			"program": "CLASSIC_Interface.py",
+			"console": "integratedTerminal",
+		},
+		{
+			"name": "GUI (Clean)",
+			"type": "debugpy",
+			"request": "launch",
+			"noDebug": true,
+			"cwd": "${workspaceFolder}",
+			"program": "CLASSIC_Interface.py",
+			"preLaunchTask": "cleanup",
+			"console": "integratedTerminal",
+		},
+		{
+			"name": "[D] GUI",
+			"type": "debugpy",
+			"request": "launch",
+			"cwd": "${workspaceFolder}",
+			"program": "CLASSIC_Interface.py",
+			"console": "integratedTerminal",
+		},
+		{
+			"name": "[D] GUI (Clean)",
+			"type": "debugpy",
+			"request": "launch",
+			"cwd": "${workspaceFolder}",
+			"program": "CLASSIC_Interface.py",
+			"preLaunchTask": "cleanup",
+			"console": "integratedTerminal",
+		}
+	]
+}

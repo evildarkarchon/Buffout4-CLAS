@@ -1,18 +1,17 @@
 from pathlib import Path
 
 import pytest
-import ruamel.yaml
 from requests import HTTPError
 
-import CLASSIC_Main
 import CLASSIC_ScanLogs
+from tests.conftest import MockYAML
 
 
 def test_pastebin_fetch() -> None:
     """Test CLASSIC_ScanLogs's `pastebin_fetch()`."""
     test_url = "https://pastebin.com/7rXpAw8s"
     test_url_fake = "https://pastebin.com/XXXXXXXX"
-    pastebin_path = Path("CLASSIC Pastebin")
+    pastebin_path = Path("Crash Logs/Pastebin")
 
     assert not pastebin_path.exists(), f"{pastebin_path} existed before testing"
 
@@ -38,6 +37,9 @@ def test_get_entry() -> None:
     game = "Fallout4"
     db_path_main = Path(f"CLASSIC Data/databases/{game} FormIDs Main.db")
     db_path_local = Path(f"CLASSIC Data/databases/{game} FormIDs Local.db")
+    db_found = db_path_main.is_file() and db_path_local.is_file()
+    assert db_found is True, "DB files not found"
+
     test_formid = "00003C"
     test_plugin = "Fallout4.esm"
 
@@ -64,34 +66,19 @@ def test_get_entry() -> None:
 
 
 @pytest.mark.usefixtures("_gamevars")
-def test_crashlogs_get_files(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None:
+def test_crashlogs_get_files(mock_yaml: MockYAML) -> None:
     """Test CLASSIC_ScanLogs's `crashlogs_get_files()`."""
-    # Fake the YAML cache to prevent loading real values.
-    game = CLASSIC_Main.gamevars["game"]
-    yaml_path = Path(f"CLASSIC Data/CLASSIC {game} Local.yaml")
-    yaml_path.touch()
-    last_mod_time = yaml_path.stat().st_mtime
-    yaml_cache.file_mod_times[yaml_path] = last_mod_time
+    CLASSIC_logs = Path.cwd() / "Crash Logs"
 
-    yaml_cache.cache[yaml_path] = ruamel.yaml.CommentedMap({
-        "Game_Info": {"Docs_Folder_XSE": "tests/"},
-    })
-
-    settings_path = Path("CLASSIC Settings.yaml")
-    settings_path.touch()
-    last_mod_time = settings_path.stat().st_mtime
-    yaml_cache.file_mod_times[settings_path] = last_mod_time
-
-    yaml_cache.cache[settings_path] = ruamel.yaml.CommentedMap({
-        "CLASSIC_Settings": {"SCAN Custom Path": "tests/"},
-    })
+    mock_yaml["Docs_Folder_XSE"] = "tests/"
+    mock_yaml["SCAN Custom Path"] = "tests/"
 
     test_logs = [
         Path.cwd() / "tests/crash-TEST_1.log",
         Path.cwd() / "tests/crash-TEST_2.log",
     ]
     for f in test_logs:
-        copy_destination = Path.cwd() / f.name
+        copy_destination = CLASSIC_logs / f.name
         assert not copy_destination.exists(), f"{copy_destination} existed before testing"
         f.touch()
         assert f.is_file(), f"{f} was not created"
@@ -102,7 +89,7 @@ def test_crashlogs_get_files(yaml_cache: CLASSIC_Main.YamlSettingsCache) -> None
     assert all(r.name.startswith("crash-TEST_") for r in return_value), "Non-test logs were included in results"
 
     for q in test_logs:
-        copy_destination = Path.cwd() / q.name
+        copy_destination = CLASSIC_logs / q.name
         assert copy_destination.exists(), f"{q.name} was not copied to CLASSIC's folder"
     for s in return_value:
         s.unlink(missing_ok=True)
