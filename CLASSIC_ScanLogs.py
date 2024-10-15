@@ -14,6 +14,11 @@ import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
 
 query_cache: dict[tuple[str, str], str] = {}
+# Define paths for both Main and Local databases
+DB_PATHS = (
+    Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs Main.db"),
+    Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs Local.db"),
+)
 
 
 # ================================================
@@ -36,13 +41,7 @@ def get_entry(formid: str, plugin: str) -> str | None:
     if (entry := query_cache.get((formid, plugin))) is not None:
         return entry
 
-    # Define paths for both Main and Local databases
-    db_paths = [
-        Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs Main.db"),
-        Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs Local.db"),
-    ]
-
-    for db_path in db_paths:
+    for db_path in DB_PATHS:
         if db_path.is_file():
             with sqlite3.connect(db_path) as conn:
                 c = conn.cursor()
@@ -176,6 +175,8 @@ def crashlogs_scan() -> None:
     game_mods_solu: dict[str, str] = CMain.yaml_settings(CMain.YAML.Game, "Mods_SOLU")  # type: ignore
 
     ignore_list: list[str] = CMain.yaml_settings(CMain.YAML.Ignore, f"CLASSIC_Ignore_{CMain.gamevars["game"]}")  # type: ignore
+    show_formid_values = CMain.classic_settings("Show FormID Values")
+    formid_db_exists = any(db.is_file() for db in DB_PATHS)
     # ================================================
     if CMain.classic_settings("FCX Mode"):
         main_files_check = CMain.main_combined_result()
