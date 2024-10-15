@@ -250,11 +250,11 @@ def crashlogs_scan() -> None:
         segment_start = segment_start.lower()
         segment_end = segment_end.lower()
         try:
-            index_start: int = next(index for index, item in enumerate(crash_data) if segment_start in item.lower()) + 1
+            index_start = next(index for index, item in enumerate(crash_data) if segment_start in item.lower()) + 1
         except StopIteration:
             index_start = 0
         try:
-            index_end: int = (
+            index_end = (
                 next(
                     index
                     for index, item in enumerate(crash_data)
@@ -266,7 +266,7 @@ def crashlogs_scan() -> None:
             index_end = len(crash_data)
 
         if index_start <= index_end:
-            segment_output: list[str] = [
+            segment_output = [
                 s_line.strip()
                 for s_line in crash_data[index_start:index_end]
                 if all(item.lower() not in s_line.lower() for item in remove_list)
@@ -281,7 +281,7 @@ def crashlogs_scan() -> None:
     stats_crashlog_scanned = stats_crashlog_incomplete = stats_crashlog_failed = 0
     CMain.logger.info(f"- - - INITIATED CRASH LOG FILE SCAN >>> CURRENTLY SCANNING {len(crashlog_list)} FILES")
     for crashlog_file in crashlog_list:
-        autoscan_report = []
+        autoscan_report: list[str] = []
         trigger_plugin_limit = trigger_plugins_loaded = trigger_scan_failed = False
         with crashlog_file.open(encoding="utf-8", errors="ignore") as crash_log:
             crash_log.seek(0)  # DON'T FORGET WHEN READING FILE MULTIPLE TIMES
