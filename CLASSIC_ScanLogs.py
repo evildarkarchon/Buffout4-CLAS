@@ -131,7 +131,7 @@ def crashlogs_reformat() -> None:
 # CRASH LOG SCAN START
 # ================================================
 def crashlogs_scan() -> None:
-    pluginsearch = re.compile(r"\s*\[(FE:([0-9A-F]{3})?|[0-9A-F]{2})\]\s*([\w\s-]+\.es[pml])", flags=re.IGNORECASE)
+    pluginsearch = re.compile(r"\s*\[(FE:([0-9A-F]{3})|[0-9A-F]{2})\]\s*(.+?(?:\.es[pml])+)", flags=re.IGNORECASE)
     # is_ng_log = re.compile(r"\s*\[([0-9A-F]{2})\]([^\s]+.*)", flags=re.IGNORECASE)
     print("REFORMATTING CRASH LOGS, PLEASE WAIT...\n")
     crashlogs_reformat()
