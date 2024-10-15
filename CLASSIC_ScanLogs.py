@@ -175,6 +175,7 @@ def crashlogs_scan() -> None:
     game_mods_solu: dict[str, str] = CMain.yaml_settings(CMain.YAML.Game, "Mods_SOLU")  # type: ignore
 
     ignore_list: list[str] = CMain.yaml_settings(CMain.YAML.Ignore, f"CLASSIC_Ignore_{CMain.gamevars["game"]}")  # type: ignore
+    xse_acronym = xse_acronym.lower()
     show_formid_values = CMain.classic_settings("Show FormID Values")
     formid_db_exists = any(db.is_file() for db in DB_PATHS)
     # ================================================
@@ -258,7 +259,7 @@ def crashlogs_scan() -> None:
                 next(
                     index
                     for index, item in enumerate(crash_data)
-                    if segment_end in item.lower() and xse_acronym.lower() not in item.lower()
+                    if segment_end in item.lower() and xse_acronym not in item.lower()
                 )
                 - 1
             )
@@ -317,8 +318,8 @@ def crashlogs_scan() -> None:
         # ================================================
         # 2) GENERATE REQUIRED SEGMENTS FROM THE CRASH LOG
         # ================================================
-        segment_allmodules = crashlog_generate_segment("modules:", f"{xse_acronym.lower()} plugins:", crash_data)
-        segment_xsemodules = crashlog_generate_segment(f"{xse_acronym.lower()} plugins:", "plugins:", crash_data)
+        segment_allmodules = crashlog_generate_segment("modules:", f"{xse_acronym} plugins:", crash_data)
+        segment_xsemodules = crashlog_generate_segment(f"{xse_acronym} plugins:", "plugins:", crash_data)
         segment_callstack = crashlog_generate_segment("probable call stack:", "modules:", crash_data)
         segment_crashgen = crashlog_generate_segment("[compatibility]", "system specs:", crash_data)
         segment_system = crashlog_generate_segment("system specs:", "probable call stack:", crash_data)
