@@ -560,45 +560,50 @@ def crashlogs_scan() -> None:
                             f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n",
                         )
 
-                if Has_XCell and "bstexturestreamerlocalheap:" in line_lower and "true" in line_lower:
-                    autoscan_report.extend((
-                        "# ❌ CAUTION : X-Cell is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE # \n",
-                        f" FIX: Open {crashgen_name}'s TOML file and change BSTextureStreamerLocalHeap to FALSE, this prevents conflicts with X-Cell.\n-----\n",
-                    ))
-                elif Has_XCell and "bstexturestreamerlocalheap:" in line_lower and "false" in line_lower:
-                    autoscan_report.append(
-                        f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
-                    )
+                if Has_XCell:
+                    if "bstexturestreamerlocalheap:" in line_lower:
+                        if "true" in line_lower:
+                            autoscan_report.extend((
+                                "# ❌ CAUTION : X-Cell is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE # \n",
+                                f" FIX: Open {crashgen_name}'s TOML file and change BSTextureStreamerLocalHeap to FALSE, this prevents conflicts with X-Cell.\n-----\n",
+                            ))
+                        elif "false" in line_lower:
+                            autoscan_report.append(
+                                f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
+                            )
 
-                if Has_XCell and "havokmemorysystem:" in line_lower and "true" in line_lower:
-                    autoscan_report.extend((
-                        "# ❌ CAUTION : X-Cell is installed, but HavokMemorySystem parameter is set to TRUE # \n",
-                        f" FIX: Open {crashgen_name}'s TOML file and change HavokMemorySystem to FALSE, this prevents conflicts with X-Cell.\n-----\n",
-                    ))
-                elif Has_XCell and "havokmemorysystem:" in line_lower and "false" in line_lower:
-                    autoscan_report.append(
-                        f"✔️ HavokMemorySystem parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
-                    )
+                    if "havokmemorysystem:" in line_lower:
+                        if "true" in line_lower:
+                            autoscan_report.extend((
+                                "# ❌ CAUTION : X-Cell is installed, but HavokMemorySystem parameter is set to TRUE # \n",
+                                f" FIX: Open {crashgen_name}'s TOML file and change HavokMemorySystem to FALSE, this prevents conflicts with X-Cell.\n-----\n",
+                            ))
+                        elif "false" in line_lower:
+                            autoscan_report.append(
+                                f"✔️ HavokMemorySystem parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
+                            )
 
-                if Has_XCell and "scaleformallocator:" in line_lower and "true" in line_lower:
-                    autoscan_report.extend((
-                        "# ❌ CAUTION : X-Cell is installed, but ScaleformAllocator parameter is set to TRUE # \n",
-                        f" FIX: Open {crashgen_name}'s TOML file and change ScaleformAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n",
-                    ))
-                elif Has_XCell and "scaleformallocator:" in line_lower and "false" in line_lower:
-                    autoscan_report.append(
-                        f"✔️ ScaleformAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
-                    )
+                    if "scaleformallocator:" in line_lower:
+                        if "true" in line_lower:
+                            autoscan_report.extend((
+                                "# ❌ CAUTION : X-Cell is installed, but ScaleformAllocator parameter is set to TRUE # \n",
+                                f" FIX: Open {crashgen_name}'s TOML file and change ScaleformAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n",
+                            ))
+                        elif "false" in line_lower:
+                            autoscan_report.append(
+                                f"✔️ ScaleformAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
+                            )
 
-                if Has_XCell and "smallblockallocator:" in line_lower and "true" in line_lower:
-                    autoscan_report.extend((
-                        "# ❌ CAUTION : X-Cell is installed, but SmallBlockAllocator parameter is set to TRUE # \n",
-                        f" FIX: Open {crashgen_name}'s TOML file and change SmallBlockAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n",
-                    ))
-                elif Has_XCell and "smallblockallocator:" in line_lower and "false" in line_lower:
-                    autoscan_report.append(
-                        f"✔️ SmallBlockAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
-                    )
+                    if "smallblockallocator:" in line_lower:
+                        if "true" in line_lower:
+                            autoscan_report.extend((
+                                "# ❌ CAUTION : X-Cell is installed, but SmallBlockAllocator parameter is set to TRUE # \n",
+                                f" FIX: Open {crashgen_name}'s TOML file and change SmallBlockAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n",
+                            ))
+                        elif "false" in line_lower:
+                            autoscan_report.append(
+                                f"✔️ SmallBlockAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
+                            )
 
                 if "f4ee:" in line_lower:
                     if "false" in line_lower and any("f4ee.dll" in elem.lower() for elem in segment_xsemodules):
