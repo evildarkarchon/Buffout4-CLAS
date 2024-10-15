@@ -845,24 +845,11 @@ def main_combined_result() -> str:
                        docs_check_ini(f"{gamevars["game"]}.ini"), docs_check_ini(f"{gamevars["game"]}Custom.ini"), docs_check_ini(f"{gamevars["game"]}Prefs.ini")]
     return "".join(combined_return)
 
-yaml_cache: YamlSettingsCache | None = None
-manual_docs_gui: ManualDocsPath | None = None
-game_path_gui: GamePathEntry | None = None
-gui_mode: bool = False
 
-def initialize(is_gui: bool = False) -> None:
-    global gui_mode, yaml_cache, manual_docs_gui, game_path_gui  # noqa: PLW0603
-
-    yaml_cache = YamlSettingsCache()
-    gui_mode = is_gui
-    if gui_mode:
-        manual_docs_gui = ManualDocsPath()
-        game_path_gui = GamePathEntry()
-
+def main_generate_required() -> None:
     configure_logging()
     classic_data_extract()
     classic_generate_files()
-    gamevars["vr"] = "VR" if classic_settings("VR Mode") else ""
     classic_ver = yaml_settings(YAML.Main, "CLASSIC_Info.version")
     game_name = yaml_settings(YAML.Game, "Game_Info.Main_Root_Name")
     if not (isinstance(classic_ver, str) and isinstance(game_name, str)):
@@ -886,6 +873,24 @@ def initialize(is_gui: bool = False) -> None:
     print("    YOU CAN NOW SCAN YOUR CRASH LOGS, GAME AND/OR MOD FILES \n")
 
 
+yaml_cache: YamlSettingsCache | None = None
+manual_docs_gui: ManualDocsPath | None = None
+game_path_gui: GamePathEntry | None = None
+gui_mode: bool = False
+
+
+def initialize(is_gui: bool = False) -> None:
+    global gui_mode, yaml_cache, manual_docs_gui, game_path_gui  # noqa: PLW0603
+
+    yaml_cache = YamlSettingsCache()
+    gamevars["vr"] = "VR" if classic_settings("VR Mode") else ""
+    gui_mode = is_gui
+    if gui_mode:
+        manual_docs_gui = ManualDocsPath()
+        game_path_gui = GamePathEntry()
+
+
 if __name__ == "__main__":  # AKA only autorun / do the following when NOT imported.
     initialize()
+    main_generate_required()
     os.system("pause")

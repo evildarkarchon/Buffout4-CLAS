@@ -402,6 +402,7 @@ class MainWindow(QMainWindow):
         self.initialize_folder_paths()
         self.setup_output_redirection()
         self.output_buffer = ""
+        CMain.main_generate_required()
         # Perform initial update check
         if CMain.classic_settings("Update Check"):
             QTimer.singleShot(0, self.update_popup)

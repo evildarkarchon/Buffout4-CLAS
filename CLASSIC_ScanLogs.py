@@ -417,6 +417,8 @@ def crashlogs_scan() -> None:
             key_split = key.split(" | ", 1)
             error_req_found = error_opt_found = stack_found = False
             item_list = suspects_stack_list.get(key, [])
+            if not isinstance(item_list, list):
+                raise TypeError
             has_required_item = any("ME-REQ|" in elem for elem in item_list)
             for item in item_list:
                 if "|" in item:

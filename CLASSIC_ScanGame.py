@@ -701,6 +701,7 @@ def write_combined_results() -> None:
 
 if __name__ == "__main__":
     CMain.initialize()
+    CMain.main_generate_required()
     print(game_combined_result())
     print(mods_combined_result())
     game_files_manage("Backup ENB")
