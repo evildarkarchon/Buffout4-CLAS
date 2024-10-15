@@ -517,25 +517,25 @@ def crashlogs_scan() -> None:
             "====================================================\n",
         ))
 
-        Is_XCellPresent = any("x-cell-fo4.dll" in elem.lower() for elem in segment_xsemodules)
-        Is_BakaScrapheapPresent = any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules)
+        Has_XCell = any("x-cell-fo4.dll" in elem.lower() for elem in segment_xsemodules)
+        Has_BakaScrapHeap = any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules)
 
         if not CMain.classic_settings("FCX Mode"):
             autoscan_report.extend((
                 "* NOTICE: FCX MODE IS DISABLED. YOU CAN ENABLE IT TO DETECT PROBLEMS IN YOUR MOD & GAME FILES * \n",
                 "[ FCX Mode can be enabled in the exe or CLASSIC Settings.yaml located in your CLASSIC folder. ] \n\n",
-            if Is_XCellPresent:
-                crashgen_ignore.extend(["havokmemorysystem", "scaleformallocator", "smallblockallocator"])
             ))
+            if Has_XCell:
+                crashgen_ignore.extend(("havokmemorysystem", "scaleformallocator", "smallblockallocator"))
             for line in segment_crashgen:
-                if "false" in line.lower() and all(elem.lower() not in line.lower() for elem in crashgen_ignore):
-                    line_split = line.split(":", 1)
+                line_lower = line.lower()
+                if "false" in line_lower and all(elem.lower() not in line_lower for elem in crashgen_ignore):
                     autoscan_report.append(
-                        f"* NOTICE : {line_split[0].strip()} is disabled in your {crashgen_name} settings, is this intentional? * \n-----\n"
+                        f"* NOTICE : {line.split(":", 1)[0].strip()} is disabled in your {crashgen_name} settings, is this intentional? * \n-----\n",
                     )
 
-                if "achievements:" in line.lower():
-                    if "true" in line.lower() and any(
+                if "achievements:" in line_lower:
+                    if "true" in line_lower and any(
                         any(dll in elem.lower() for dll in ("achievements.dll", "unlimitedsurvivalmode.dll"))
                         for elem in segment_xsemodules
                     ):
@@ -548,62 +548,66 @@ def crashlogs_scan() -> None:
                             f"✔️ Achievements parameter is correctly configured in your {crashgen_name} settings! \n-----\n"
                         )
 
-                if "memorymanager:" in line.lower():
-                    if "true" in line.lower() and Is_BakaScrapheapPresent and not Is_XCellPresent:
+                if "memorymanager:" in line_lower:
+                    if Has_BakaScrapHeap and not Has_XCell and "true" in line_lower:
                         autoscan_report.extend((
                             "# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but MemoryManager parameter is set to TRUE # \n",
                             f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with {crashgen_name}.\n-----\n",
-                    elif "true" in line.lower() and Is_XCellPresent and not Is_BakaScrapheapPresent:
                         ))
+                    elif Has_XCell and not Has_BakaScrapHeap and "true" in line_lower:
                         autoscan_report.extend((
                             "# ❌ CAUTION : X-Cell is installed, but MemoryManager parameter is set to TRUE # \n",
                             f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with X-Cell.\n-----\n",
-                    elif "false" in line.lower() and Is_XCellPresent and not Is_BakaScrapheapPresent:
                             f"✔️ Memory Manager parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
                         ))
+                    elif Has_XCell and not Has_BakaScrapHeap and "false" in line_lower:
                     else:
                         autoscan_report.append(
                             f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n"
                         )
 
-                if "bstexturestreamerlocalheap:" in line.lower() and "true" in line.lower() and Is_XCellPresent:
+                if Has_XCell and "bstexturestreamerlocalheap:" in line_lower and "true" in line_lower:
                     autoscan_report.extend((
                         "# ❌ CAUTION : X-Cell is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE # \n",
                         f" FIX: Open {crashgen_name}'s TOML file and change BSTextureStreamerLocalHeap to FALSE, this prevents conflicts with X-Cell.\n-----\n",
-                elif "bstexturestreamerlocalheap:" in line.lower() and "false" in line.lower() and Is_XCellPresent:
                     ))
+                elif Has_XCell and "bstexturestreamerlocalheap:" in line_lower and "false" in line_lower:
                     autoscan_report.append(
                         f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
                     )
 
-                if "havokmemorysystem:" in line.lower() and "true" in line.lower() and Is_XCellPresent:
+                if Has_XCell and "havokmemorysystem:" in line_lower and "true" in line_lower:
                     autoscan_report.extend((
                         "# ❌ CAUTION : X-Cell is installed, but HavokMemorySystem parameter is set to TRUE # \n",
                         f" FIX: Open {crashgen_name}'s TOML file and change HavokMemorySystem to FALSE, this prevents conflicts with X-Cell.\n-----\n",
-                elif "havokmemorysystem:" in line.lower() and "false" in line.lower() and Is_XCellPresent:
                     ))
+                elif Has_XCell and "havokmemorysystem:" in line_lower and "false" in line_lower:
                     autoscan_report.append(
                         f"✔️ HavokMemorySystem parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
                     )
 
-                if "scaleformallocator:" in line.lower() and "true" in line.lower() and Is_XCellPresent:
+                if Has_XCell and "scaleformallocator:" in line_lower and "true" in line_lower:
                     autoscan_report.extend((
                         "# ❌ CAUTION : X-Cell is installed, but ScaleformAllocator parameter is set to TRUE # \n",
                         f" FIX: Open {crashgen_name}'s TOML file and change ScaleformAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n",
-                elif "scaleformallocator:" in line.lower() and "false" in line.lower() and Is_XCellPresent:
                         f"✔️ ScaleformAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
-
-                if "smallblockallocator:" in line.lower() and "true" in line.lower() and Is_XCellPresent:
                     ))
+                elif Has_XCell and "scaleformallocator:" in line_lower and "false" in line_lower:
+                    autoscan_report.append(
+                    )
+
+                if Has_XCell and "smallblockallocator:" in line_lower and "true" in line_lower:
                     autoscan_report.extend((
                         "# ❌ CAUTION : X-Cell is installed, but SmallBlockAllocator parameter is set to TRUE # \n",
                         f" FIX: Open {crashgen_name}'s TOML file and change SmallBlockAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n",
-                elif "smallblockallocator:" in line.lower() and "false" in line.lower() and Is_XCellPresent:
                         f"✔️ SmallBlockAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
-
-                if "f4ee:" in line.lower():
-                    if "false" in line.lower() and any("f4ee.dll" in elem.lower() for elem in segment_xsemodules):
                     ))
+                elif Has_XCell and "smallblockallocator:" in line_lower and "false" in line_lower:
+                    autoscan_report.append(
+                    )
+
+                if "f4ee:" in line_lower:
+                    if "false" in line_lower and any("f4ee.dll" in elem.lower() for elem in segment_xsemodules):
                         autoscan_report.extend((
                             "# ❌ CAUTION : Looks Menu is installed, but F4EE parameter under [Compatibility] is set to FALSE # \n",
                             f" FIX: Open {crashgen_name}'s TOML file and change F4EE to TRUE, this prevents bugs and crashes from Looks Menu.\n-----\n",
@@ -755,7 +759,7 @@ def crashlogs_scan() -> None:
         # ================================================
         autoscan_report.append("# LIST OF (POSSIBLE) FORM ID SUSPECTS #\n")
         formids_matches = [
-            line.replace("0x", "").strip() for line in segment_callstack if "id:" in line.lower() and "0xFF" not in line
+            line.replace("0x", "").strip() for line in segment_callstack if "0xFF" not in line and "id:" in line.lower()
         ]
         if formids_matches:
             formids_found = dict(Counter(sorted(formids_matches)))
