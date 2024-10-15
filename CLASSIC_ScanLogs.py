@@ -792,7 +792,7 @@ def crashlogs_scan() -> None:
         # ================================================
 
         autoscan_report.append("# LIST OF DETECTED (NAMED) RECORDS #\n")
-        records_matches = []
+        records_matches: list[str] = []
         for line in segment_callstack:
             if any(item.lower() in line.lower() for item in classic_records_list) and all(
                 record.lower() not in line.lower() for record in game_ignore_records
@@ -826,11 +826,12 @@ def crashlogs_scan() -> None:
             scan_failed_list.append(crashlog_file.name)
 
         # HIDE PERSONAL USERNAME
+        user_name = user_folder.name
+        user_path_1 = f"{user_folder.parent}\\{user_folder.name}"
+        user_path_2 = f"{user_folder.parent}/{user_folder.name}"
         for line in autoscan_report:
-            if user_folder.name in line:
-                line.replace(f"{user_folder.parent}\\{user_folder.name}", "******").replace(
-                    f"{user_folder.parent}/{user_folder.name}", "******"
-                )
+            if user_name in line:
+                line.replace(user_path_1, "******").replace(user_path_2, "******")
 
         # WRITE AUTOSCAN REPORT TO FILE
         autoscan_path = crashlog_file.with_name(crashlog_file.stem + "-AUTOSCAN.md")
