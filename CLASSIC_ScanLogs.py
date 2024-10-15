@@ -545,7 +545,7 @@ def crashlogs_scan() -> None:
                         ))
                     else:
                         autoscan_report.append(
-                            f"✔️ Achievements parameter is correctly configured in your {crashgen_name} settings! \n-----\n"
+                            f"✔️ Achievements parameter is correctly configured in your {crashgen_name} settings! \n-----\n",
                         )
 
                 if "memorymanager:" in line_lower:
@@ -558,12 +558,14 @@ def crashlogs_scan() -> None:
                         autoscan_report.extend((
                             "# ❌ CAUTION : X-Cell is installed, but MemoryManager parameter is set to TRUE # \n",
                             f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with X-Cell.\n-----\n",
-                            f"✔️ Memory Manager parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
                         ))
                     elif Has_XCell and not Has_BakaScrapHeap and "false" in line_lower:
+                        autoscan_report.append(
+                            f"✔️ Memory Manager parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
+                        )
                     else:
                         autoscan_report.append(
-                            f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n"
+                            f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n",
                         )
 
                 if Has_XCell and "bstexturestreamerlocalheap:" in line_lower and "true" in line_lower:
@@ -573,7 +575,7 @@ def crashlogs_scan() -> None:
                     ))
                 elif Has_XCell and "bstexturestreamerlocalheap:" in line_lower and "false" in line_lower:
                     autoscan_report.append(
-                        f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
+                        f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
                     )
 
                 if Has_XCell and "havokmemorysystem:" in line_lower and "true" in line_lower:
@@ -583,27 +585,27 @@ def crashlogs_scan() -> None:
                     ))
                 elif Has_XCell and "havokmemorysystem:" in line_lower and "false" in line_lower:
                     autoscan_report.append(
-                        f"✔️ HavokMemorySystem parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
+                        f"✔️ HavokMemorySystem parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
                     )
 
                 if Has_XCell and "scaleformallocator:" in line_lower and "true" in line_lower:
                     autoscan_report.extend((
                         "# ❌ CAUTION : X-Cell is installed, but ScaleformAllocator parameter is set to TRUE # \n",
                         f" FIX: Open {crashgen_name}'s TOML file and change ScaleformAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n",
-                        f"✔️ ScaleformAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
                     ))
                 elif Has_XCell and "scaleformallocator:" in line_lower and "false" in line_lower:
                     autoscan_report.append(
+                        f"✔️ ScaleformAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
                     )
 
                 if Has_XCell and "smallblockallocator:" in line_lower and "true" in line_lower:
                     autoscan_report.extend((
                         "# ❌ CAUTION : X-Cell is installed, but SmallBlockAllocator parameter is set to TRUE # \n",
                         f" FIX: Open {crashgen_name}'s TOML file and change SmallBlockAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n",
-                        f"✔️ SmallBlockAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
                     ))
                 elif Has_XCell and "smallblockallocator:" in line_lower and "false" in line_lower:
                     autoscan_report.append(
+                        f"✔️ SmallBlockAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
                     )
 
                 if "f4ee:" in line_lower:
@@ -614,7 +616,7 @@ def crashlogs_scan() -> None:
                         ))
                     else:
                         autoscan_report.append(
-                            f"✔️ F4EE (Looks Menu) parameter is correctly configured in your {crashgen_name} settings! \n-----\n"
+                            f"✔️ F4EE (Looks Menu) parameter is correctly configured in your {crashgen_name} settings! \n-----\n",
                         )
 
         else:
@@ -680,7 +682,7 @@ def crashlogs_scan() -> None:
                 ))
             else:
                 autoscan_report.append(
-                    "# FOUND NO PROBLEMATIC MODS WITH AVAILABLE SOLUTIONS AND COMMUNITY PATCHES # \n\n"
+                    "# FOUND NO PROBLEMATIC MODS WITH AVAILABLE SOLUTIONS AND COMMUNITY PATCHES # \n\n",
                 )
         else:
             autoscan_report.append(warn_noplugins)
@@ -700,7 +702,7 @@ def crashlogs_scan() -> None:
                     ))
                 else:
                     autoscan_report.append(
-                        "# FOUND NO PROBLEMATIC MODS THAT ARE ALREADY PATCHED THROUGH THE OPC INSTALLER # \n\n"
+                        "# FOUND NO PROBLEMATIC MODS THAT ARE ALREADY PATCHED THROUGH THE OPC INSTALLER # \n\n",
                     )
             else:
                 autoscan_report.append(warn_noplugins)
