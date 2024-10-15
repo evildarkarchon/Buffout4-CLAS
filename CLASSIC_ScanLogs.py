@@ -325,9 +325,8 @@ def crashlogs_scan() -> None:
         segment_callstack = crashlog_generate_segment("probable call stack:", "modules:", crash_data)
         segment_crashgen = crashlog_generate_segment("[compatibility]", "system specs:", crash_data)
         segment_system = crashlog_generate_segment("system specs:", "probable call stack:", crash_data)
-        segment_plugins = crashlog_generate_segment(
-            "plugins:", "???????", crash_data
-        )  # Non-existent value makes it go to last line.
+        # Non-existent value makes it go to last line.
+        segment_plugins = crashlog_generate_segment("plugins:", "???????", crash_data)
         segment_callstack_intact = "".join(segment_callstack)
         if not segment_plugins:
             stats_crashlog_incomplete += 1
@@ -390,10 +389,10 @@ def crashlogs_scan() -> None:
                     trigger_plugin_limit = True
                 pluginmatch = pluginsearch.match(elem, concurrent=True)
                 if pluginmatch is not None:
-                    """if ng_log_match and ng_log_match.group(1) and ng_log_match.group(2):
-                        plugin_fid = pluginmatch.group(2)
-                    else:
-                        plugin_fid = pluginmatch.group(1)"""
+                    # if ng_log_match and ng_log_match.group(1) and ng_log_match.group(2):
+                    #     plugin_fid = pluginmatch.group(2)
+                    # else:
+                    #     plugin_fid = pluginmatch.group(1)
                     plugin_fid = pluginmatch.group(1)
                     plugin_name = pluginmatch.group(3)
                     if plugin_fid is not None and all(plugin_name not in item for item in crashlog_plugins):
