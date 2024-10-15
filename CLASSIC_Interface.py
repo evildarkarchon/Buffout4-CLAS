@@ -248,7 +248,7 @@ class PapyrusLogProcessor(QThread):
         self.is_running = False
 
 
-def papyrus_worker(q: multiprocessing.Queue[str], stop_event: multiprocessing.synchronize.Event) -> None:
+def papyrus_worker(q: multiprocessing.Queue, stop_event: multiprocessing.synchronize.Event) -> None:
     while not stop_event.is_set():
         papyrus_result, _ = CGame.papyrus_logging()
         # Ensure the message starts and ends with newlines
@@ -414,7 +414,7 @@ class MainWindow(QMainWindow):
         self.is_update_check_running = False
 
         # Set up Papyrus monitoring
-        self.result_queue: multiprocessing.Queue[str] = multiprocessing.Queue()
+        self.result_queue: multiprocessing.Queue = multiprocessing.Queue()
         self.worker_stop_event = multiprocessing.Event()
         self.worker_process: multiprocessing.Process | None = None
         self.is_worker_running = False
