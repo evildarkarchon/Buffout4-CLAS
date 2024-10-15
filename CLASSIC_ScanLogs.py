@@ -153,7 +153,7 @@ def crashlogs_scan() -> None:
 
     autoscan_text: str = CMain.yaml_settings(CMain.YAML.Main, f"CLASSIC_Interface.autoscan_text_{CMain.gamevars["game"]}")  # type: ignore
     remove_list: list[str] = CMain.yaml_settings(CMain.YAML.Main, "exclude_log_records")  # type: ignore
-    ignore_list: list[str] = CMain.yaml_settings("CLASSIC Ignore.yaml", f"CLASSIC_Ignore_{CMain.gamevars["game"]}")  # type: ignore
+    ignore_list: list[str] = CMain.yaml_settings(CMain.YAML.Ignore, f"CLASSIC_Ignore_{CMain.gamevars["game"]}")  # type: ignore
 
     game_mods_conf: dict[str, str] = CMain.yaml_settings(CMain.YAML.Game, "Mods_CONF")  # type: ignore
     game_mods_core: dict[str, str] = CMain.yaml_settings(CMain.YAML.Game, "Mods_CORE")  # type: ignore
@@ -770,7 +770,7 @@ if __name__ == "__main__":
     if isinstance(args.fcx_mode, bool) and args.fcx_mode != CMain.classic_settings("FCX Mode"):
         CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.FCX Mode", args.fcx_mode)
 
-    if isinstance(args.show_fid_vaues, bool) and args.imi_mode != CMain.classic_settings("Show FormID Values"):
+    if isinstance(args.show_fid_values, bool) and args.show_fid_values != CMain.classic_settings("Show FormID Values"):
         CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.IMI Mode", args.imi_mode)
 
     if isinstance(args.move_unsolved, bool) and args.move_unsolved != CMain.classic_settings("Move Unsolved Logs"):
