@@ -11,6 +11,7 @@ from types import TracebackType
 from typing import Any, Literal
 
 import regex as re
+import requests
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtMultimedia import QSoundEffect
@@ -38,6 +39,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
 
 class ErrorDialog(QDialog):
     def __init__(self, error_text: str) -> None:
@@ -246,7 +248,7 @@ class PapyrusLogProcessor(QThread):
         self.is_running = False
 
 
-def papyrus_worker(q: multiprocessing.Queue, stop_event: multiprocessing.synchronize.Event) -> None:
+def papyrus_worker(q: multiprocessing.Queue[str], stop_event: multiprocessing.synchronize.Event) -> None:
     while not stop_event.is_set():
         papyrus_result, _ = CGame.papyrus_logging()
         # Ensure the message starts and ends with newlines
@@ -462,7 +464,7 @@ class MainWindow(QMainWindow):
         try:
             CLogs.pastebin_fetch(pastebin_url)  # Fetch the log file from Pastebin
             QMessageBox.information(self, "Success", f"Log fetched from: {pastebin_url}")
-        except Exception as e:  # noqa: BLE001
+        except (OSError, requests.HTTPError) as e:
             QMessageBox.warning(self, "Error", f"Failed to fetch log: {e!s}")
 
     def show_manual_docs_path_dialog(self) -> None:
