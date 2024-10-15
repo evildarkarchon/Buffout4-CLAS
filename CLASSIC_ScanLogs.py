@@ -445,16 +445,16 @@ def crashlogs_scan() -> None:
         max_warn_length = 30
         trigger_suspect_found = False
         for error in suspects_error_list:
-            error_split = error.split(" | ", 1)
-            if error_split[1] in crashlog_mainerror:
-                error_split[1] = error_split[1].ljust(max_warn_length, ".")
+            error_split_0, error_split_1 = error.split(" | ", 1)
+            if error_split_1 in crashlog_mainerror:
+                error_split_1 = error_split_1.ljust(max_warn_length, ".")
                 autoscan_report.append(
-                    f"# Checking for {error_split[1]} SUSPECT FOUND! > Severity : {error_split[0]} # \n-----\n"
+                    f"# Checking for {error_split_1} SUSPECT FOUND! > Severity : {error_split_0} # \n-----\n"
                 )
                 trigger_suspect_found = True
 
         for key in suspects_stack_list:
-            key_split = key.split(" | ", 1)
+            key_split_0, key_split_1 = key.split(" | ", 1)
             error_req_found = error_opt_found = stack_found = False
             item_list = suspects_stack_list.get(key, [])
             if not isinstance(item_list, list):
@@ -462,17 +462,17 @@ def crashlogs_scan() -> None:
             has_required_item = any("ME-REQ|" in elem for elem in item_list)
             for item in item_list:
                 if "|" in item:
-                    item_split = item.split("|", 1)
-                    if item_split[0] == "ME-REQ":
-                        if item_split[1] in crashlog_mainerror:
+                    item_split_0, item_split_1 = item.split("|", 1)
+                    if item_split_0 == "ME-REQ":
+                        if item_split_1 in crashlog_mainerror:
                             error_req_found = True
-                    elif item_split[0] == "ME-OPT":
-                        if item_split[1] in crashlog_mainerror:
+                    elif item_split_0 == "ME-OPT":
+                        if item_split_1 in crashlog_mainerror:
                             error_opt_found = True
-                    elif item_split[0].isdecimal():
-                        if segment_callstack_intact.count(item_split[1]) >= int(item_split[0]):
+                    elif item_split_0.isdecimal():
+                        if segment_callstack_intact.count(item_split_1) >= int(item_split_0):
                             stack_found = True
-                    elif item_split[0] == "NOT" and item_split[1] in segment_callstack_intact:
+                    elif item_split_0 == "NOT" and item_split_1 in segment_callstack_intact:
                         break
                 elif item in segment_callstack_intact:
                     stack_found = True
@@ -480,15 +480,15 @@ def crashlogs_scan() -> None:
             # print(f"TEST: {error_req_found} | {error_opt_found} | {stack_found}")
             if has_required_item:
                 if error_req_found:
-                    key_split[1] = key_split[1].ljust(max_warn_length, ".")
+                    key_split_1 = key_split_1.ljust(max_warn_length, ".")
                     autoscan_report.append(
-                        f"# Checking for {key_split[1]} SUSPECT FOUND! > Severity : {key_split[0]} # \n-----\n"
+                        f"# Checking for {key_split_1} SUSPECT FOUND! > Severity : {key_split_0} # \n-----\n"
                     )
                     trigger_suspect_found = True
             elif error_opt_found or stack_found:
-                key_split[1] = key_split[1].ljust(max_warn_length, ".")
+                key_split_1 = key_split_1.ljust(max_warn_length, ".")
                 autoscan_report.append(
-                    f"# Checking for {key_split[1]} SUSPECT FOUND! > Severity : {key_split[0]} # \n-----\n"
+                    f"# Checking for {key_split_1} SUSPECT FOUND! > Severity : {key_split_0} # \n-----\n"
                 )
                 trigger_suspect_found = True
 
