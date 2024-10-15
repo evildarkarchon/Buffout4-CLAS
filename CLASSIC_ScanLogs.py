@@ -349,7 +349,7 @@ def crashlogs_scan() -> None:
         # =============== CRASHGEN VERSION ===============
         crashlog_crashgen = crash_data[index_crashgenver].strip()
         autoscan_report.append(f"Detected {crashgen_name} Version: {crashlog_crashgen} \n")
-        if crashlog_crashgen in (crashgen_latest_og, crashgen_latest_vr):
+        if crashlog_crashgen in {crashgen_latest_og, crashgen_latest_vr}:
             autoscan_report.append(f"* You have the latest version of {crashgen_name}! *\n\n")
         else:
             autoscan_report.append(f"{warn_outdated} \n")
@@ -360,7 +360,8 @@ def crashlogs_scan() -> None:
         crashlog_GPUAMD = crashlog_GPUNV = False
         crashlog_plugins: dict[str, str] = {}
 
-        if any(f"{CMain.gamevars["game"]}.esm" in elem for elem in segment_plugins):
+        esm_name = f"{CMain.gamevars["game"]}.esm"
+        if any(esm_name in elem for elem in segment_plugins):
             trigger_plugins_loaded = True
         else:
             stats_crashlog_incomplete += 1
@@ -408,11 +409,11 @@ def crashlogs_scan() -> None:
                     else:
                         crashlog_plugins[plugin_name] = "???"
 
-                """if " " in elem:
-                    elem = elem.replace("     ", " ").strip()
-                    elem_parts = elem.split(" ", 1)
-                    elem_parts[0] = elem_parts[0].replace("[", "").replace(":", "").replace("]", "")
-                    crashlog_plugins[elem_parts[1]] = elem_parts[0]"""
+                # if " " in elem:
+                #     elem = elem.replace("     ", " ").strip()
+                #     elem_parts = elem.split(" ", 1)
+                #     elem_parts[0] = elem_parts[0].replace("[", "").replace(":", "").replace("]", "")
+                #     crashlog_plugins[elem_parts[1]] = elem_parts[0]
 
         for elem in segment_xsemodules:
             # SOME IMPORTANT DLLs HAVE A VERSION, REMOVE IT
@@ -443,7 +444,8 @@ def crashlogs_scan() -> None:
             "====================================================\n",
         ))
 
-        if ".dll" in crashlog_mainerror.lower() and "tbbmalloc" not in crashlog_mainerror.lower():
+        crashlog_mainerror_lower = crashlog_mainerror.lower()
+        if ".dll" in crashlog_mainerror_lower and "tbbmalloc" not in crashlog_mainerror_lower:
             autoscan_report.extend((
                 "* NOTICE : MAIN ERROR REPORTS THAT A DLL FILE WAS INVOLVED IN THIS CRASH! * \n",
                 "If that dll file belongs to a mod, that mod is a prime suspect for the crash. \n-----\n",
