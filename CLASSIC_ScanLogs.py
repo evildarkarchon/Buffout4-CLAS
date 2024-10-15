@@ -179,6 +179,7 @@ def crashlogs_scan() -> None:
     fcx_mode = CMain.classic_settings("FCX Mode")
     show_formid_values = CMain.classic_settings("Show FormID Values")
     formid_db_exists = any(db.is_file() for db in DB_PATHS)
+    move_unsolved_logs = CMain.classic_settings("Move Unsolved Logs")
     # ================================================
     if fcx_mode:
         main_files_check = CMain.main_combined_result()
@@ -839,7 +840,7 @@ def crashlogs_scan() -> None:
             autoscan_output = "".join(autoscan_report)
             autoscan_file.write(autoscan_output)
 
-        if trigger_scan_failed and CMain.classic_settings("Move Unsolved Logs"):
+        if trigger_scan_failed and move_unsolved_logs:
             backup_path = Path("CLASSIC Backup/Unsolved Logs")
             backup_path.mkdir(parents=True, exist_ok=True)
             autoscan_filepath = crashlog_file.with_name(crashlog_file.stem + "-AUTOSCAN.md")
