@@ -23,14 +23,13 @@ def pastebin_fetch(url: str) -> None:
     if urlparse(url).netloc == "pastebin.com" and "/raw" not in url:
         url = url.replace("pastebin.com", "pastebin.com/raw")
     response = requests.get(url)
-    if response.status_code == requests.codes.ok:
-        pastebin_path = Path("Crash Logs/Pastebin")
-        if not pastebin_path.is_dir():
-            pastebin_path.mkdir(parents=True, exist_ok=True)
-        outfile = pastebin_path / f"crash-{urlparse(url).path.split("/")[-1]}.log"
-        outfile.write_text(response.text, encoding="utf-8", errors="ignore")
-    else:
+    if response.status_code != requests.codes.ok:
         response.raise_for_status()
+    pastebin_path = Path("Crash Logs/Pastebin")
+    if not pastebin_path.is_dir():
+        pastebin_path.mkdir(parents=True, exist_ok=True)
+    outfile = pastebin_path / f"crash-{urlparse(url).path.split("/")[-1]}.log"
+    outfile.write_text(response.text, encoding="utf-8", errors="ignore")
 
 
 def get_entry(formid: str, plugin: str) -> str | None:
