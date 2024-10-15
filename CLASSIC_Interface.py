@@ -61,16 +61,10 @@ class ErrorDialog(QDialog):
         QApplication.clipboard().setText(self.text_edit.toPlainText())
 
 
-def show_exception_box(error_text: str) -> None:
-    dialog = ErrorDialog(error_text)
-    dialog.show()
-    dialog.exec()
-
-
 def custom_excepthook(exc_type: type[BaseException], exc_value: BaseException, exc_traceback: TracebackType | None) -> Any:
     error_text = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
     print(error_text)  # Still print to console
-    show_exception_box(error_text)
+    MainWindow.show_exception_box(error_text)
 
 
 sys.excepthook = custom_excepthook
@@ -430,6 +424,11 @@ class MainWindow(QMainWindow):
             raise TypeError("CMain not initialized")
         CMain.manual_docs_gui.manual_docs_path_signal.connect(self.show_manual_docs_path_dialog)
         CMain.game_path_gui.game_path_signal.connect(self.show_game_path_dialog)
+
+    @staticmethod
+    def show_exception_box(error_text: str) -> None:
+        dialog = ErrorDialog(error_text)
+        dialog.exec()
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         """if event.type() == QEvent.KeyPress:
@@ -1443,4 +1442,4 @@ if __name__ == "__main__":
         sys.exit(app.exec())
     except Exception as _:  # noqa: BLE001
         error_text = traceback.format_exc()
-        show_exception_box(error_text)
+        MainWindow.show_exception_box(error_text)
