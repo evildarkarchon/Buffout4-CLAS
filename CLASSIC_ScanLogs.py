@@ -335,16 +335,8 @@ def crashlogs_scan() -> None:
             trigger_scan_failed = True
 
         # ================== MAIN ERROR ==================
-        try:
-            crashlog_mainerror = crash_data[index_mainerror]
-            if "|" in crashlog_mainerror:
-                crashlog_errorsplit = crashlog_mainerror.split("|", 1)
-                autoscan_report.append(f"\nMain Error: {crashlog_errorsplit[0]}\n{crashlog_errorsplit[1]}\n")
-            else:
-                autoscan_report.append(f"\nMain Error: {crashlog_mainerror}\n")
-        except IndexError:
-            crashlog_mainerror = "UNKNOWN"
-            autoscan_report.append(f"\nMain Error: {crashlog_mainerror}\n")
+        crashlog_mainerror = crash_data[index_mainerror] if len(crash_data) > index_mainerror else "UNKNOWN"
+        autoscan_report.append(f"\nMain Error: {crashlog_mainerror.replace("|", "\n", 1)}\n")
 
         # =============== CRASHGEN VERSION ===============
         crashlog_crashgen = crash_data[index_crashgenver].strip()
@@ -767,25 +759,20 @@ def crashlogs_scan() -> None:
             formids_found = dict(Counter(sorted(formids_matches)))
             for formid_full, count in formids_found.items():
                 formid_split = formid_full.split(": ", 1)
+                if len(formid_split) < 2:
+                    continue
                 for plugin, plugin_id in crashlog_plugins.items():
-                    if len(formid_split) >= 2 and str(plugin_id) == str(formid_split[1][:2]):
-                        if CMain.classic_settings("Show FormID Values"):
-                            if (
-                                Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs Main.db").exists()
-                                or Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs Local.db").exists()
-                            ):
-                                report = get_entry(formid_split[1][2:], plugin)
-                                if report:
-                                    autoscan_report.append(f"- {formid_full} | [{plugin}] | {report} | {count}\n")
-                                else:
-                                    autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
-                                    break
-                            else:
-                                autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
-                                break
-                        else:
-                            autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
-                            break
+                    if plugin_id != formid_split[1][:2]:
+                        continue
+
+                    if show_formid_values and formid_db_exists:
+                        report = get_entry(formid_split[1][2:], plugin)
+                        if report:
+                            autoscan_report.append(f"- {formid_full} | [{plugin}] | {report} | {count}\n")
+                            continue
+
+                    autoscan_report.append(f"- {formid_full} | [{plugin}] | {count}\n")
+                    break
 
             autoscan_report.extend((
                 "\n[Last number counts how many times each Form ID shows up in the crash log.]\n",
