@@ -664,7 +664,7 @@ Mods_CONF:  # 2) MODS THAT CONFLICT WITH OTHER MODS
         If you encounter problems or crashes, see here how to add additional skeletons: https://www.nexusmods.com/fallout4/articles/2496
         -----
 
-  awkcr | SKKCraftableWeaponsAmmo: |
+  ArmorKeywords | SKKCraftableWeaponsAmmo: |
     Armor And Weapon Keywords ❌ CONFLICTS WITH : SKK Craft Weapons And Scrap Ammo
         SKK Craft Weapons & Ammo Version 008 is incompatible with AWKCR and will cause crashes while saving the game.
         If you encounter problems or crashes, remove AWKCR and / or switch to Equipment and Crafting Overhaul instead.
@@ -720,7 +720,7 @@ Mods_SOLU:  # 3) MODS WITH SOLUTIONS & COMMUNITY PATCHES
           Skeleton Fixes: https://www.nexusmods.com/fallout4/mods/56101
         -----
 
-  AWKCR: |
+  ArmorKeywords: |
     Armor And Weapons Keywords
         - If you don't rely on AWKCR, consider switching to Equipment and Crafting Overhaul
           Better Alternative: https://www.nexusmods.com/fallout4/mods/67679?tab=files
