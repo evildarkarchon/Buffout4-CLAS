@@ -66,8 +66,8 @@ def crashlogs_get_files() -> list[Path]:
     CLASSIC_folder = Path.cwd()
     CLASSIC_logs = CLASSIC_folder / "Crash Logs"
     # CLASSIC_pastebin = CLASSIC_logs / "Pastebin"
-    CUSTOM_folder_setting = CMain.classic_settings("SCAN Custom Path")
-    XSE_folder_setting = CMain.yaml_settings(CMain.YAML.Game_Local, "Game_Info.Docs_Folder_XSE")
+    CUSTOM_folder_setting = CMain.classic_settings(str, "SCAN Custom Path")
+    XSE_folder_setting = CMain.yaml_settings(str, CMain.YAML.Game_Local, "Game_Info.Docs_Folder_XSE")
 
     CUSTOM_folder = Path(CUSTOM_folder_setting) if isinstance(CUSTOM_folder_setting, str) else None
     XSE_folder = Path(XSE_folder_setting) if isinstance(XSE_folder_setting, str) else None
@@ -101,9 +101,9 @@ def crashlogs_get_files() -> list[Path]:
 def crashlogs_reformat() -> None:
     """Reformat plugin lists in crash logs, so that old and new CRASHGEN formats match."""
     CMain.logger.debug("- - - INITIATED CRASH LOG FILE REFORMAT")
-    xse_acronym: str = CMain.yaml_settings(CMain.YAML.Game, f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym")  # type: ignore
-    remove_list: list[str] = CMain.yaml_settings(CMain.YAML.Main, "exclude_log_records")  # type: ignore
-    simple_logs = CMain.classic_settings("Simplify Logs")
+    xse_acronym = CMain.yaml_settings(str, CMain.YAML.Game, f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym")
+    remove_list = CMain.yaml_settings(list[str], CMain.YAML.Main, "exclude_log_records") or []
+    simple_logs = CMain.classic_settings(bool, "Simplify Logs")
 
     for file in crashlogs_get_files():
         with file.open(encoding="utf-8", errors="ignore") as crash_log:
@@ -140,46 +140,41 @@ def crashlogs_scan() -> None:
     scan_start_time = time.perf_counter()
     # ================================================
     # Grabbing YAML values is time expensive, so keep these out of the main file loop.
-    classic_game_hints: list[str] = CMain.yaml_settings(CMain.YAML.Game, "Game_Hints")  # type: ignore
-    classic_records_list: list[str] = CMain.yaml_settings(CMain.YAML.Main, "catch_log_records")  # type: ignore
-    classic_version: str = CMain.yaml_settings(CMain.YAML.Main, "CLASSIC_Info.version")  # type: ignore
-    classic_version_date: str = CMain.yaml_settings(CMain.YAML.Main, "CLASSIC_Info.version_date")  # type: ignore
+    classic_game_hints = CMain.yaml_settings(list[str], CMain.YAML.Game, "Game_Hints") or []
+    classic_records_list = CMain.yaml_settings(list[str], CMain.YAML.Main, "catch_log_records") or []
+    classic_version = CMain.yaml_settings(str, CMain.YAML.Main, "CLASSIC_Info.version") or ""
+    classic_version_date = CMain.yaml_settings(str, CMain.YAML.Main, "CLASSIC_Info.version_date") or ""
 
-    crashgen_name: str = CMain.yaml_settings(CMain.YAML.Game, "Game_Info.CRASHGEN_LogName")  # type: ignore
-    crashgen_latest_og: str = CMain.yaml_settings(CMain.YAML.Game, "Game_Info.CRASHGEN_LatestVer")  # type: ignore
-    crashgen_latest_vr: str = CMain.yaml_settings(CMain.YAML.Game, "GameVR_Info.CRASHGEN_LatestVer")  # type: ignore
-    crashgen_ignore: list[str] = CMain.yaml_settings(
-        CMain.YAML.Game, f"Game{CMain.gamevars["vr"]}_Info.CRASHGEN_Ignore"
-    )  # type: ignore
+    crashgen_name = CMain.yaml_settings(str, CMain.YAML.Game, "Game_Info.CRASHGEN_LogName") or ""
+    crashgen_latest_og = CMain.yaml_settings(str, CMain.YAML.Game, "Game_Info.CRASHGEN_LatestVer") or ""
+    crashgen_latest_vr = CMain.yaml_settings(str, CMain.YAML.Game, "GameVR_Info.CRASHGEN_LatestVer") or ""
+    crashgen_ignore = CMain.yaml_settings(list[str], CMain.YAML.Game, f"Game{CMain.gamevars["vr"]}_Info.CRASHGEN_Ignore") or []
 
-    warn_noplugins: str = CMain.yaml_settings(CMain.YAML.Game, "Warnings_CRASHGEN.Warn_NOPlugins")  # type: ignore
-    warn_outdated: str = CMain.yaml_settings(CMain.YAML.Game, "Warnings_CRASHGEN.Warn_Outdated")  # type: ignore
-    xse_acronym: str = CMain.yaml_settings(CMain.YAML.Game, "Game_Info.XSE_Acronym")  # type: ignore
+    warn_noplugins = CMain.yaml_settings(str, CMain.YAML.Game, "Warnings_CRASHGEN.Warn_NOPlugins") or ""
+    warn_outdated = CMain.yaml_settings(str, CMain.YAML.Game, "Warnings_CRASHGEN.Warn_Outdated") or ""
+    xse_acronym = CMain.yaml_settings(str, CMain.YAML.Game, "Game_Info.XSE_Acronym") or ""
 
-    game_ignore_plugins: list[str] = CMain.yaml_settings(CMain.YAML.Game, "Crashlog_Plugins_Exclude")  # type: ignore
-    game_ignore_records: list[str] = CMain.yaml_settings(CMain.YAML.Game, "Crashlog_Records_Exclude")  # type: ignore
-    suspects_error_list: dict[str, str] = CMain.yaml_settings(CMain.YAML.Game, "Crashlog_Error_Check")  # type: ignore
-    suspects_stack_list: dict[str, list[str]] = CMain.yaml_settings(CMain.YAML.Game, "Crashlog_Stack_Check")  # type: ignore
+    game_ignore_plugins = CMain.yaml_settings(list[str], CMain.YAML.Game, "Crashlog_Plugins_Exclude") or []
+    game_ignore_records = CMain.yaml_settings(list[str], CMain.YAML.Game, "Crashlog_Records_Exclude") or []
+    suspects_error_list = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Crashlog_Error_Check") or {}
+    suspects_stack_list = CMain.yaml_settings(dict[str, list[str]], CMain.YAML.Game, "Crashlog_Stack_Check") or {}
 
-    autoscan_text: str = CMain.yaml_settings(
-        CMain.YAML.Main, f"CLASSIC_Interface.autoscan_text_{CMain.gamevars["game"]}"
-    )  # type: ignore
-    remove_list: list[str] = CMain.yaml_settings(CMain.YAML.Main, "exclude_log_records")  # type: ignore
-    ignore_list: list[str] = CMain.yaml_settings(CMain.YAML.Ignore, f"CLASSIC_Ignore_{CMain.gamevars["game"]}")  # type: ignore
+    autoscan_text = CMain.yaml_settings(str, CMain.YAML.Main, f"CLASSIC_Interface.autoscan_text_{CMain.gamevars["game"]}") or ""
+    remove_list = CMain.yaml_settings(list[str], CMain.YAML.Main, "exclude_log_records") or []
+    ignore_list = CMain.yaml_settings(list[str], CMain.YAML.Ignore, f"CLASSIC_Ignore_{CMain.gamevars["game"]}") or []
 
-    game_mods_conf: dict[str, str] = CMain.yaml_settings(CMain.YAML.Game, "Mods_CONF")  # type: ignore
-    game_mods_core: dict[str, str] = CMain.yaml_settings(CMain.YAML.Game, "Mods_CORE")  # type: ignore
-    games_mods_core_folon: dict[str, str] = CMain.yaml_settings(CMain.YAML.Game, "Mods_CORE_FOLON")  # type: ignore
-    game_mods_freq: dict[str, str] = CMain.yaml_settings(CMain.YAML.Game, "Mods_FREQ")  # type: ignore
-    game_mods_opc2: dict[str, str] = CMain.yaml_settings(CMain.YAML.Game, "Mods_OPC2")  # type: ignore
-    game_mods_solu: dict[str, str] = CMain.yaml_settings(CMain.YAML.Game, "Mods_SOLU")  # type: ignore
+    game_mods_conf = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_CONF") or {}
+    game_mods_core = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_CORE") or {}
+    games_mods_core_folon = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_CORE_FOLON") or {}
+    game_mods_freq = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_FREQ") or {}
+    game_mods_opc2 = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_OPC2") or {}
+    game_mods_solu = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_SOLU") or {}
 
-    ignore_list: list[str] = CMain.yaml_settings(CMain.YAML.Ignore, f"CLASSIC_Ignore_{CMain.gamevars["game"]}")  # type: ignore
     xse_acronym = xse_acronym.lower()
-    fcx_mode = CMain.classic_settings("FCX Mode")
-    show_formid_values = CMain.classic_settings("Show FormID Values")
+    fcx_mode = CMain.classic_settings(bool, "FCX Mode")
+    show_formid_values = CMain.classic_settings(bool, "Show FormID Values")
     formid_db_exists = any(db.is_file() for db in DB_PATHS)
-    move_unsolved_logs = CMain.classic_settings("Move Unsolved Logs")
+    move_unsolved_logs = CMain.classic_settings(bool, "Move Unsolved Logs")
     # ================================================
     if fcx_mode:
         main_files_check = CMain.main_combined_result()
@@ -425,7 +420,7 @@ def crashlogs_scan() -> None:
                 if all(elem_parts[0] not in item for item in crashlog_plugins):
                     crashlog_plugins[elem_parts[0]] = elem_parts[1]
 
-        # CHECK IF THERE ARE ANY PLUGINS IN THE IGNORE TOML
+        # CHECK IF THERE ARE ANY PLUGINS IN THE IGNORE YAML
         if ignore_plugins_list:
             for item in ignore_plugins_list:
                 if any(item.lower() == plugin.lower() for plugin in crashlog_plugins):
@@ -458,8 +453,6 @@ def crashlogs_scan() -> None:
             key_split_0, key_split_1 = key.split(" | ", 1)
             error_req_found = error_opt_found = stack_found = False
             item_list = suspects_stack_list.get(key, [])
-            if not isinstance(item_list, list):
-                raise TypeError
             has_required_item = any("ME-REQ|" in elem for elem in item_list)
             for item in item_list:
                 if "|" in item:
@@ -726,7 +719,7 @@ def crashlogs_scan() -> None:
         ))
 
         if trigger_plugin_limit:
-            warn_plugin_limit: str = CMain.yaml_settings(CMain.YAML.Main, "Mods_Warn.Mods_Plugin_Limit")  # type: ignore
+            warn_plugin_limit = CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_Plugin_Limit") or ""
             autoscan_report.append(warn_plugin_limit)
 
         # ================================================
@@ -919,40 +912,38 @@ if __name__ == "__main__":
 
     # Default output value for an argparse.BooleanOptionalAction is None, and so fails the isinstance check.
     # So it will respect current INI values if not specified on the command line.
-    if isinstance(args.fcx_mode, bool) and args.fcx_mode != CMain.classic_settings("FCX Mode"):
-        CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.FCX Mode", args.fcx_mode)
+    if isinstance(args.fcx_mode, bool) and args.fcx_mode != CMain.classic_settings(bool, "FCX Mode"):
+        CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.FCX Mode", args.fcx_mode)
 
-    if isinstance(args.show_fid_values, bool) and args.show_fid_values != CMain.classic_settings("Show FormID Values"):
-        CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.IMI Mode", args.imi_mode)
+    if isinstance(args.show_fid_values, bool) and args.show_fid_values != CMain.classic_settings(bool, "Show FormID Values"):
+        CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.IMI Mode", args.imi_mode)
 
-    if isinstance(args.move_unsolved, bool) and args.move_unsolved != CMain.classic_settings("Move Unsolved Logs"):
-        CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.Move Unsolved", args.args.move_unsolved)
+    if isinstance(args.move_unsolved, bool) and args.move_unsolved != CMain.classic_settings(bool, "Move Unsolved Logs"):
+        CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.Move Unsolved", args.args.move_unsolved)
 
     if (
         isinstance(ini_path, Path)
         and ini_path.resolve().is_dir()
-        and str(ini_path) != CMain.classic_settings("INI Folder Path")
+        and str(ini_path) != CMain.classic_settings(str, "INI Folder Path")
     ):
-        CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.INI Folder Path", str(Path(ini_path).resolve()))
+        CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.INI Folder Path", str(Path(ini_path).resolve()))
 
     if (
         isinstance(scan_path, Path)
         and scan_path.resolve().is_dir()
-        and str(scan_path) != CMain.classic_settings("SCAN Custom Path")
+        and str(scan_path) != CMain.classic_settings(str, "SCAN Custom Path")
     ):
-        CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.SCAN Custom Path", str(Path(scan_path).resolve()))
+        CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.SCAN Custom Path", str(Path(scan_path).resolve()))
 
     if (
         isinstance(mods_folder_path, Path)
         and mods_folder_path.resolve().is_dir()
-        and str(mods_folder_path) != CMain.classic_settings("MODS Folder Path")
+        and str(mods_folder_path) != CMain.classic_settings(str, "MODS Folder Path")
     ):
-        CMain.yaml_settings(
-            CMain.YAML.Settings, "CLASSIC_Settings.MODS Folder Path", str(Path(mods_folder_path).resolve())
-        )
+        CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.MODS Folder Path", str(Path(mods_folder_path).resolve()))
 
-    if isinstance(args.simplify_logs, bool) and args.simplify_logs != CMain.classic_settings("Simplify Logs"):
-        CMain.yaml_settings(CMain.YAML.Settings, "CLASSIC_Settings.Simplify Logs", args.simplify_logs)
+    if isinstance(args.simplify_logs, bool) and args.simplify_logs != CMain.classic_settings(bool, "Simplify Logs"):
+        CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.Simplify Logs", args.simplify_logs)
 
     crashlogs_scan()
     os.system("pause")
