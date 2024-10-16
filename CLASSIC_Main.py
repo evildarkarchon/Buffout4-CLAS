@@ -19,6 +19,7 @@ from typing import Literal, TypedDict
 import aiohttp
 import chardet
 import ruamel.yaml
+from packaging.version import InvalidVersion, Version
 from PySide6.QtCore import QObject, Signal
 
 with contextlib.suppress(ImportError):
@@ -318,49 +319,87 @@ def classic_data_extract() -> None:
 
 
 async def classic_update_check(quiet: bool = False, gui_request: bool = True) -> bool:
+    """Check both GitHub and Nexus Mods for newer versions.
+
+    Returns True if CLASSIC is already the latest version.
+    """
     logger.debug("- - - INITIATED UPDATE CHECK")
-    if gui_request or classic_settings(bool, "Update Check"):
-        classic_local = yaml_settings(str, YAML.Main, "CLASSIC_Info.version")
-        if not isinstance(classic_local, str):
-            raise TypeError
+    if not (gui_request or classic_settings(bool, "Update Check")):
         if not quiet:
-            print("❓ (Needs internet connection) CHECKING FOR NEW CLASSIC VERSIONS...")
-            sys.stdout.flush()
-            print("   (You can disable this check in the EXE or CLASSIC Settings.yaml) \n")
-            sys.stdout.flush()
-        async with aiohttp.ClientSession() as session:
-            try:
-                async with session.get("https://api.github.com/repos/evildarkarchon/CLASSIC-Fallout4/releases/latest") as response:
-                    if response.status != 200:
-                        response.raise_for_status()
-                    response_json = await response.json()  # Await the JSON response
+            print(
+                "\n❌ NOTICE: UPDATE CHECK IS DISABLED IN CLASSIC Settings.yaml \n",
+                "\n===============================================================================",
+                flush=True
+            )
+        return False
+    classic_local = yaml_settings(str, YAML.Main, "CLASSIC_Info.version")
+    if not quiet:
+        print(
+            "❓ (Needs internet connection) CHECKING FOR NEW CLASSIC VERSIONS...",
+            "\n   (You can disable this check in the EXE or CLASSIC Settings.yaml) \n",
+            flush=True
+        )
+    try:
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            response_github = None
+            response_nexus = None
+            async with session.get("https://api.github.com/repos/evildarkarchon/CLASSIC-Fallout4/releases/latest") as response:
+                # The JSON should have this field with the title of the latest release:
+                # "name": "CLASSIC v7.30.3"
+                response_json = await response.json()
+                if isinstance(response_json, dict):
+                    response_github = response_json.get("name")
+                    if not isinstance(response_github, str):
+                        response_github = None
 
-                    # Now you can access items in the JSON response
-                    classic_ver_received = response_json["name"]
+            async with session.get("https://www.nexusmods.com/fallout4/mods/56255") as response:
+                use_next = False
+                async for line in response.content:
+                    # We're looking for these lines:
+                    #    <meta property="twitter:label1" content="Version" />
+                    #    <meta property="twitter:data1" content="7.30.3" />
+                    # We'll find the label and then use the next line.
+                    # If we hit the <link tags we've gone too far.
+                    # The HTML likely changed and this needs updating.
+                    line_text = line.decode("utf-8")
+                    if line_text.startswith('<meta property="twitter:label1" content="Version"'):
+                        use_next = True
+                        continue
+                    if line_text.startswith("<link"):
+                        break
+                    if use_next:
+                        # [ '<meta property="twitter:data1" content=',
+                        #   '7.30.3',
+                        #   ' />' ]
+                        split = line_text.rsplit('"', 2)
+                        response_nexus = split[1] if len(split) == 3 else None
+                        break
+    except (ValueError, OSError, aiohttp.ClientError) as err:
+        if not quiet:
+            print(err, flush=True)
+            print(yaml_settings(str, YAML.Main, f"CLASSIC_Interface.update_unable_{gamevars["game"]}"), flush=True)
+        return False
 
-                    if classic_ver_received == classic_local:
-                        if not quiet:
-                            print(f"Your CLASSIC Version: {classic_local}\nNewest CLASSIC Version: {classic_ver_received}\n")
-                            sys.stdout.flush()
-                            print("✔️ You have the latest version of CLASSIC! \n")
-                            sys.stdout.flush()
-                        return True
+    no_version = Version("0.0.0")
+    # Split "CLASSIC" from the version for YAML and GitHub; "CLASSIC v7.30.3"
+    version_local = Version(classic_local.rsplit(maxsplit=1)[-1]) if classic_local else no_version
+    version_github = Version(response_github.rsplit(maxsplit=1)[-1]) if response_github else no_version
+    version_nexus = Version(response_nexus) if response_nexus else no_version
 
-                    if not quiet:
-                        print(yaml_settings(str, YAML.Main, f"CLASSIC_Interface.update_warning_{gamevars["game"]}"))
-                        sys.stdout.flush()
-            except (ValueError, OSError, aiohttp.ClientError) as err:
-                if not quiet:
-                    print(err)
-                    sys.stdout.flush()
-                    print(yaml_settings(str, YAML.Main, f"CLASSIC_Interface.update_unable_{gamevars["game"]}"))
-                    sys.stdout.flush()
-    elif not quiet:
-        print("\n❌ NOTICE: UPDATE CHECK IS DISABLED IN CLASSIC Settings.yaml \n")
-        sys.stdout.flush()
-        print("===============================================================================")
-        sys.stdout.flush()
-    return False
+    if (version_github > version_local) or (version_nexus > version_local):
+        if not quiet:
+            print(yaml_settings(str, YAML.Main, f"CLASSIC_Interface.update_warning_{gamevars["game"]}"), flush=True)
+        return False
+
+    if not quiet:
+        print(
+            f"Your CLASSIC Version: {version_local}",
+            f"\nLatest GitHub Version: {version_github}",
+            f"\nLatest Nexus Version: {version_nexus}",
+            "\n\n✔️ You have the latest version of CLASSIC!\n",
+            flush=True
+        )
+    return True
 
 
 # ================================================
