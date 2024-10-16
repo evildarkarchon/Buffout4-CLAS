@@ -658,7 +658,7 @@ Mods_CONF:  # 2) MODS THAT CONFLICT WITH OTHER MODS
         If you encounter problems or crashes, see here how to add additional skeletons: https://www.nexusmods.com/fallout4/articles/2496
         -----
 
-  cbp | chw: |
+  cbp | ClassicHolseredWeapons: |
     CBP Physics ❌ CONFLICTS WITH : Classic Holstered Weapons
         Classic Holstered Weapons will not work correctly with mods that modify the player skeleton or add new skeleton paths.
         If you encounter problems or crashes, see here how to add additional skeletons: https://www.nexusmods.com/fallout4/articles/2496
