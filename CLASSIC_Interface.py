@@ -13,7 +13,7 @@ from typing import Any, Literal
 import regex as re
 import requests
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
-from PySide6.QtGui import QDesktopServices, QIcon
+from PySide6.QtGui import QDesktopServices, QIcon, QPixmap
 from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import (
     QApplication,
@@ -40,6 +40,48 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+
+class CustomAboutDialog(QDialog):
+    def __init__(self, parent: QMainWindow | QDialog | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("About")
+        self.setFixedSize(600, 125)  # Adjust size for icon and text
+
+        # Create a layout with margins similar to QMessageBox.about
+        layout: QVBoxLayout = QVBoxLayout(self)
+        layout.setContentsMargins(15, 15, 15, 15)  # Adjust margins (left, top, right, bottom)
+
+        # Horizontal layout for icon and text
+        h_layout: QHBoxLayout = QHBoxLayout()
+
+        # Add the icon
+        icon_label: QLabel = QLabel(self)
+        icon: QIcon = QIcon("CLASSIC Data/graphics/CLASSIC.ico")
+        pixmap: QPixmap = icon.pixmap(128, 128)  # Request the 64x64 icon size
+        if not pixmap.isNull():
+            icon_label.setPixmap(pixmap)
+            icon_label.setAlignment(Qt.AlignmentFlag.AlignTop)  # Align icon at the top
+        h_layout.addWidget(icon_label)
+
+        # Add the text next to the icon
+        text_label: QLabel = QLabel(
+            "Crash Log Auto Scanner & Setup Integrity Checker\n\n"
+            "Made by: Poet\n"
+            "Contributors: evildarkarchon | kittivelae | AtomicFallout757 | wxMichael"
+        )
+        text_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)  # Align text to top-left
+        text_label.setWordWrap(True)  # Allow text wrapping for better formatting
+        h_layout.addWidget(text_label)
+
+        layout.addLayout(h_layout)
+
+        # Add a Close button at the bottom
+        close_button: QPushButton = QPushButton("Close", self)
+        close_button.clicked.connect(self.accept)
+        layout.addWidget(close_button)
+
+        # Align the Close button to the right and add some space at the bottom
+        layout.setAlignment(close_button, Qt.AlignmentFlag.AlignRight)
 
 class ErrorDialog(QDialog):
     def __init__(self, error_text: str) -> None:
@@ -1141,12 +1183,8 @@ class MainWindow(QMainWindow):
         layout.addLayout(bottom_layout)
 
     def show_about(self) -> None:
-        about_text = (
-            "Crash Log Auto Scanner & Setup Integrity Checker\n\n"
-            "Made by: Poet\n"
-            "Contributors: evildarkarchon | kittivelae | AtomicFallout757"
-        )
-        QMessageBox.about(self, "About CLASSIC", about_text)
+        dialog = CustomAboutDialog(self)
+        dialog.exec()
 
     def help_popup_main(self) -> None:
         help_popup_text = CMain.yaml_settings(str, CMain.YAML.Main, "CLASSIC_Interface.help_popup_main") or ""
