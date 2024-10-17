@@ -21,7 +21,7 @@ chardet = "^5.2.0"
 aiohttp = "^3.10.10"
 regex = "^2024.9.11"
 iniparse = "^0.5"
-pyside6 = ">=6.8.0.1"
+pyside6 = ">=6.8.0"
 typed-argument-parser = "^1.10.1"
 packaging = "^24.1"
 
