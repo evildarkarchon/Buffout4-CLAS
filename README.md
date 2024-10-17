@@ -67,3 +67,9 @@ Updating dependency versions in `pyproject.toml` is handled by [poetry-plugin-up
 ```powershell
 poetry up --latest
 ```
+
+CLASSIC's exe is built using nuitka:
+
+```powershell
+nuitka .\CLASSIC_Interface.py
+```
