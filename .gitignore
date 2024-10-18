@@ -58,7 +58,9 @@ game_vars.py
 test.*
 
 # User Files
+*.zip
 *.7z
 Archive/
 Release/
 Crash Logs/
+compile.py

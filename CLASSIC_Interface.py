@@ -960,6 +960,8 @@ class MainWindow(QMainWindow):
         else:
             CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.Update Source", "Nexus")
 
+        update_source_combo.setToolTip("Select the source to check for updates. Nexus = stable, GitHub = latest, Both = check both")
+
         update_source_combo.currentTextChanged.connect(
             lambda value: CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.Update Source", value)
         )
