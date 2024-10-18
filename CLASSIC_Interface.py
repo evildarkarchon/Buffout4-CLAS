@@ -13,13 +13,14 @@ from typing import Any, Literal
 import regex as re
 import requests
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
-from PySide6.QtGui import QDesktopServices, QIcon, QPixmap
+from PySide6.QtGui import QDesktopServices, QIcon, QPixmap, QFontMetrics
 from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import (
     QApplication,
     QBoxLayout,
     QButtonGroup,
     QCheckBox,
+    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
@@ -923,6 +924,51 @@ class MainWindow(QMainWindow):
         checkbox_layout.addSpacing(20)
 
         layout.addLayout(checkbox_layout)
+
+        update_source_layout = QHBoxLayout()
+
+        update_source_label = QLabel("Update Source")
+        update_source_combo = QComboBox()
+        update_sources = ("Nexus", "GitHub", "Both")
+        update_source_combo.addItems(update_sources)
+
+        # Set the ComboBox to adjust size based on content
+        update_source_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+
+        # Optionally, reduce the spacing between the label and ComboBox
+        update_source_layout.setSpacing(10)  # Adjust the spacing between label and combo box
+
+        # Set layout margins to 0 to bring the label and combo box closer
+        update_source_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Set the layout alignment to align left
+        update_source_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        # Set the size policy to prevent expanding
+        update_source_combo.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        update_source_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        # Calculate the width of the longest item and set the ComboBox width accordingly
+        font_metrics = QFontMetrics(update_source_combo.font())
+        combo_width = max(font_metrics.horizontalAdvance(item) for item in update_sources) + 30
+        update_source_combo.setFixedWidth(combo_width)
+
+        # Set the default value if stored in settings
+        current_value = CMain.classic_settings(str, "Update Source")
+        if current_value is not None:
+            update_source_combo.setCurrentText(current_value)
+        else:
+            CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.Update Source", "Nexus")
+
+        update_source_combo.currentTextChanged.connect(
+            lambda value: CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.Update Source", value)
+        )
+
+        update_source_layout.addWidget(update_source_label)
+        update_source_layout.addWidget(update_source_combo)
+
+        # Add the update source layout below the checkboxes
+        layout.addLayout(update_source_layout)
 
         # Add a separator after the checkboxes
         layout.addWidget(self.create_separator())
