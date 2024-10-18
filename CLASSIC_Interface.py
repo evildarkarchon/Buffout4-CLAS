@@ -1,4 +1,4 @@
-import asyncio  # noqa: I001
+import asyncio
 import multiprocessing
 import multiprocessing.synchronize
 import queue
