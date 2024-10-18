@@ -11,8 +11,9 @@ from types import TracebackType
 from typing import Any, Literal
 
 import regex as re
+import requests
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
-from PySide6.QtGui import QDesktopServices, QIcon
+from PySide6.QtGui import QDesktopServices, QIcon, QPixmap
 from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import (
     QApplication,
@@ -38,6 +39,49 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+
+class CustomAboutDialog(QDialog):
+    def __init__(self, parent: QMainWindow | QDialog | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("About")
+        self.setFixedSize(600, 125)  # Adjust size for icon and text
+
+        # Create a layout with margins similar to QMessageBox.about
+        layout: QVBoxLayout = QVBoxLayout(self)
+        layout.setContentsMargins(15, 15, 15, 15)  # Adjust margins (left, top, right, bottom)
+
+        # Horizontal layout for icon and text
+        h_layout: QHBoxLayout = QHBoxLayout()
+
+        # Add the icon
+        icon_label: QLabel = QLabel(self)
+        icon: QIcon = QIcon("CLASSIC Data/graphics/CLASSIC.ico")
+        pixmap: QPixmap = icon.pixmap(128, 128)  # Request the 64x64 icon size
+        if not pixmap.isNull():
+            icon_label.setPixmap(pixmap)
+            icon_label.setAlignment(Qt.AlignmentFlag.AlignTop)  # Align icon at the top
+        h_layout.addWidget(icon_label)
+
+        # Add the text next to the icon
+        text_label: QLabel = QLabel(
+            "Crash Log Auto Scanner & Setup Integrity Checker\n\n"
+            "Made by: Poet\n"
+            "Contributors: evildarkarchon | kittivelae | AtomicFallout757 | wxMichael"
+        )
+        text_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)  # Align text to top-left
+        text_label.setWordWrap(True)  # Allow text wrapping for better formatting
+        h_layout.addWidget(text_label)
+
+        layout.addLayout(h_layout)
+
+        # Add a Close button at the bottom
+        close_button: QPushButton = QPushButton("Close", self)
+        close_button.clicked.connect(self.accept)
+        layout.addWidget(close_button)
+
+        # Align the Close button to the right and add some space at the bottom
+        layout.setAlignment(close_button, Qt.AlignmentFlag.AlignRight)
 
 class ErrorDialog(QDialog):
     def __init__(self, error_text: str) -> None:
@@ -93,9 +137,9 @@ class AudioPlayer(QObject):
 
     def __init__(self) -> None:
         super().__init__()
-        self.audio_enabled = CMain.classic_settings("Audio Notifications")
+        self.audio_enabled = CMain.classic_settings(bool, "Audio Notifications")
         if self.audio_enabled is None:
-            CMain.yaml_settings("CLASSIC Settings.yaml", "CLASSIC_Settings.Audio Notifications", True)
+            CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.Audio Notifications", True)
             self.audio_enabled = True
 
         # Setup QSoundEffect objects for the preset sounds
@@ -148,7 +192,7 @@ class ManualPathDialog(QDialog):
         layout = QVBoxLayout(self)
 
         # Add a label
-        label = QLabel(f"Enter the path for the {CMain.gamevars["game"]} INI files directory (Example: c:\\users\\<name>\\Documents\\My Games\\{CMain.gamevars['game']})", self)
+        label = QLabel(f"Enter the path for the {CMain.gamevars["game"]} INI files directory (Example: c:\\users\\<name>\\Documents\\My Games\\{CMain.gamevars["game"]})", self)
         layout.addWidget(label)
 
         inputlayout = QHBoxLayout()
@@ -313,7 +357,7 @@ class MainWindow(QMainWindow):
         CMain.initialize(is_gui=True)
 
         self.setWindowTitle(
-            f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings('CLASSIC Data/databases/CLASSIC Main.yaml', 'CLASSIC_Info.version')}"
+            f"Crash Log Auto Scanner & Setup Integrity Checker | {CMain.yaml_settings(str, CMain.YAML.Main, "CLASSIC_Info.version")}"
         )
         self.setWindowIcon(QIcon("CLASSIC Data/graphics/CLASSIC.ico"))
         dark_style = """
@@ -396,7 +440,7 @@ class MainWindow(QMainWindow):
         self.output_buffer = ""
         CMain.main_generate_required()
         # Perform initial update check
-        if CMain.classic_settings("Update Check"):
+        if CMain.classic_settings(bool, "Update Check"):
             QTimer.singleShot(0, self.update_popup)
 
         self.update_check_timer = QTimer()
@@ -416,14 +460,10 @@ class MainWindow(QMainWindow):
         # Set up the QTimer for periodic updates
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_output_text_box_papyrus_watcher)
-        if CMain.manual_docs_gui is not None:
-            CMain.manual_docs_gui.manual_docs_path_signal.connect(self.show_manual_docs_path_dialog)
-        else:
+        if CMain.manual_docs_gui is None or CMain.game_path_gui is None:
             raise TypeError("CMain not initialized")
-        if CMain.game_path_gui is not None:
-            CMain.game_path_gui.game_path_signal.connect(self.show_game_path_dialog)
-        else:
-            raise TypeError("CMain not initialized")
+        CMain.manual_docs_gui.manual_docs_path_signal.connect(self.show_manual_docs_path_dialog)
+        CMain.game_path_gui.game_path_signal.connect(self.show_game_path_dialog)
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         """if event.type() == QEvent.KeyPress:
@@ -464,7 +504,8 @@ class MainWindow(QMainWindow):
 
         try:
             CLogs.pastebin_fetch(pastebin_url)  # Fetch the log file from Pastebin
-        except Exception as e:  # noqa: BLE001
+            QMessageBox.information(self, "Success", f"Log fetched from: {pastebin_url}")
+        except (OSError, requests.HTTPError) as e:
             QMessageBox.warning(self, "Error", f"Failed to fetch log: {e!s}")
         else:
             print(f"✔️ Log successfully fetched from: {pastebin_url}")
@@ -535,10 +576,7 @@ class MainWindow(QMainWindow):
                 self, "CLASSIC UPDATE", "You have the latest version of CLASSIC!"
             )
         else:
-            update_popup_text: str = CMain.yaml_settings(
-                "CLASSIC Data/databases/CLASSIC Main.yaml",
-                "CLASSIC_Interface.update_popup_text",
-            ) # type: ignore
+            update_popup_text = CMain.yaml_settings(str, CMain.YAML.Main, "CLASSIC_Interface.update_popup_text") or ""
             result = QMessageBox.question(
                 self,
                 "CLASSIC UPDATE",
@@ -574,6 +612,7 @@ class MainWindow(QMainWindow):
         )
         self.scan_folder_edit.setToolTip("Select a custom folder to scan for log files.")
         self.scan_folder_edit.setPlaceholderText("Optional: Select a custom folder to scan for log files.")
+
 
 
         self.setup_pastebin_elements(layout)
@@ -761,10 +800,7 @@ class MainWindow(QMainWindow):
             )
 
     def help_popup_backup(self) -> None:
-        help_popup_text: str = CMain.yaml_settings(
-            "CLASSIC Data/databases/CLASSIC Main.yaml",
-            "CLASSIC_Interface.help_popup_backup",
-        ) # type: ignore
+        help_popup_text = CMain.yaml_settings(str, CMain.YAML.Main, "CLASSIC_Interface.help_popup_backup") or ""
         QMessageBox.information(self, "NEED HELP?", help_popup_text)
 
     @staticmethod
@@ -893,16 +929,15 @@ class MainWindow(QMainWindow):
 
     def create_checkbox(self, label_text: str, setting: str) -> QCheckBox:
         checkbox = QCheckBox(label_text)
-        if CMain.classic_settings(setting) is not None:
-            checkbox.setChecked(CMain.classic_settings(setting)) # type: ignore
+        value = CMain.classic_settings(bool, setting)
+        if value is not None:
+            checkbox.setChecked(value)
         else:
-            CMain.yaml_settings("CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}", False)
+            CMain.yaml_settings(bool, CMain.YAML.Settings, f"CLASSIC_Settings.{setting}", False)
             checkbox.setChecked(False)
 
         checkbox.stateChanged.connect(
-            lambda state: CMain.yaml_settings(
-                "CLASSIC Settings.yaml", f"CLASSIC_Settings.{setting}", bool(state) # type: ignore
-            )
+            lambda state: CMain.yaml_settings(bool, CMain.YAML.Settings, f"CLASSIC_Settings.{setting}", bool(state))
         )
         if setting == "Audio Notifications":
             checkbox.stateChanged.connect(
@@ -1152,18 +1187,11 @@ class MainWindow(QMainWindow):
         layout.addLayout(bottom_layout)
 
     def show_about(self) -> None:
-        about_text = (
-            "Crash Log Auto Scanner & Setup Integrity Checker\n\n"
-            "Made by: Poet\n"
-            "Contributors: evildarkarchon | kittivelae | AtomicFallout757"
-        )
-        QMessageBox.about(self, "About CLASSIC", about_text)
+        dialog = CustomAboutDialog(self)
+        dialog.exec()
 
     def help_popup_main(self) -> None:
-        help_popup_text: str = CMain.yaml_settings(
-            "CLASSIC Data/databases/CLASSIC Main.yaml",
-            "CLASSIC_Interface.help_popup_main",
-        ) # type: ignore
+        help_popup_text = CMain.yaml_settings(str, CMain.YAML.Main, "CLASSIC_Interface.help_popup_main") or ""
         QMessageBox.information(self, "NEED HELP?", help_popup_text)
 
     @staticmethod
@@ -1218,21 +1246,17 @@ class MainWindow(QMainWindow):
         folder = QFileDialog.getExistingDirectory(self, "Select Custom Scan Folder")
         if folder:
             self.scan_folder_edit.setText(folder)
-            CMain.yaml_settings(
-                "CLASSIC Settings.yaml", "CLASSIC_Settings.SCAN Custom Path", folder
-            )
+            CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.SCAN Custom Path", folder)
 
     def select_folder_mods(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Select Staging Mods Folder")
         if folder:
             self.mods_folder_edit.setText(folder)
-            CMain.yaml_settings(
-                "CLASSIC Settings.yaml", "CLASSIC_Settings.MODS Folder Path", folder
-            )
+            CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.MODS Folder Path", folder)
 
     def initialize_folder_paths(self) -> None:
-        scan_folder: str = CMain.classic_settings("SCAN Custom Path") # type: ignore
-        mods_folder: str = CMain.classic_settings("MODS Folder Path") # type: ignore
+        scan_folder = CMain.classic_settings(str, "SCAN Custom Path")
+        mods_folder = CMain.classic_settings(str, "MODS Folder Path")
 
         if scan_folder:
             self.scan_folder_edit.setText(scan_folder)
@@ -1242,12 +1266,8 @@ class MainWindow(QMainWindow):
     def select_folder_ini(self) -> None:
         folder = QFileDialog.getExistingDirectory(self)
         if folder:
-            CMain.yaml_settings(
-                "CLASSIC Settings.yaml", "CLASSIC_Settings.INI Folder Path", folder
-            )
-            QMessageBox.information(
-                self, "New INI Path Set", f"You have set the new path to: \n{folder}"
-            )
+            CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.INI Folder Path", folder)
+            QMessageBox.information(self, "New INI Path Set", f"You have set the new path to: \n{folder}")
 
     @staticmethod
     def open_settings() -> None:
@@ -1320,10 +1340,10 @@ class MainWindow(QMainWindow):
             # Start the worker process for papyrus logs
             self.worker_stop_event = multiprocessing.Event()
             self.worker_process = multiprocessing.Process(
-                target=papyrus_worker, args=(self.result_queue, self.worker_stop_event) # type: ignore
+                target=papyrus_worker, args=(self.result_queue, self.worker_stop_event)
             )
-            self.worker_process.daemon = True # type: ignore
-            self.worker_process.start() # type: ignore
+            self.worker_process.daemon = True
+            self.worker_process.start()
 
             # Start the timer for periodic updates
             self.timer.start(5000)  # Update every 5 seconds
@@ -1389,8 +1409,8 @@ class MainWindow(QMainWindow):
             ):
                 # Split the buffer into lines
                 lines = self.message_buffer.split("\n")
-                papyrus_data = []
-                non_papyrus_data = []
+                papyrus_data: list[str] = []
+                non_papyrus_data: list[str] = []
 
                 # Separate Papyrus monitoring data from other data
                 for line in lines:
@@ -1425,17 +1445,17 @@ class MainWindow(QMainWindow):
 
                     # Update or add the Papyrus monitoring section
                     if papyrus_start != -1 and papyrus_end != -1:
-                        updated_lines = (
-                            current_lines[:papyrus_start]
-                            + papyrus_data
-                            + current_lines[papyrus_end:]
-                        )
+                        updated_lines = [
+                            *current_lines[:papyrus_start],
+                            *papyrus_data,
+                            *current_lines[papyrus_end:],
+                        ]
                     else:
-                        updated_lines = (
-                            current_lines  # noqa: RUF005
-                            + ["\n--- Papyrus Monitoring ---"]
-                            + papyrus_data
-                        )
+                        updated_lines = [
+                            *current_lines,
+                            "\n--- Papyrus Monitoring ---",
+                            *papyrus_data,
+                        ]
 
                     new_text = "\n".join(updated_lines)
                     self.output_text_box.setPlainText(new_text)

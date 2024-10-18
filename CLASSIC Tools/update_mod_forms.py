@@ -35,8 +35,8 @@ with sqlite3.connect(args.db) as conn, Path(args.file).open(encoding="utf-8", er
                     plugins_announced.append(plugin)
                 if args.verbose:
                     print(f"Adding {line} to {args.table}")
-                c.execute(f'''INSERT INTO {args.table} (plugin, formid, entry)
-                    VALUES (?, ?, ?)''', (plugin, formid, entry))
+                c.execute(f"""INSERT INTO {args.table} (plugin, formid, entry)
+                    VALUES (?, ?, ?)""", (plugin, formid, entry))
     if conn.in_transaction:
         conn.commit()
     print("Optimizing database...")

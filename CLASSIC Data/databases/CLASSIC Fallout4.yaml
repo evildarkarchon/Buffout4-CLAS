@@ -70,7 +70,7 @@ GameVR_Info:
   CRASHGEN_Acronym: BO4 NG
   CRASHGEN_LogName: Buffout 4
   CRASHGEN_DLL_File: buffout4.dll
-  CRASHGEN_LatestVer: Buffout 4 v1.35.1 Jul  5 2024 20:37:23
+  CRASHGEN_LatestVer: Buffout 4 v1.36.0 Oct 13 2024 01:09:30
   CRASHGEN_Ignore:
     - F4EE
     - WaitForDebugger
@@ -658,13 +658,13 @@ Mods_CONF:  # 2) MODS THAT CONFLICT WITH OTHER MODS
         If you encounter problems or crashes, see here how to add additional skeletons: https://www.nexusmods.com/fallout4/articles/2496
         -----
 
-  cbp | chw: |
+  cbp | ClassicHolseredWeapons: |
     CBP Physics ❌ CONFLICTS WITH : Classic Holstered Weapons
         Classic Holstered Weapons will not work correctly with mods that modify the player skeleton or add new skeleton paths.
         If you encounter problems or crashes, see here how to add additional skeletons: https://www.nexusmods.com/fallout4/articles/2496
         -----
 
-  awkcr | SKKCraftableWeaponsAmmo: |
+  ArmorKeywords | SKKCraftableWeaponsAmmo: |
     Armor And Weapon Keywords ❌ CONFLICTS WITH : SKK Craft Weapons And Scrap Ammo
         SKK Craft Weapons & Ammo Version 008 is incompatible with AWKCR and will cause crashes while saving the game.
         If you encounter problems or crashes, remove AWKCR and / or switch to Equipment and Crafting Overhaul instead.
@@ -720,7 +720,7 @@ Mods_SOLU:  # 3) MODS WITH SOLUTIONS & COMMUNITY PATCHES
           Skeleton Fixes: https://www.nexusmods.com/fallout4/mods/56101
         -----
 
-  AWKCR: |
+  ArmorKeywords: |
     Armor And Weapons Keywords
         - If you don't rely on AWKCR, consider switching to Equipment and Crafting Overhaul
           Better Alternative: https://www.nexusmods.com/fallout4/mods/67679?tab=files

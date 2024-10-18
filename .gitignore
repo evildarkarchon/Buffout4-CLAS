@@ -27,6 +27,7 @@ lcov.info
 *.spec
 build/
 dist/
+_internal/
 
 # CLASSIC Runtime-Created Files
 *-AUTOSCAN.md
