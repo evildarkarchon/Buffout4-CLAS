@@ -14,7 +14,7 @@ from enum import Enum, auto
 from functools import reduce
 from io import TextIOWrapper
 from pathlib import Path
-from typing import Literal
+from typing import Literal, TypedDict
 
 import aiohttp
 import chardet
