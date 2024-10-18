@@ -40,6 +40,8 @@ Our primary IDE is [Visual Studio Code](https://code.visualstudio.com/).
 `.vscode/` contains config files to aid in working on the project, including extension recommendations.  
 In the Extensions sidebar (Ctrl+Shift+X), search for `@recommended` and you'll see a star on them.
 
+You can run CLASSIC or build the exe from the VS Code GUI in the Run and Debug sidebar (Ctrl+Shift+D).
+
 To install Poetry using PowerShell:
 
 ```powershell
@@ -68,8 +70,10 @@ Updating dependency versions in `pyproject.toml` is handled by [poetry-plugin-up
 poetry up --latest
 ```
 
-CLASSIC's exe is built using nuitka:
+CLASSIC's exe is built using PyInstaller. You can do so with VS Code (Ctrl+Shift+D) or via command.
+To enable compression of the exe, download [UPX](https://upx.github.io/).
+Add the folder it's extracted in to your PATH *or* specify the location in the command or `.vscode/launch.json`
 
 ```powershell
-nuitka .\CLASSIC_Interface.py
+pyinstaller --clean --upx-dir 'C:\\Path\\to\\UPX' .\CLASSIC.spec
 ```
