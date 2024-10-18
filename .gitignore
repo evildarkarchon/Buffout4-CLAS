@@ -25,6 +25,7 @@ lcov.info
 *.onefile-build/
 *.pdb
 *.spec
+!CLASSIC.spec
 build/
 dist/
 
