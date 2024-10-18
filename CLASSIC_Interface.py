@@ -13,7 +13,7 @@ from typing import Any, Literal
 import regex as re
 import requests
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
-from PySide6.QtGui import QDesktopServices, QIcon, QPixmap, QFontMetrics
+from PySide6.QtGui import QDesktopServices, QFontMetrics, QIcon, QPixmap
 from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import (
     QApplication,
