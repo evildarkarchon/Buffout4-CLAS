@@ -28,6 +28,7 @@ lcov.info
 !CLASSIC.spec
 build/
 dist/
+_internal/
 
 # CLASSIC Runtime-Created Files
 *-AUTOSCAN.md
@@ -59,6 +60,7 @@ test.*
 
 # User Files
 *.7z
+*.zip
 Archive/
 Release/
 Crash Logs/
