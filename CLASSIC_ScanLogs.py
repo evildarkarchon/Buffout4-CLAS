@@ -98,14 +98,14 @@ def crashlogs_get_files() -> list[Path]:
     return crash_files
 
 
-def crashlogs_reformat() -> None:
+def crashlogs_reformat(crashlog_list: list[Path]) -> None:
     """Reformat plugin lists in crash logs, so that old and new CRASHGEN formats match."""
     CMain.logger.debug("- - - INITIATED CRASH LOG FILE REFORMAT")
     xse_acronym = CMain.yaml_settings(str, CMain.YAML.Game, f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym")
     remove_list = CMain.yaml_settings(list[str], CMain.YAML.Main, "exclude_log_records") or []
     simple_logs = CMain.classic_settings(bool, "Simplify Logs")
 
-    for file in crashlogs_get_files():
+    for file in crashlog_list:
         with file.open(encoding="utf-8", errors="ignore") as crash_log:
             crash_data = crash_log.readlines()
         try:
@@ -133,8 +133,9 @@ def crashlogs_reformat() -> None:
 def crashlogs_scan() -> None:
     pluginsearch = re.compile(r"\s*\[(FE:([0-9A-F]{3})|[0-9A-F]{2})\]\s*(.+?(?:\.es[pml])+)", flags=re.IGNORECASE)
     # is_ng_log = re.compile(r"\s*\[([0-9A-F]{2})\]([^\s]+.*)", flags=re.IGNORECASE)
+    crashlog_list = crashlogs_get_files()
     print("REFORMATTING CRASH LOGS, PLEASE WAIT...\n")
-    crashlogs_reformat()
+    crashlogs_reformat(crashlog_list)
 
     print("SCANNING CRASH LOGS, PLEASE WAIT...\n")
     scan_start_time = time.perf_counter()
@@ -273,7 +274,6 @@ def crashlogs_scan() -> None:
             segment_output = []
         return segment_output
 
-    crashlog_list = crashlogs_get_files()
     scan_failed_list: list[str] = []
     user_folder = Path.home()
     stats_crashlog_scanned = stats_crashlog_incomplete = stats_crashlog_failed = 0
