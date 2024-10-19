@@ -904,10 +904,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    scan_path: Path = (
-        args.scan_path
-    )  # VSCode gives me type errors because args.* is set at runtime (doesn't know what types it's dealing with).
-    ini_path: Path = args.ini_path  # Using intermediate variables with type annotations to satisfy it.
+    # VSCode gives type errors because args.* is set at runtime (doesn't know what types it's dealing with).
+    # Using intermediate variables with type annotations to satisfy it.
+    # TODO: Implement Typed Argument Parser or similar
+    scan_path: Path = args.scan_path
+    ini_path: Path = args.ini_path
     mods_folder_path: Path = args.mods_folder_path
 
     # Default output value for an argparse.BooleanOptionalAction is None, and so fails the isinstance check.
