@@ -101,28 +101,30 @@ def crashlogs_get_files() -> list[Path]:
 def crashlogs_reformat(crashlog_list: list[Path]) -> None:
     """Reformat plugin lists in crash logs, so that old and new CRASHGEN formats match."""
     CMain.logger.debug("- - - INITIATED CRASH LOG FILE REFORMAT")
-    xse_acronym = CMain.yaml_settings(str, CMain.YAML.Game, f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym")
-    remove_list = CMain.yaml_settings(list[str], CMain.YAML.Main, "exclude_log_records") or []
-    simple_logs = CMain.classic_settings(bool, "Simplify Logs")
+    simplify_logs = CMain.classic_settings(bool, "Simplify Logs")
+    remove_list = CMain.yaml_settings(list[str], CMain.YAML.Main, "exclude_log_records") or [] if simplify_logs else []
 
     for file in crashlog_list:
         with file.open(encoding="utf-8", errors="ignore") as crash_log:
             crash_data = crash_log.readlines()
-        try:
-            index_plugins = next(
-                index
-                for index, item in enumerate(crash_data)
-                if xse_acronym and xse_acronym not in item and "PLUGINS:" in item
-            )
-        except StopIteration:
-            index_plugins = 1
+        index_plugins = next((index for index, line in enumerate(crash_data) if line.startswith("PLUGINS:")), 1)
 
-        for index, line in enumerate(crash_data):
-            if simple_logs and any(string in line for string in remove_list):
-                crash_data.pop(index)  # Remove *useless* lines from crash log if Simplify Logs is enabled.
-            elif index > index_plugins:  # Replace all white space chars inside [ ] brackets with the 0 char.
-                formatted_line = re.sub(r"\[(.*?)]", lambda x: "[" + re.sub(r"\s", "0", x.group(1)) + "]", line)
-                crash_data[index] = formatted_line
+        last_index = len(crash_data) - 1
+        for index, line in enumerate(reversed(crash_data)):
+            reversed_index = last_index - index
+            if simplify_logs and any(string in line for string in remove_list):
+                # Remove *useless* lines from crash log if Simplify Logs is enabled.
+                crash_data.pop(reversed_index)
+            elif reversed_index > index_plugins and "[" in line:
+                # Replace all spaces inside the load order [brackets] with 0s.
+                # This maintains consistency between different versions of Buffout 4.
+                # Example log lines:
+                # [ 1] DLCRobot.esm
+                # [FE:  0] RedRocketsGlareII.esl
+                indent, rest = line.split("[", 1)
+                fid, name = rest.split("]", 1)
+                crash_data[reversed_index] = f"{indent}[{fid.replace(" ", "0")}]{name}"
+
         with file.open("w", encoding="utf-8", errors="ignore") as crash_log:
             crash_log.writelines(crash_data)
 
