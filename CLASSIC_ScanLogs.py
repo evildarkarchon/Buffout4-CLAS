@@ -78,16 +78,16 @@ def crashlogs_get_files() -> list[Path]:
     #     CLASSIC_pastebin.mkdir(parents=True, exist_ok=True)
     for file in CLASSIC_folder.glob("crash-*.log"):
         destination_file = CLASSIC_logs / file.name
-        if not Path(destination_file).is_file():
+        if not destination_file.is_file():
             file.rename(destination_file)
     for file in CLASSIC_folder.glob("crash-*-AUTOSCAN.md"):
         destination_file = CLASSIC_logs / file.name
-        if not Path(destination_file).is_file():
+        if not destination_file.is_file():
             file.rename(destination_file)
     if XSE_folder and XSE_folder.is_dir():
         for crash_file in XSE_folder.glob("crash-*.log"):
             destination_file = CLASSIC_logs / crash_file.name
-            if not Path(destination_file).is_file():
+            if not destination_file.is_file():
                 shutil.copy2(crash_file, destination_file)
 
     crash_files = list(CLASSIC_logs.glob("crash-*.log"))
@@ -926,21 +926,21 @@ if __name__ == "__main__":
         and ini_path.resolve().is_dir()
         and str(ini_path) != CMain.classic_settings(str, "INI Folder Path")
     ):
-        CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.INI Folder Path", str(Path(ini_path).resolve()))
+        CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.INI Folder Path", str(ini_path.resolve()))
 
     if (
         isinstance(scan_path, Path)
         and scan_path.resolve().is_dir()
         and str(scan_path) != CMain.classic_settings(str, "SCAN Custom Path")
     ):
-        CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.SCAN Custom Path", str(Path(scan_path).resolve()))
+        CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.SCAN Custom Path", str(scan_path.resolve()))
 
     if (
         isinstance(mods_folder_path, Path)
         and mods_folder_path.resolve().is_dir()
         and str(mods_folder_path) != CMain.classic_settings(str, "MODS Folder Path")
     ):
-        CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.MODS Folder Path", str(Path(mods_folder_path).resolve()))
+        CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.MODS Folder Path", str(mods_folder_path.resolve()))
 
     if isinstance(args.simplify_logs, bool) and args.simplify_logs != CMain.classic_settings(bool, "Simplify Logs"):
         CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.Simplify Logs", args.simplify_logs)
