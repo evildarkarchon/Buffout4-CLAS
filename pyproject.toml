@@ -51,7 +51,7 @@ reportUnusedImport = false    # Redundant with Ruff F401
 
 [tool.ruff]
 indent-width = 4
-line-length = 120
+line-length = 140
 
 [tool.ruff.format]
 preview = true
