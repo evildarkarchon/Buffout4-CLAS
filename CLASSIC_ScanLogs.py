@@ -128,6 +128,7 @@ def crashlogs_reformat(crashlog_list: list[Path], remove_list: list[str]) -> Non
         with file.open("w", encoding="utf-8", errors="ignore") as crash_log:
             crash_log.writelines(crash_data)
 
+
 def detect_mods_single(yaml_dict: dict[str, str], crashlog_plugins: dict[str, str], autoscan_report: list[str]) -> bool:
     """Detect one whole key (1 mod) per loop in YAML dict."""
     trigger_mod_found = False
@@ -143,6 +144,7 @@ def detect_mods_single(yaml_dict: dict[str, str], crashlog_plugins: dict[str, st
                 trigger_mod_found = True
                 break
     return trigger_mod_found
+
 
 def detect_mods_double(yaml_dict: dict[str, str], crashlog_plugins: dict[str, str], autoscan_report: list[str]) -> bool:
     """Detect one split key (2 mods) per loop in YAML dict."""
@@ -166,6 +168,7 @@ def detect_mods_double(yaml_dict: dict[str, str], crashlog_plugins: dict[str, st
                 raise ValueError(f"ERROR: {mod_name} has no warning in the database!")
             trigger_mod_found = True
     return trigger_mod_found
+
 
 def detect_mods_important(
     yaml_dict: dict[str, str],
@@ -193,24 +196,17 @@ def detect_mods_important(
         elif (gpu_rival and mod_warn) and gpu_rival not in mod_warn.lower():
             autoscan_report.extend((f"❌ {mod_split[1]} is not installed!\n", mod_warn, "\n"))
 
-def crashlog_generate_segment(
-    segment_start: str, segment_end: str, crash_data: list[str], remove_list: list[str], xse_acronym: str) -> list[str]:
-    segment_start = segment_start.lower()
-    segment_end = segment_end.lower()
+
+def crashlog_generate_segment(start: str, end: str, crash_data: list[str], remove_list: list[str], xse_acronym: str) -> list[str]:
+    start = start.lower()
+    end = end.lower()
     try:
-        index_start = next(index for index, item in enumerate(crash_data) if segment_start in item.lower()) + 1
+        index_start = next(index for index, item in enumerate(crash_data) if start in item.lower()) + 1
 
     except StopIteration:
         index_start = 0
     try:
-        index_end = (
-            next(
-                index
-                for index, item in enumerate(crash_data)
-                if segment_end in item.lower() and xse_acronym not in item.lower()
-            )
-            - 1
-        )
+        index_end = next(index for index, item in enumerate(crash_data) if end in item.lower() and xse_acronym not in item.lower()) - 1
     except StopIteration:
         index_end = len(crash_data)
 
@@ -307,16 +303,12 @@ def crashlogs_scan() -> None:
         # Set default index values incase actual index is not found.
         try:
             index_crashgenver = next(
-                index
-                for index, item in enumerate(crash_data)
-                if index < 10 and crashgen_name and crashgen_name.lower() in item.lower()
+                index for index, item in enumerate(crash_data) if index < 10 and crashgen_name and crashgen_name.lower() in item.lower()
             )
         except StopIteration:
             index_crashgenver = 1
         try:
-            index_mainerror = next(
-                index for index, item in enumerate(crash_data) if index < 10 and "unhandled exception" in item.lower()
-            )
+            index_mainerror = next(index for index, item in enumerate(crash_data) if index < 10 and "unhandled exception" in item.lower())
         except StopIteration:
             index_mainerror = 3
 
@@ -369,9 +361,7 @@ def crashlogs_scan() -> None:
         crashlog_GPUAMD = any("GPU #1" in elem and "AMD" in elem for elem in segment_system)
         crashlog_GPUNV = any("GPU #1" in elem and "Nvidia" in elem for elem in segment_system)
         crashlog_GPUI = not crashlog_GPUAMD and not crashlog_GPUNV
-        gpu_rival: Literal["nvidia", "amd"] | None = (
-            "nvidia" if (crashlog_GPUAMD or crashlog_GPUI) else "amd" if crashlog_GPUNV else None
-        )
+        gpu_rival: Literal["nvidia", "amd"] | None = "nvidia" if (crashlog_GPUAMD or crashlog_GPUI) else "amd" if crashlog_GPUNV else None
 
         # IF LOADORDER FILE EXISTS, USE ITS PLUGINS
         loadorder_path = Path("loadorder.txt")
@@ -454,9 +444,7 @@ def crashlogs_scan() -> None:
             error_split_0, error_split_1 = error.split(" | ", 1)
             if error_split_1 in crashlog_mainerror:
                 error_split_1 = error_split_1.ljust(max_warn_length, ".")
-                autoscan_report.append(
-                    f"# Checking for {error_split_1} SUSPECT FOUND! > Severity : {error_split_0} # \n-----\n"
-                )
+                autoscan_report.append(f"# Checking for {error_split_1} SUSPECT FOUND! > Severity : {error_split_0} # \n-----\n")
                 trigger_suspect_found = True
 
         for key in suspects_stack_list:
@@ -485,15 +473,11 @@ def crashlogs_scan() -> None:
             if has_required_item:
                 if error_req_found:
                     key_split_1 = key_split_1.ljust(max_warn_length, ".")
-                    autoscan_report.append(
-                        f"# Checking for {key_split_1} SUSPECT FOUND! > Severity : {key_split_0} # \n-----\n"
-                    )
+                    autoscan_report.append(f"# Checking for {key_split_1} SUSPECT FOUND! > Severity : {key_split_0} # \n-----\n")
                     trigger_suspect_found = True
             elif error_opt_found or stack_found:
                 key_split_1 = key_split_1.ljust(max_warn_length, ".")
-                autoscan_report.append(
-                    f"# Checking for {key_split_1} SUSPECT FOUND! > Severity : {key_split_0} # \n-----\n"
-                )
+                autoscan_report.append(f"# Checking for {key_split_1} SUSPECT FOUND! > Severity : {key_split_0} # \n-----\n")
                 trigger_suspect_found = True
 
         if trigger_suspect_found:
@@ -538,8 +522,7 @@ def crashlogs_scan() -> None:
 
                 if "achievements:" in line_lower:
                     if "true" in line_lower and any(
-                        any(dll in elem.lower() for dll in ("achievements.dll", "unlimitedsurvivalmode.dll"))
-                        for elem in segment_xsemodules
+                        any(dll in elem.lower() for dll in ("achievements.dll", "unlimitedsurvivalmode.dll")) for elem in segment_xsemodules
                     ):
                         autoscan_report.extend((
                             "# ❌ CAUTION : The Achievements Mod and/or Unlimited Survival Mode is installed, but Achievements is set to TRUE # \n",
@@ -740,11 +723,7 @@ def crashlogs_scan() -> None:
             line = line.lower()
             for plugin in crashlog_plugins:
                 plugin = plugin.lower()
-                if (
-                    plugin in line
-                    and "modified by:" not in line
-                    and all(ignore.lower() not in plugin for ignore in game_ignore_plugins)
-                ):
+                if plugin in line and "modified by:" not in line and all(ignore.lower() not in plugin for ignore in game_ignore_plugins):
                     plugins_matches.append(plugin)
 
         if plugins_matches:
@@ -761,9 +740,7 @@ def crashlogs_scan() -> None:
 
         # ================================================
         autoscan_report.append("# LIST OF (POSSIBLE) FORM ID SUSPECTS #\n")
-        formids_matches = [
-            line.replace("0x", "").strip() for line in segment_callstack if "0xFF" not in line and "id:" in line.lower()
-        ]
+        formids_matches = [line.replace("0x", "").strip() for line in segment_callstack if "0xFF" not in line and "id:" in line.lower()]
         if formids_matches:
             formids_found = dict(Counter(sorted(formids_matches)))
             for formid_full, count in formids_found.items():
@@ -896,9 +873,7 @@ if __name__ == "__main__":
     # I will figure out a better way in a future iteration, this iteration simply mimics the GUI. - evildarkarchon
     parser.add_argument("--fcx-mode", action=argparse.BooleanOptionalAction, help="Enable (or disable) FCX mode")
     parser.add_argument("--show-fid-values", action=argparse.BooleanOptionalAction, help="Enable (or disable) IMI mode")
-    parser.add_argument(
-        "--stat-logging", action=argparse.BooleanOptionalAction, help="Enable (or disable) Stat Logging"
-    )
+    parser.add_argument("--stat-logging", action=argparse.BooleanOptionalAction, help="Enable (or disable) Stat Logging")
     parser.add_argument(
         "--move-unsolved",
         action=argparse.BooleanOptionalAction,
@@ -906,12 +881,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("--ini-path", type=Path, help="Set the directory that stores the game's INI files.")
     parser.add_argument("--scan-path", type=Path, help="Set which custom directory to scan crash logs from.")
-    parser.add_argument(
-        "--mods-folder-path", type=Path, help="Set the directory where your mod manager stores your mods (Optional)."
-    )
-    parser.add_argument(
-        "--simplify-logs", action=argparse.BooleanOptionalAction, help="Enable (or disable) Simplify Logs"
-    )
+    parser.add_argument("--mods-folder-path", type=Path, help="Set the directory where your mod manager stores your mods (Optional).")
+    parser.add_argument("--simplify-logs", action=argparse.BooleanOptionalAction, help="Enable (or disable) Simplify Logs")
     args = parser.parse_args()
 
     # VSCode gives type errors because args.* is set at runtime (doesn't know what types it's dealing with).
@@ -932,18 +903,10 @@ if __name__ == "__main__":
     if isinstance(args.move_unsolved, bool) and args.move_unsolved != CMain.classic_settings(bool, "Move Unsolved Logs"):
         CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.Move Unsolved", args.args.move_unsolved)
 
-    if (
-        isinstance(ini_path, Path)
-        and ini_path.resolve().is_dir()
-        and str(ini_path) != CMain.classic_settings(str, "INI Folder Path")
-    ):
+    if isinstance(ini_path, Path) and ini_path.resolve().is_dir() and str(ini_path) != CMain.classic_settings(str, "INI Folder Path"):
         CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.INI Folder Path", str(ini_path.resolve()))
 
-    if (
-        isinstance(scan_path, Path)
-        and scan_path.resolve().is_dir()
-        and str(scan_path) != CMain.classic_settings(str, "SCAN Custom Path")
-    ):
+    if isinstance(scan_path, Path) and scan_path.resolve().is_dir() and str(scan_path) != CMain.classic_settings(str, "SCAN Custom Path"):
         CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.SCAN Custom Path", str(scan_path.resolve()))
 
     if (
