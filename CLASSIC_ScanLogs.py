@@ -348,7 +348,12 @@ def crashlogs_scan() -> None:
         ) = find_segments(crash_data, xse_acronym, crashgen_name)
         segment_callstack_intact = "".join(segment_callstack)
 
-        xsemodules = {x.strip() for x in segment_xsemodules} if segment_xsemodules else set()
+        # SOME IMPORTANT DLLs HAVE A VERSION, REMOVE IT
+        xsemodules = (
+            {x.split(" v", 1)[0].strip().lower() if "dll v" in x else x.strip().lower() for x in segment_xsemodules}
+            if segment_xsemodules
+            else set()
+        )
         crashgen: dict[str, bool | int | str] = {}
         if segment_crashgen:
             for elem in segment_crashgen:
@@ -436,12 +441,7 @@ def crashlogs_scan() -> None:
                 #     elem_parts[0] = elem_parts[0].replace("[", "").replace(":", "").replace("]", "")
                 #     crashlog_plugins[elem_parts[1]] = elem_parts[0]
 
-        for elem in segment_xsemodules:
-            # SOME IMPORTANT DLLs HAVE A VERSION, REMOVE IT
-            elem = elem.strip()
-            if ".dll v" in elem:
-                elem_parts = elem.split(" v", 1)
-                elem = elem_parts[0]
+        for elem in xsemodules:
             if all(elem not in item for item in crashlog_plugins):
                 crashlog_plugins[elem] = "DLL"
 
@@ -531,8 +531,8 @@ def crashlogs_scan() -> None:
             "====================================================\n",
         ))
 
-        Has_XCell = any("x-cell-fo4.dll" in elem.lower() for elem in segment_xsemodules)
-        Has_BakaScrapHeap = any("bakascrapheap.dll" in elem.lower() for elem in segment_xsemodules)
+        Has_XCell = "x-cell-fo4.dll" in xsemodules
+        Has_BakaScrapHeap = "bakascrapheap.dll" in xsemodules
 
         if fcx_mode:
             autoscan_report.extend((
@@ -552,21 +552,19 @@ def crashlogs_scan() -> None:
                 for setting_name, setting_value in crashgen.items():
                     if setting_value is False and setting_name not in crashgen_ignore:
                         autoscan_report.append(
-                            f"* NOTICE : {setting_name} is disabled in your {crashgen_name} settings, is this intentional? * \n-----\n",
+                            f"* NOTICE : {setting_name} is disabled in your {crashgen_name} settings, is this intentional? * \n-----\n"
                         )
 
                 crashgen_achievements = crashgen.get("Achievements")
                 if crashgen_achievements is not None:
-                    if crashgen_achievements and any(
-                        any(dll in elem.lower() for dll in ("achievements.dll", "unlimitedsurvivalmode.dll")) for elem in segment_xsemodules
-                    ):
+                    if crashgen_achievements and ("achievements.dll" in xsemodules or "unlimitedsurvivalmode.dll" in xsemodules):
                         autoscan_report.extend((
                             "# ❌ CAUTION : The Achievements Mod and/or Unlimited Survival Mode is installed, but Achievements is set to TRUE # \n",
                             f" FIX: Open {crashgen_name}'s TOML file and change Achievements to FALSE, this prevents conflicts with {crashgen_name}.\n-----\n",
                         ))
                     else:
                         autoscan_report.append(
-                            f"✔️ Achievements parameter is correctly configured in your {crashgen_name} settings! \n-----\n",
+                            f"✔️ Achievements parameter is correctly configured in your {crashgen_name} settings! \n-----\n"
                         )
 
                 crashgen_memorymanager = crashgen.get("MemoryManager")
@@ -583,11 +581,11 @@ def crashlogs_scan() -> None:
                         ))
                     elif Has_XCell and not Has_BakaScrapHeap and not crashgen_memorymanager:
                         autoscan_report.append(
-                            f"✔️ Memory Manager parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
+                            f"✔️ Memory Manager parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
                         )
                     else:
                         autoscan_report.append(
-                            f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n",
+                            f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n"
                         )
 
                 if Has_XCell:
@@ -600,7 +598,7 @@ def crashlogs_scan() -> None:
                             ))
                         else:
                             autoscan_report.append(
-                                f"✔️ HavokMemorySystem parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
+                                f"✔️ HavokMemorySystem parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
                             )
 
                     crashgen_bstexturestreamerlocalheap = crashgen.get("BSTextureStreamerLocalHeap")
@@ -612,7 +610,7 @@ def crashlogs_scan() -> None:
                             ))
                         else:
                             autoscan_report.append(
-                                f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
+                                f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
                             )
 
                     crashgen_scaleformallocator = crashgen.get("ScaleformAllocator")
@@ -624,7 +622,7 @@ def crashlogs_scan() -> None:
                             ))
                         else:
                             autoscan_report.append(
-                                f"✔️ ScaleformAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
+                                f"✔️ ScaleformAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
                             )
 
                     crashgen_smallblockallocator = crashgen.get("SmallBlockAllocator")
@@ -636,19 +634,19 @@ def crashlogs_scan() -> None:
                             ))
                         else:
                             autoscan_report.append(
-                                f"✔️ SmallBlockAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
+                                f"✔️ SmallBlockAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
                             )
 
                 crashgen_f4ee = crashgen.get("F4EE")
                 if crashgen_f4ee is not None:
-                    if not crashgen_f4ee and any("f4ee.dll" in elem.lower() for elem in segment_xsemodules):
+                    if not crashgen_f4ee and "f4ee.dll" in xsemodules:
                         autoscan_report.extend((
                             "# ❌ CAUTION : Looks Menu is installed, but F4EE parameter under [Compatibility] is set to FALSE # \n",
                             f" FIX: Open {crashgen_name}'s TOML file and change F4EE to TRUE, this prevents bugs and crashes from Looks Menu.\n-----\n",
                         ))
                     else:
                         autoscan_report.append(
-                            f"✔️ F4EE (Looks Menu) parameter is correctly configured in your {crashgen_name} settings! \n-----\n",
+                            f"✔️ F4EE (Looks Menu) parameter is correctly configured in your {crashgen_name} settings! \n-----\n"
                         )
 
         autoscan_report.append(main_files_check)
@@ -707,9 +705,7 @@ def crashlogs_scan() -> None:
                     "[To hide these warnings, you can add their plugin names to the CLASSIC Ignore.yaml file. ONE PLUGIN PER LINE.] \n\n",
                 ))
             else:
-                autoscan_report.append(
-                    "# FOUND NO PROBLEMATIC MODS WITH AVAILABLE SOLUTIONS AND COMMUNITY PATCHES # \n\n",
-                )
+                autoscan_report.append("# FOUND NO PROBLEMATIC MODS WITH AVAILABLE SOLUTIONS AND COMMUNITY PATCHES # \n\n")
         else:
             autoscan_report.append(warn_noplugins)
 
@@ -727,9 +723,7 @@ def crashlogs_scan() -> None:
                         "* VISIT OPTIMIZATION PATCHES COLLECTION: https://www.nexusmods.com/fallout4/mods/54872 * \n\n",
                     ))
                 else:
-                    autoscan_report.append(
-                        "# FOUND NO PROBLEMATIC MODS THAT ARE ALREADY PATCHED THROUGH THE OPC INSTALLER # \n\n",
-                    )
+                    autoscan_report.append("# FOUND NO PROBLEMATIC MODS THAT ARE ALREADY PATCHED THROUGH THE OPC INSTALLER # \n\n")
             else:
                 autoscan_report.append(warn_noplugins)
 
