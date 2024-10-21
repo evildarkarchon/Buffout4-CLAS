@@ -107,15 +107,17 @@ def crashlogs_reformat(crashlog_list: list[Path], remove_list: list[str]) -> Non
     for file in crashlog_list:
         with file.open(encoding="utf-8", errors="ignore") as crash_log:
             crash_data = crash_log.readlines()
-        index_plugins = next((index for index, line in enumerate(crash_data) if line.startswith("PLUGINS:")), 1)
 
         last_index = len(crash_data) - 1
+        in_plugins = True
         for index, line in enumerate(reversed(crash_data)):
+            if in_plugins and line.startswith("PLUGINS:"):
+                in_plugins = False
             reversed_index = last_index - index
             if simplify_logs and any(string in line for string in remove_list):
                 # Remove *useless* lines from crash log if Simplify Logs is enabled.
                 crash_data.pop(reversed_index)
-            elif reversed_index > index_plugins and "[" in line:
+            elif in_plugins and "[" in line:
                 # Replace all spaces inside the load order [brackets] with 0s.
                 # This maintains consistency between different versions of Buffout 4.
                 # Example log lines:
