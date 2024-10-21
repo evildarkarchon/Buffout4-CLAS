@@ -13,13 +13,14 @@ from typing import Any, Literal
 import regex as re
 import requests
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
-from PySide6.QtGui import QDesktopServices, QIcon, QPixmap
+from PySide6.QtGui import QDesktopServices, QFontMetrics, QIcon, QPixmap
 from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import (
     QApplication,
     QBoxLayout,
     QButtonGroup,
     QCheckBox,
+    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
@@ -374,14 +375,6 @@ class MainWindow(QMainWindow):
             color: #ffffff;
         }
 
-        QCheckBox::indicator:unchecked {
-            image: url('unchecked.png');
-        }
-
-        QCheckBox::indicator:checked {
-            image: url('checked.png');
-        }
-
         QTabWidget::pane {
             border: 1px solid #444444;
         }
@@ -419,7 +412,7 @@ class MainWindow(QMainWindow):
     """
         self.setStyleSheet(dark_style)
         # self.setMinimumSize(700, 950)  # Increase minimum width from 650 to 700
-        self.setFixedSize(700, 950)  # Set fixed size to prevent resizing, for now.
+        self.setFixedSize(700, 1000)  # Set fixed size to prevent resizing, for now.
 
         # Set up the custom exception handler for the main window
         self.installEventFilter(self)
@@ -485,8 +478,15 @@ class MainWindow(QMainWindow):
         """Set up the Pastebin fetch UI elements."""
         pastebin_layout = QHBoxLayout()
 
+        self.pastebin_label = QLabel("PASTEBIN LOG FETCH", self)
+        self.pastebin_label.setToolTip("Fetch a log file from Pastebin. Can be used more than once.")
+        pastebin_layout.addWidget(self.pastebin_label)
+
+        pastebin_layout.addSpacing(50)
+
         self.pastebin_id_input = QLineEdit(self)
         self.pastebin_id_input.setPlaceholderText("Enter Pastebin URL or ID")
+        self.pastebin_id_input.setToolTip("Enter the Pastebin URL or ID to fetch the log. Can be used more than once.")
         pastebin_layout.addWidget(self.pastebin_id_input)
 
         self.pastebin_fetch_button = QPushButton("Fetch Log", self)
@@ -497,7 +497,7 @@ class MainWindow(QMainWindow):
         layout.addLayout(pastebin_layout)
 
     def fetch_pastebin_log(self) -> None:
-        """Fetch the log from Pastebin and scan it."""
+        """Fetch the log from Pastebin"""
         input_text = self.pastebin_id_input.text().strip()
 
         # Regular expression to check if the input is a full URL
@@ -508,6 +508,9 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Success", f"Log fetched from: {pastebin_url}")
         except (OSError, requests.HTTPError) as e:
             QMessageBox.warning(self, "Error", f"Failed to fetch log: {e!s}")
+        else:
+            print(f"✔️ Log successfully fetched from: {pastebin_url}")
+            QMessageBox.information(self, "Success", f"Log successfully fetched from: {pastebin_url}")
 
     def show_manual_docs_path_dialog(self) -> None:
         dialog = ManualPathDialog(self)
@@ -612,7 +615,8 @@ class MainWindow(QMainWindow):
         self.scan_folder_edit.setPlaceholderText("Optional: Select a custom folder to scan for log files.")
 
 
-        # self.setup_pastebin_elements(layout)
+
+        self.setup_pastebin_elements(layout)
 
         # Add first separator
         layout.addWidget(self.create_separator())
@@ -920,6 +924,53 @@ class MainWindow(QMainWindow):
         checkbox_layout.addSpacing(20)
 
         layout.addLayout(checkbox_layout)
+
+        update_source_layout = QHBoxLayout()
+
+        update_source_label = QLabel("Update Source")
+        update_source_combo = QComboBox()
+        update_sources = ("Nexus", "GitHub", "Both")
+        update_source_combo.addItems(update_sources)
+
+        # Set the ComboBox to adjust size based on content
+        update_source_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+
+        # Optionally, reduce the spacing between the label and ComboBox
+        update_source_layout.setSpacing(10)  # Adjust the spacing between label and combo box
+
+        # Set layout margins to 0 to bring the label and combo box closer
+        update_source_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Set the layout alignment to align left
+        update_source_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        # Set the size policy to prevent expanding
+        update_source_combo.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        update_source_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        # Calculate the width of the longest item and set the ComboBox width accordingly
+        font_metrics = QFontMetrics(update_source_combo.font())
+        combo_width = max(font_metrics.horizontalAdvance(item) for item in update_sources) + 30
+        update_source_combo.setFixedWidth(combo_width)
+
+        # Set the default value if stored in settings
+        current_value = CMain.classic_settings(str, "Update Source")
+        if current_value is not None:
+            update_source_combo.setCurrentText(current_value)
+        else:
+            CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.Update Source", "Nexus")
+
+        update_source_combo.setToolTip("Select the source to check for updates. Nexus = stable, GitHub = latest, Both = check both")
+
+        update_source_combo.currentTextChanged.connect(
+            lambda value: CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.Update Source", value)
+        )
+
+        update_source_layout.addWidget(update_source_label)
+        update_source_layout.addWidget(update_source_combo)
+
+        # Add the update source layout below the checkboxes
+        layout.addLayout(update_source_layout)
 
         # Add a separator after the checkboxes
         layout.addWidget(self.create_separator())
