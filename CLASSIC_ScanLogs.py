@@ -199,28 +199,52 @@ def detect_mods_important(
             autoscan_report.extend((f"❌ {mod_split[1]} is not installed!\n", mod_warn, "\n"))
 
 
-def crashlog_generate_segment(start: str, end: str, crash_data: list[str], remove_list: list[str], xse_acronym: str) -> list[str]:
-    start = start.lower()
-    end = end.lower()
-    try:
-        index_start = next(index for index, item in enumerate(crash_data) if start in item.lower()) + 1
+# Replacement for crashlog_generate_segment()
+def find_segments(crash_data: list[str], xse_acronym: str) -> list[list[str]]:
+    """Divide the log up into segments."""
+    xse = xse_acronym.upper()
+    segment_boundaries = (
+        ("	[Compatibility]", "SYSTEM SPECS:"),
+        ("SYSTEM SPECS:", "PROBABLE CALL STACK:"),
+        ("PROBABLE CALL STACK:", "MODULES:"),
+        ("MODULES:", f"{xse} PLUGINS:"),
+        (f"{xse} PLUGINS:", "PLUGINS:"),
+        ("PLUGINS:", "EOF"),
+    )
+    segment_index = 0
+    collect = False
+    segments: list[list[str]] = []
+    next_boundary = segment_boundaries[0][0]
+    index_start = 0
+    total = len(crash_data)
+    current_index = 0
+    while current_index < total:
+        line = crash_data[current_index]
+        if line.startswith(next_boundary):
+            if collect:
+                index_end = current_index - 1 if current_index > 0 else current_index
+                segments.append(crash_data[index_start:index_end])
+                segment_index += 1
+                if segment_index == len(segment_boundaries):
+                    break
+            else:
+                index_start = current_index + 1 if total > current_index else current_index
+            collect = not collect
+            next_boundary = segment_boundaries[segment_index][collect]
+            if collect:
+                if next_boundary == "EOF":
+                    segments.append(crash_data[index_start:])
+                    break
+            else:
+                # Don't increase current_index in case the current
+                # line is also the next start boundary
+                continue
+        current_index += 1
 
-    except StopIteration:
-        index_start = 0
-    try:
-        index_end = next(index for index, item in enumerate(crash_data) if end in item.lower() and xse_acronym not in item.lower()) - 1
-    except StopIteration:
-        index_end = len(crash_data)
-
-    if index_start <= index_end:
-        segment_output = [
-            s_line.strip()
-            for s_line in crash_data[index_start:index_end]
-            if all(item.lower() not in s_line.lower() for item in remove_list)
-        ]
-    else:
-        segment_output = []
-    return segment_output
+    missing_segments = len(segment_boundaries) - len(segments)
+    if missing_segments > 0:
+        segments.extend([[]] * missing_segments)
+    return [[line.strip() for line in segment] for segment in segments]
 
 
 # ================================================
@@ -317,13 +341,7 @@ def crashlogs_scan() -> None:
         # ================================================
         # 2) GENERATE REQUIRED SEGMENTS FROM THE CRASH LOG
         # ================================================
-        segment_allmodules = crashlog_generate_segment("modules:", f"{xse_acronym} plugins:", crash_data, remove_list, xse_acronym)
-        segment_xsemodules = crashlog_generate_segment(f"{xse_acronym} plugins:", "plugins:", crash_data, remove_list, xse_acronym)
-        segment_callstack = crashlog_generate_segment("probable call stack:", "modules:", crash_data, remove_list, xse_acronym)
-        segment_crashgen = crashlog_generate_segment("[compatibility]", "system specs:", crash_data, remove_list, xse_acronym)
-        segment_system = crashlog_generate_segment("system specs:", "probable call stack:", crash_data, remove_list, xse_acronym)
-        # Non-existent value makes it go to last line.
-        segment_plugins = crashlog_generate_segment("plugins:", "???????", crash_data, remove_list, xse_acronym)
+        segment_crashgen, segment_system, segment_callstack, segment_allmodules, segment_xsemodules, segment_plugins = find_segments(crash_data, xse_acronym)
         segment_callstack_intact = "".join(segment_callstack)
         if not segment_plugins:
             stats_crashlog_incomplete += 1
