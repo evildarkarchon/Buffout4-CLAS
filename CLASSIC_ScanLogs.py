@@ -204,12 +204,12 @@ def find_segments(crash_data: list[str], xse_acronym: str, crashgen_name: str) -
     """Divide the log up into segments."""
     xse = xse_acronym.upper()
     segment_boundaries = (
-        ("	[Compatibility]", "SYSTEM SPECS:"),
-        ("SYSTEM SPECS:", "PROBABLE CALL STACK:"),
-        ("PROBABLE CALL STACK:", "MODULES:"),
-        ("MODULES:", f"{xse} PLUGINS:"),
-        (f"{xse} PLUGINS:", "PLUGINS:"),
-        ("PLUGINS:", "EOF"),
+        ("	[Compatibility]", "SYSTEM SPECS:"),  # segment_crashgen
+        ("SYSTEM SPECS:", "PROBABLE CALL STACK:"),  # segment_system
+        ("PROBABLE CALL STACK:", "MODULES:"),  # segment_callstack
+        ("MODULES:", f"{xse} PLUGINS:"),  # segment_allmodules
+        (f"{xse} PLUGINS:", "PLUGINS:"),  # segment_xsemodules
+        ("PLUGINS:", "EOF"),  # segment_plugins
     )
     segment_index = 0
     collect = False
@@ -280,7 +280,7 @@ def crashlogs_scan() -> None:
     crashgen_name = CMain.yaml_settings(str, CMain.YAML.Game, "Game_Info.CRASHGEN_LogName") or ""
     crashgen_latest_og = CMain.yaml_settings(str, CMain.YAML.Game, "Game_Info.CRASHGEN_LatestVer") or ""
     crashgen_latest_vr = CMain.yaml_settings(str, CMain.YAML.Game, "GameVR_Info.CRASHGEN_LatestVer") or ""
-    crashgen_ignore = CMain.yaml_settings(list[str], CMain.YAML.Game, f"Game{CMain.gamevars["vr"]}_Info.CRASHGEN_Ignore") or []
+    crashgen_ignore = set(CMain.yaml_settings(list[str], CMain.YAML.Game, f"Game{CMain.gamevars["vr"]}_Info.CRASHGEN_Ignore") or [])
 
     warn_noplugins = CMain.yaml_settings(str, CMain.YAML.Game, "Warnings_CRASHGEN.Warn_NOPlugins") or ""
     warn_outdated = CMain.yaml_settings(str, CMain.YAML.Game, "Warnings_CRASHGEN.Warn_Outdated") or ""
@@ -347,6 +347,15 @@ def crashlogs_scan() -> None:
             ),
         ) = find_segments(crash_data, xse_acronym, crashgen_name)
         segment_callstack_intact = "".join(segment_callstack)
+
+        xsemodules = {x.strip() for x in segment_xsemodules} if segment_xsemodules else set()
+        crashgen: dict[str, bool | int | str] = {}
+        if segment_crashgen:
+            for elem in segment_crashgen:
+                if ":" in elem:
+                    k, v = elem.split(":", 1)
+                    crashgen[k] = True if v == " true" else False if v == " false" else int(v) if v.isdecimal() else v.strip()
+
         if not segment_plugins:
             stats_crashlog_incomplete += 1
         if len(crash_data) < 20:
@@ -446,9 +455,9 @@ def crashlogs_scan() -> None:
 
         # CHECK IF THERE ARE ANY PLUGINS IN THE IGNORE YAML
         if ignore_plugins_list:
-            for item in ignore_plugins_list:
-                if any(item.lower() == plugin.lower() for plugin in crashlog_plugins):
-                    del crashlog_plugins[item]
+            for signal in ignore_plugins_list:
+                if any(signal.lower() == plugin.lower() for plugin in crashlog_plugins):
+                    del crashlog_plugins[signal]
 
         autoscan_report.extend((
             "====================================================\n",
@@ -465,43 +474,44 @@ def crashlogs_scan() -> None:
         max_warn_length = 30
         trigger_suspect_found = False
         for error in suspects_error_list:
-            error_split_0, error_split_1 = error.split(" | ", 1)
-            if error_split_1 in crashlog_mainerror:
-                error_split_1 = error_split_1.ljust(max_warn_length, ".")
-                autoscan_report.append(f"# Checking for {error_split_1} SUSPECT FOUND! > Severity : {error_split_0} # \n-----\n")
+            error_severity, error_name = error.split(" | ", 1)
+            if error_name in crashlog_mainerror:
+                error_name = error_name.ljust(max_warn_length, ".")
+                autoscan_report.append(f"# Checking for {error_name} SUSPECT FOUND! > Severity : {error_severity} # \n-----\n")
                 trigger_suspect_found = True
 
-        for key in suspects_stack_list:
-            key_split_0, key_split_1 = key.split(" | ", 1)
+        for error in suspects_stack_list:
+            error_severity, error_name = error.split(" | ", 1)
             error_req_found = error_opt_found = stack_found = False
-            item_list = suspects_stack_list.get(key, [])
-            has_required_item = any("ME-REQ|" in elem for elem in item_list)
-            for item in item_list:
-                if "|" in item:
-                    item_split_0, item_split_1 = item.split("|", 1)
-                    if item_split_0 == "ME-REQ":
-                        if item_split_1 in crashlog_mainerror:
+            signal_list = suspects_stack_list.get(error, [])
+            has_required_item = False
+            for signal in signal_list:
+                if "|" in signal:
+                    signal_modifier, signal_string = signal.split("|", 1)
+                    if signal_modifier == "ME-REQ":
+                        has_required_item = True
+                        if signal_string in crashlog_mainerror:
                             error_req_found = True
-                    elif item_split_0 == "ME-OPT":
-                        if item_split_1 in crashlog_mainerror:
+                    elif signal_modifier == "ME-OPT":
+                        if signal_string in crashlog_mainerror:
                             error_opt_found = True
-                    elif item_split_0.isdecimal():
-                        if segment_callstack_intact.count(item_split_1) >= int(item_split_0):
+                    elif signal_modifier.isdecimal():
+                        if segment_callstack_intact.count(signal_string) >= int(signal_modifier):
                             stack_found = True
-                    elif item_split_0 == "NOT" and item_split_1 in segment_callstack_intact:
+                    elif signal_modifier == "NOT" and signal_string in segment_callstack_intact:
                         break
-                elif item in segment_callstack_intact:
+                elif signal in segment_callstack_intact:
                     stack_found = True
 
             # print(f"TEST: {error_req_found} | {error_opt_found} | {stack_found}")
             if has_required_item:
                 if error_req_found:
-                    key_split_1 = key_split_1.ljust(max_warn_length, ".")
-                    autoscan_report.append(f"# Checking for {key_split_1} SUSPECT FOUND! > Severity : {key_split_0} # \n-----\n")
+                    error_name = error_name.ljust(max_warn_length, ".")
+                    autoscan_report.append(f"# Checking for {error_name} SUSPECT FOUND! > Severity : {error_severity} # \n-----\n")
                     trigger_suspect_found = True
             elif error_opt_found or stack_found:
-                key_split_1 = key_split_1.ljust(max_warn_length, ".")
-                autoscan_report.append(f"# Checking for {key_split_1} SUSPECT FOUND! > Severity : {key_split_0} # \n-----\n")
+                error_name = error_name.ljust(max_warn_length, ".")
+                autoscan_report.append(f"# Checking for {error_name} SUSPECT FOUND! > Severity : {error_severity} # \n-----\n")
                 trigger_suspect_found = True
 
         if trigger_suspect_found:
@@ -536,16 +546,18 @@ def crashlogs_scan() -> None:
                 "[ FCX Mode can be enabled in the exe or CLASSIC Settings.yaml located in your CLASSIC folder. ] \n\n",
             ))
             if Has_XCell:
-                crashgen_ignore.extend(("havokmemorysystem", "scaleformallocator", "smallblockallocator"))
-            for line in segment_crashgen:
-                line_lower = line.lower()
-                if "false" in line_lower and all(elem.lower() not in line_lower for elem in crashgen_ignore):
-                    autoscan_report.append(
-                        f"* NOTICE : {line.split(":", 1)[0].strip()} is disabled in your {crashgen_name} settings, is this intentional? * \n-----\n",
-                    )
+                crashgen_ignore.union({"HavokMemorySystem", "ScaleformAllocator", "SmallBlockAllocator"})
 
-                if "achievements:" in line_lower:
-                    if "true" in line_lower and any(
+            if crashgen:
+                for setting_name, setting_value in crashgen.items():
+                    if setting_value is False and setting_name not in crashgen_ignore:
+                        autoscan_report.append(
+                            f"* NOTICE : {setting_name} is disabled in your {crashgen_name} settings, is this intentional? * \n-----\n",
+                        )
+
+                crashgen_achievements = crashgen.get("Achievements")
+                if crashgen_achievements is not None:
+                    if crashgen_achievements and any(
                         any(dll in elem.lower() for dll in ("achievements.dll", "unlimitedsurvivalmode.dll")) for elem in segment_xsemodules
                     ):
                         autoscan_report.extend((
@@ -557,18 +569,19 @@ def crashlogs_scan() -> None:
                             f"✔️ Achievements parameter is correctly configured in your {crashgen_name} settings! \n-----\n",
                         )
 
-                if "memorymanager:" in line_lower:
-                    if Has_BakaScrapHeap and not Has_XCell and "true" in line_lower:
+                crashgen_memorymanager = crashgen.get("MemoryManager")
+                if crashgen_memorymanager is not None:
+                    if Has_BakaScrapHeap and not Has_XCell and crashgen_memorymanager:
                         autoscan_report.extend((
                             "# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but MemoryManager parameter is set to TRUE # \n",
                             f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with {crashgen_name}.\n-----\n",
                         ))
-                    elif Has_XCell and not Has_BakaScrapHeap and "true" in line_lower:
+                    elif Has_XCell and not Has_BakaScrapHeap and crashgen_memorymanager:
                         autoscan_report.extend((
                             "# ❌ CAUTION : X-Cell is installed, but MemoryManager parameter is set to TRUE # \n",
                             f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with X-Cell.\n-----\n",
                         ))
-                    elif Has_XCell and not Has_BakaScrapHeap and "false" in line_lower:
+                    elif Has_XCell and not Has_BakaScrapHeap and not crashgen_memorymanager:
                         autoscan_report.append(
                             f"✔️ Memory Manager parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
                         )
@@ -578,52 +591,57 @@ def crashlogs_scan() -> None:
                         )
 
                 if Has_XCell:
-                    if "bstexturestreamerlocalheap:" in line_lower:
-                        if "true" in line_lower:
-                            autoscan_report.extend((
-                                "# ❌ CAUTION : X-Cell is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE # \n",
-                                f" FIX: Open {crashgen_name}'s TOML file and change BSTextureStreamerLocalHeap to FALSE, this prevents conflicts with X-Cell.\n-----\n",
-                            ))
-                        elif "false" in line_lower:
-                            autoscan_report.append(
-                                f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
-                            )
-
-                    if "havokmemorysystem:" in line_lower:
-                        if "true" in line_lower:
+                    crashgen_havokmemorysystem = crashgen.get("HavokMemorySystem")
+                    if crashgen_havokmemorysystem is not None:
+                        if crashgen_havokmemorysystem:
                             autoscan_report.extend((
                                 "# ❌ CAUTION : X-Cell is installed, but HavokMemorySystem parameter is set to TRUE # \n",
                                 f" FIX: Open {crashgen_name}'s TOML file and change HavokMemorySystem to FALSE, this prevents conflicts with X-Cell.\n-----\n",
                             ))
-                        elif "false" in line_lower:
+                        else:
                             autoscan_report.append(
                                 f"✔️ HavokMemorySystem parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
                             )
 
-                    if "scaleformallocator:" in line_lower:
-                        if "true" in line_lower:
+                    crashgen_bstexturestreamerlocalheap = crashgen.get("BSTextureStreamerLocalHeap")
+                    if crashgen_bstexturestreamerlocalheap is not None:
+                        if crashgen_bstexturestreamerlocalheap:
+                            autoscan_report.extend((
+                                "# ❌ CAUTION : X-Cell is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE # \n",
+                                f" FIX: Open {crashgen_name}'s TOML file and change BSTextureStreamerLocalHeap to FALSE, this prevents conflicts with X-Cell.\n-----\n",
+                            ))
+                        else:
+                            autoscan_report.append(
+                                f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
+                            )
+
+                    crashgen_scaleformallocator = crashgen.get("ScaleformAllocator")
+                    if crashgen_scaleformallocator is not None:
+                        if crashgen_scaleformallocator:
                             autoscan_report.extend((
                                 "# ❌ CAUTION : X-Cell is installed, but ScaleformAllocator parameter is set to TRUE # \n",
                                 f" FIX: Open {crashgen_name}'s TOML file and change ScaleformAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n",
                             ))
-                        elif "false" in line_lower:
+                        else:
                             autoscan_report.append(
                                 f"✔️ ScaleformAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
                             )
 
-                    if "smallblockallocator:" in line_lower:
-                        if "true" in line_lower:
+                    crashgen_smallblockallocator = crashgen.get("SmallBlockAllocator")
+                    if crashgen_smallblockallocator is not None:
+                        if crashgen_smallblockallocator:
                             autoscan_report.extend((
                                 "# ❌ CAUTION : X-Cell is installed, but SmallBlockAllocator parameter is set to TRUE # \n",
                                 f" FIX: Open {crashgen_name}'s TOML file and change SmallBlockAllocator to FALSE, this prevents conflicts with X-Cell.\n-----\n",
                             ))
-                        elif "false" in line_lower:
+                        else:
                             autoscan_report.append(
                                 f"✔️ SmallBlockAllocator parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n",
                             )
 
-                if "f4ee:" in line_lower:
-                    if "false" in line_lower and any("f4ee.dll" in elem.lower() for elem in segment_xsemodules):
+                crashgen_f4ee = crashgen.get("F4EE")
+                if crashgen_f4ee is not None:
+                    if not crashgen_f4ee and any("f4ee.dll" in elem.lower() for elem in segment_xsemodules):
                         autoscan_report.extend((
                             "# ❌ CAUTION : Looks Menu is installed, but F4EE parameter under [Compatibility] is set to FALSE # \n",
                             f" FIX: Open {crashgen_name}'s TOML file and change F4EE to TRUE, this prevents bugs and crashes from Looks Menu.\n-----\n",
