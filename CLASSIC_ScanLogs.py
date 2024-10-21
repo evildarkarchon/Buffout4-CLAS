@@ -200,7 +200,7 @@ def detect_mods_important(
 
 
 # Replacement for crashlog_generate_segment()
-def find_segments(crash_data: list[str], xse_acronym: str) -> list[list[str]]:
+def find_segments(crash_data: list[str], xse_acronym: str, crashgen_name: str) -> tuple[str, str, list[list[str]]]:
     """Divide the log up into segments."""
     xse = xse_acronym.upper()
     segment_boundaries = (
@@ -218,9 +218,17 @@ def find_segments(crash_data: list[str], xse_acronym: str) -> list[list[str]]:
     index_start = 0
     total = len(crash_data)
     current_index = 0
+    crashlog_crashgen = None
+    crashlog_mainerror = None
     while current_index < total:
         line = crash_data[current_index]
-        if line.startswith(next_boundary):
+        if crashlog_crashgen is None:
+            if line.startswith(crashgen_name):
+                crashlog_crashgen = line.strip()
+        elif crashlog_mainerror is None and line.startswith("Unhandled exception"):
+            crashlog_mainerror = line.replace("|", "\n", 1)
+
+        elif line.startswith(next_boundary):
             if collect:
                 index_end = current_index - 1 if current_index > 0 else current_index
                 segments.append(crash_data[index_start:index_end])
@@ -241,10 +249,12 @@ def find_segments(crash_data: list[str], xse_acronym: str) -> list[list[str]]:
                 continue
         current_index += 1
 
+    segment_results = [[line.strip() for line in segment] for segment in segments] if segments else segments
     missing_segments = len(segment_boundaries) - len(segments)
     if missing_segments > 0:
         segments.extend([[]] * missing_segments)
-    return [[line.strip() for line in segment] for segment in segments]
+    # Set default values incase actual index is not found.
+    return crashlog_crashgen or "UNKNOWN", crashlog_mainerror or "UNKNOWN", segment_results
 
 
 # ================================================
@@ -312,7 +322,6 @@ def crashlogs_scan() -> None:
         autoscan_report: list[str] = []
         trigger_plugin_limit = trigger_plugins_loaded = trigger_scan_failed = False
         with crashlog_file.open(encoding="utf-8", errors="ignore") as crash_log:
-            crash_log.seek(0)  # DON'T FORGET WHEN READING FILE MULTIPLE TIMES
             crash_data = crash_log.readlines()
 
         autoscan_report.extend((
@@ -323,25 +332,20 @@ def crashlogs_scan() -> None:
         ))
 
         # ================================================
-        # 1) CHECK EXISTENCE AND INDEXES OF EACH SEGMENT
+        # 1) GENERATE REQUIRED SEGMENTS FROM THE CRASH LOG
         # ================================================
-
-        # Set default index values incase actual index is not found.
-        try:
-            index_crashgenver = next(
-                index for index, item in enumerate(crash_data) if index < 10 and crashgen_name and crashgen_name.lower() in item.lower()
-            )
-        except StopIteration:
-            index_crashgenver = 1
-        try:
-            index_mainerror = next(index for index, item in enumerate(crash_data) if index < 10 and "unhandled exception" in item.lower())
-        except StopIteration:
-            index_mainerror = 3
-
-        # ================================================
-        # 2) GENERATE REQUIRED SEGMENTS FROM THE CRASH LOG
-        # ================================================
-        segment_crashgen, segment_system, segment_callstack, segment_allmodules, segment_xsemodules, segment_plugins = find_segments(crash_data, xse_acronym)
+        (
+            crashlog_crashgen,
+            crashlog_mainerror,
+            (
+                segment_crashgen,
+                segment_system,
+                segment_callstack,
+                segment_allmodules,
+                segment_xsemodules,
+                segment_plugins,
+            ),
+        ) = find_segments(crash_data, xse_acronym, crashgen_name)
         segment_callstack_intact = "".join(segment_callstack)
         if not segment_plugins:
             stats_crashlog_incomplete += 1
@@ -351,16 +355,16 @@ def crashlogs_scan() -> None:
             trigger_scan_failed = True
 
         # ================== MAIN ERROR ==================
-        crashlog_mainerror = crash_data[index_mainerror] if len(crash_data) > index_mainerror else "UNKNOWN"
-        autoscan_report.append(f"\nMain Error: {crashlog_mainerror.replace("|", "\n", 1)}\n")
-
         # =============== CRASHGEN VERSION ===============
-        crashlog_crashgen = crash_data[index_crashgenver].strip()
-        autoscan_report.append(f"Detected {crashgen_name} Version: {crashlog_crashgen} \n")
-        if crashlog_crashgen in {crashgen_latest_og, crashgen_latest_vr}:
-            autoscan_report.append(f"* You have the latest version of {crashgen_name}! *\n\n")
-        else:
-            autoscan_report.append(f"{warn_outdated} \n")
+        autoscan_report.extend((
+            f"\nMain Error: {crashlog_mainerror}\n",
+            f"Detected {crashgen_name} Version: {crashlog_crashgen} \n",
+            (
+                f"* You have the latest version of {crashgen_name}! *\n\n"
+                if crashlog_crashgen in {crashgen_latest_og, crashgen_latest_vr}
+                else f"{warn_outdated} \n"
+            ),
+        ))
 
         # ======= REQUIRED LISTS, DICTS AND CHECKS =======
         ignore_plugins_list = [item.lower() for item in ignore_list] if ignore_list else []
@@ -374,7 +378,7 @@ def crashlogs_scan() -> None:
             stats_crashlog_incomplete += 1
 
         # ================================================
-        # 3) CHECK EACH SEGMENT AND CREATE REQUIRED VALUES
+        # 2) CHECK EACH SEGMENT AND CREATE REQUIRED VALUES
         # ================================================
 
         # CHECK GPU TYPE FOR CRASH LOG
