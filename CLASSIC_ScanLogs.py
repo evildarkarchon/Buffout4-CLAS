@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 import regex as re
 import requests
+from packaging.version import Version
 
 import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
@@ -273,6 +274,17 @@ def crashlogs_scan() -> None:
             segment_output = []
         return segment_output
 
+    def crashgen_version_gen(input_string: str) -> Version:
+        input_string = input_string.strip()
+        parts = input_string.split()
+        version_str = ""
+        for part in parts:
+            if part.startswith('v') and len(part) > 1:
+                version_str = part[1:]  # Remove the 'v'
+        if version_str:
+            return Version(version_str)
+        return Version("0.0.0")
+
     crashlog_list = crashlogs_get_files()
     scan_failed_list: list[str] = []
     user_folder = Path.home()
@@ -337,7 +349,10 @@ def crashlogs_scan() -> None:
         # =============== CRASHGEN VERSION ===============
         crashlog_crashgen = crash_data[index_crashgenver].strip()
         autoscan_report.append(f"Detected {crashgen_name} Version: {crashlog_crashgen} \n")
-        if crashlog_crashgen in {crashgen_latest_og, crashgen_latest_vr}:
+        version_current = crashgen_version_gen(crashlog_crashgen)
+        version_latest = crashgen_version_gen(crashgen_latest_og)
+        version_latest_vr = crashgen_version_gen(crashgen_latest_vr)
+        if version_current >= version_latest or version_current >= version_latest_vr:
             autoscan_report.append(f"* You have the latest version of {crashgen_name}! *\n\n")
         else:
             autoscan_report.append(f"{warn_outdated} \n")
