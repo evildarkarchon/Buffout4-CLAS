@@ -249,6 +249,8 @@ def find_segments(crash_data: list[str], xse_acronym: str, crashgen_name: str) -
                 # line is also the next start boundary
                 continue
         current_index += 1
+        if collect and current_index == total:
+            segments.append(crash_data[index_start:])
 
     segment_results = [[line.strip() for line in segment] for segment in segments] if segments else segments
     missing_segments = len(segment_boundaries) - len(segments)
