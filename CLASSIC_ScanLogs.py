@@ -253,9 +253,9 @@ def find_segments(crash_data: list[str], xse_acronym: str, crashgen_name: str) -
             segments.append(crash_data[index_start:])
 
     segment_results = [[line.strip() for line in segment] for segment in segments] if segments else segments
-    missing_segments = len(segment_boundaries) - len(segments)
+    missing_segments = len(segment_boundaries) - len(segment_results)
     if missing_segments > 0:
-        segments.extend([[]] * missing_segments)
+        segment_results.extend([[]] * missing_segments)
     # Set default values incase actual index is not found.
     return crashlog_crashgen or "UNKNOWN", crashlog_mainerror or "UNKNOWN", segment_results
 
