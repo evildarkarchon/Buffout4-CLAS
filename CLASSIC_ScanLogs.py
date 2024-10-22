@@ -455,13 +455,11 @@ def crashlogs_scan() -> None:
             ))
         max_warn_length = 30
         trigger_suspect_found = False
-        for error in suspects_error_list:
-            error_split_0, error_split_1 = error.split(" | ", 1)
-            if error_split_1 in crashlog_mainerror:
-                error_split_1 = error_split_1.ljust(max_warn_length, ".")
-                autoscan_report.append(
-                    f"# Checking for {error_split_1} SUSPECT FOUND! > Severity : {error_split_0} # \n-----\n"
-                )
+        for error, signal in suspects_error_list.items():
+            error_severity, error_name = error.split(" | ", 1)
+            if signal in crashlog_mainerror:
+                error_name = error_name.ljust(max_warn_length, ".")
+                autoscan_report.append(f"# Checking for {error_name} SUSPECT FOUND! > Severity : {error_severity} # \n-----\n")
                 trigger_suspect_found = True
 
         for key in suspects_stack_list:
