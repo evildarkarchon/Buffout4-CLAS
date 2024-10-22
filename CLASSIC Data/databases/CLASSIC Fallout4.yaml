@@ -16,7 +16,6 @@ Game_Info:
     - WaitForDebugger
     - Achievements
     - InputSwitch
-    - MemoryManager
     - AutoOpen
     - PromptUpload
     - MemoryManagerDebug

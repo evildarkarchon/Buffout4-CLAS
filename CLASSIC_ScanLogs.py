@@ -546,7 +546,10 @@ def crashlogs_scan() -> None:
                 "[ FCX Mode can be enabled in the exe or CLASSIC Settings.yaml located in your CLASSIC folder. ] \n\n",
             ))
             if Has_XCell:
-                crashgen_ignore.union({"HavokMemorySystem", "ScaleformAllocator", "SmallBlockAllocator"})
+                crashgen_ignore.union({"MemoryManager", "HavokMemorySystem", "ScaleformAllocator", "SmallBlockAllocator"})
+            elif Has_BakaScrapHeap:
+                # To prevent two messages mentioning this parameter.
+                crashgen_ignore.add("MemoryManager")
 
             if crashgen:
                 for setting_name, setting_value in crashgen.items():
@@ -569,24 +572,41 @@ def crashlogs_scan() -> None:
 
                 crashgen_memorymanager = crashgen.get("MemoryManager")
                 if crashgen_memorymanager is not None:
-                    if Has_BakaScrapHeap and not Has_XCell and crashgen_memorymanager:
+                    if crashgen_memorymanager:
+                        if Has_XCell:
+                            autoscan_report.extend((
+                                "# ❌ CAUTION : X-Cell is installed, but MemoryManager parameter is set to TRUE # \n",
+                                f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with X-Cell.\n-----\n",
+                            ))
+                            if Has_BakaScrapHeap:
+                                autoscan_report.extend((
+                                    "# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but is redundant with X-Cell # \n",
+                                    " FIX: Uninstall the Baka ScrapHeap Mod, this prevents conflicts with X-Cell.\n-----\n",
+                                ))
+                        elif Has_BakaScrapHeap:
+                            autoscan_report.extend((
+                                f"# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but is redundant with {crashgen_name} # \n",
+                                f" FIX: Uninstall the Baka ScrapHeap Mod, this prevents conflicts with {crashgen_name}.\n-----\n",
+                            ))
+                        else:
+                            autoscan_report.append(
+                                f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n"
+                            )
+                    elif Has_XCell:
+                        if Has_BakaScrapHeap:
+                            autoscan_report.extend((
+                                "# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but is redundant with X-Cell # \n",
+                                " FIX: Uninstall the Baka ScrapHeap Mod, this prevents conflicts with X-Cell.\n-----\n",
+                            ))
+                        else:
+                            autoscan_report.append(
+                                f"✔️ Memory Manager parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
+                            )
+                    elif Has_BakaScrapHeap:
                         autoscan_report.extend((
-                            "# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but MemoryManager parameter is set to TRUE # \n",
-                            f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with {crashgen_name}.\n-----\n",
+                            f"# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but is redundant with {crashgen_name} # \n",
+                            f" FIX: Uninstall the Baka ScrapHeap Mod and open {crashgen_name}'s TOML file and change MemoryManager to TRUE, this improves performance.\n-----\n",
                         ))
-                    elif Has_XCell and not Has_BakaScrapHeap and crashgen_memorymanager:
-                        autoscan_report.extend((
-                            "# ❌ CAUTION : X-Cell is installed, but MemoryManager parameter is set to TRUE # \n",
-                            f" FIX: Open {crashgen_name}'s TOML file and change MemoryManager to FALSE, this prevents conflicts with X-Cell.\n-----\n",
-                        ))
-                    elif Has_XCell and not Has_BakaScrapHeap and not crashgen_memorymanager:
-                        autoscan_report.append(
-                            f"✔️ Memory Manager parameter is correctly configured for use with X-Cell in your {crashgen_name} settings! \n-----\n"
-                        )
-                    else:
-                        autoscan_report.append(
-                            f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n"
-                        )
 
                 if Has_XCell:
                     crashgen_havokmemorysystem = crashgen.get("HavokMemorySystem")
