@@ -8,16 +8,12 @@
 				"options": {
 					"shell": {
 						"executable": "cmd.exe",
-						"args": [
-							"/Q",
-							"/C",
-						]
+						"args": [ "/Q", "/C" ]
 					},
 				},
 				"command": "del",
 				"args": [
-					"/F",
-					"/Q",
+					"/F", "/Q",
 					"CLASSIC Journal.log",
 					"CLASSIC Ignore.yaml",
 					"CLASSIC Settings.yaml",
@@ -32,19 +28,11 @@
 				"options": {
 					"shell": {
 						"executable": "cmd.exe",
-						"args": [
-							"/Q",
-							"/C",
-						]
+						"args": [ "/Q", "/C" ]
 					}
 				},
 				"command": "rmdir",
-				"args": [
-					"/S",
-					"/Q",
-					"Crash Logs",
-					"CLASSIC Backup",
-				],
+				"args": [ "/S","/Q","Crash Logs","CLASSIC Backup" ],
 			}
 		},
 		{
@@ -56,7 +44,31 @@
 				"focus": false,
 				"panel": "shared",
 				"showReuseMessage": false,
-				"clear": true,"close": true
+				"clear": true,
+				"close": true,
+			}
+		},
+		{
+			"label": "cleanup-pyinstaller-folders",
+			"type": "shell",
+			"windows": {
+				"options": {
+					"shell": {
+						"executable": "cmd.exe",
+						"args": [ "/Q", "/C" ]
+					}
+				},
+				"command": "rmdir",
+				"args": [ "/S", "/Q", "build" ],
+			},
+			"presentation": {
+				"echo": false,
+				"reveal": "never",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true,
+				"close": true,
 			}
 		}
 	]

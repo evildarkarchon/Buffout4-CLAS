@@ -551,9 +551,9 @@ class MainWindow(QMainWindow):
 
     async def async_update_check(self) -> None:
         try:
-            is_up_to_date = await CMain.classic_update_check(quiet=True)
+            is_up_to_date = await CMain.is_latest_version(quiet=True)
             self.show_update_result(is_up_to_date)
-        except Exception as e:  # noqa: BLE001
+        except CMain.UpdateCheckError as e:
             self.show_update_error(str(e))
         finally:
             self.is_update_check_running = False
@@ -561,11 +561,11 @@ class MainWindow(QMainWindow):
 
     async def async_update_check_explicit(self) -> None:
         try:
-            is_up_to_date = await CMain.classic_update_check(
+            is_up_to_date = await CMain.is_latest_version(
                 quiet=True, gui_request=True
             )
             self.show_update_result(is_up_to_date)
-        except Exception as e:  # noqa: BLE001
+        except CMain.UpdateCheckError as e:
             self.show_update_error(str(e))
         finally:
             self.is_update_check_running = False
