@@ -412,7 +412,7 @@ class MainWindow(QMainWindow):
     """
         self.setStyleSheet(dark_style)
         # self.setMinimumSize(700, 950)  # Increase minimum width from 650 to 700
-        self.setFixedSize(700, 1000)  # Set fixed size to prevent resizing, for now.
+        self.setFixedSize(700, 950)  # Set fixed size to prevent resizing, for now.
 
         # Set up the custom exception handler for the main window
         self.installEventFilter(self)
