@@ -616,7 +616,7 @@ class MainWindow(QMainWindow):
 
 
 
-        self.setup_pastebin_elements(layout)
+        # self.setup_pastebin_elements(layout)
 
         # Add first separator
         layout.addWidget(self.create_separator())
