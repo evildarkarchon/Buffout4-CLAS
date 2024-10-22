@@ -25,7 +25,6 @@ lcov.info
 *.onefile-build/
 *.pdb
 *.spec
-!CLASSIC.spec
 build/
 dist/
 _internal/
@@ -59,8 +58,9 @@ game_vars.py
 test.*
 
 # User Files
-*.7z
 *.zip
+*.7z
 Archive/
 Release/
 Crash Logs/
+compile.py

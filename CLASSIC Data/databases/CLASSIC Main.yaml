@@ -57,6 +57,9 @@ CLASSIC_Info:
     # Toggle audio notifications for when CLASSIC finishes scanning your crash logs and mod files.
       Audio Notifications: true
 
+    # Set the source where CLASSIC will check for updates. (Nexus | GitHub)
+      Update Source: Both
+
 
   default_localyaml: |
     Game_Info:

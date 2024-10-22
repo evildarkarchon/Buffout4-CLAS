@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 
 import regex as re
 import requests
+from packaging.version import Version
 
 import CLASSIC_Main as CMain
 import CLASSIC_ScanGame as CGame
@@ -66,7 +67,7 @@ def crashlogs_get_files() -> list[Path]:
     CMain.logger.debug("- - - INITIATED CRASH LOG FILE LIST GENERATION")
     CLASSIC_folder = Path.cwd()
     CLASSIC_logs = CLASSIC_folder / "Crash Logs"
-    # CLASSIC_pastebin = CLASSIC_logs / "Pastebin"
+    CLASSIC_pastebin = CLASSIC_logs / "Pastebin"
     CUSTOM_folder_setting = CMain.classic_settings(str, "SCAN Custom Path")
     XSE_folder_setting = CMain.yaml_settings(str, CMain.YAML.Game_Local, "Game_Info.Docs_Folder_XSE")
 
@@ -75,8 +76,8 @@ def crashlogs_get_files() -> list[Path]:
 
     if not CLASSIC_logs.is_dir():
         CLASSIC_logs.mkdir(parents=True, exist_ok=True)
-    # if not CLASSIC_pastebin.is_dir():
-    #     CLASSIC_pastebin.mkdir(parents=True, exist_ok=True)
+    if not CLASSIC_pastebin.is_dir():
+        CLASSIC_pastebin.mkdir(parents=True, exist_ok=True)
     for file in CLASSIC_folder.glob("crash-*.log"):
         destination_file = CLASSIC_logs / file.name
         if not destination_file.is_file():
@@ -92,7 +93,7 @@ def crashlogs_get_files() -> list[Path]:
                 shutil.copy2(crash_file, destination_file)
 
     crash_files = list(CLASSIC_logs.glob("crash-*.log"))
-    # crash_files.extend(list(CLASSIC_pastebin.glob("crash-*.log")))
+    crash_files.extend(list(CLASSIC_pastebin.glob("crash-*.log")))
     if CUSTOM_folder and CUSTOM_folder.is_dir():
         crash_files.extend(CUSTOM_folder.glob("crash-*.log"))
 
@@ -257,6 +258,18 @@ def find_segments(crash_data: list[str], xse_acronym: str, crashgen_name: str) -
     return crashlog_crashgen or "UNKNOWN", crashlog_mainerror or "UNKNOWN", segment_results
 
 
+def crashgen_version_gen(input_string: str) -> Version:
+    input_string = input_string.strip()
+    parts = input_string.split()
+    version_str = ""
+    for part in parts:
+        if part.startswith("v") and len(part) > 1:
+            version_str = part[1:]  # Remove the 'v'
+    if version_str:
+        return Version(version_str)
+    return Version("0.0.0")
+
+
 # ================================================
 # CRASH LOG SCAN START
 # ================================================
@@ -370,12 +383,15 @@ def crashlogs_scan() -> None:
 
         # ================== MAIN ERROR ==================
         # =============== CRASHGEN VERSION ===============
+        version_current = crashgen_version_gen(crashlog_crashgen)
+        version_latest = crashgen_version_gen(crashgen_latest_og)
+        version_latest_vr = crashgen_version_gen(crashgen_latest_vr)
         autoscan_report.extend((
             f"\nMain Error: {crashlog_mainerror}\n",
             f"Detected {crashgen_name} Version: {crashlog_crashgen} \n",
             (
                 f"* You have the latest version of {crashgen_name}! *\n\n"
-                if crashlog_crashgen in {crashgen_latest_og, crashgen_latest_vr}
+                if version_current >= version_latest or version_current >= version_latest_vr
                 else f"{warn_outdated} \n"
             ),
         ))
