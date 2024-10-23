@@ -121,9 +121,10 @@ def check_crashgen_settings() -> str:
             message_list.append(f"✔️ Achievements parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
 
         if Has_BakaScrapHeap and mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager"):
-            message_list.extend(["# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but MemoryManager parameter is set to TRUE # \n",
-                                 f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with {crashgen_name}. \n-----\n"])
-            mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", "False")
+            message_list.extend((f"# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but is redundant with {crashgen_name} # \n",
+                                f" FIX: Uninstall the Baka ScrapHeap Mod, this prevents conflicts with {crashgen_name}.\n-----\n",))
+            if not Has_XCell:
+                mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", "True")
         elif Has_XCell and mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager"):
             message_list.extend(["# ❌ CAUTION : The X-Cell Mod is installed, but MemoryManager parameter is set to TRUE # \n",
                                  "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n"])
