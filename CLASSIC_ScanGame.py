@@ -257,7 +257,9 @@ def papyrus_logging() -> tuple[str, int]:
 
     count_dumps = count_stacks = count_warnings = count_errors = 0
     if papyrus_path and papyrus_path.exists():
-        with CMain.open_file_with_encoding(papyrus_path) as papyrus_log:
+        with papyrus_path.open("rb") as encode_test:
+            papyrus_encoding = chardet.detect(encode_test.read())["encoding"]
+        with papyrus_path.open(encoding=papyrus_encoding, errors="ignore") as papyrus_log:
             papyrus_data = papyrus_log.readlines()
         for line in papyrus_data:
             if "Dumping Stacks" in line:
