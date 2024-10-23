@@ -645,19 +645,19 @@ Mods_CONF:  # 2) MODS THAT CONFLICT WITH OTHER MODS
         Both mods make changes to the in-game camera. CLASSIC suggests using Camera Tweaks only, since it's an updated alternative.
         -----
 
-  UniquePlayer | chw: |
+  UniquePlayer | ClassicHolsteredWeapons: |
     Unique Player ❌ CONFLICTS WITH : Classic Holstered Weapons
         Classic Holstered Weapons will not work correctly with mods that modify the player skeleton or add new skeleton paths.
         If you encounter problems or crashes, see here how to add additional skeletons: https://www.nexusmods.com/fallout4/articles/2496
         -----
 
-  HHS | chw: |
+  HHS | ClassicHolsteredWeapons: |
     High Heels System ❌ CONFLICTS WITH : Classic Holstered Weapons
         Classic Holstered Weapons will not work correctly with mods that modify the player skeleton or add new skeleton paths.
         If you encounter problems or crashes, see here how to add additional skeletons: https://www.nexusmods.com/fallout4/articles/2496
         -----
 
-  cbp | ClassicHolseredWeapons: |
+  cbp | ClassicHolsteredWeapons: |
     CBP Physics ❌ CONFLICTS WITH : Classic Holstered Weapons
         Classic Holstered Weapons will not work correctly with mods that modify the player skeleton or add new skeleton paths.
         If you encounter problems or crashes, see here how to add additional skeletons: https://www.nexusmods.com/fallout4/articles/2496
