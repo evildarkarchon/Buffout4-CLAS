@@ -333,7 +333,7 @@ def scan_wryecheck() -> str:
                     message_list.append(title)
 
             if title == "ESL Capable":
-                esl_count = sum(1 for _ in plugin_list)
+                esl_count = len(plugin_list)
                 message_list.extend([f"❓ There are {esl_count} plugins that can be given the ESL flag. This can be done with \n",
                                      "  the SimpleESLify script to avoid reaching the plugin limit (254 esm/esp). \n",
                                      "  SimpleESLify: https://www.nexusmods.com/skyrimspecialedition/mods/27568 \n  -----\n"])
