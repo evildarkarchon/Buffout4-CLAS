@@ -564,7 +564,7 @@ def crashlogs_scan() -> None:
                 "[ FCX Mode can be enabled in the exe or CLASSIC Settings.yaml located in your CLASSIC folder. ] \n\n",
             ))
             if Has_XCell:
-                crashgen_ignore.union({"MemoryManager", "HavokMemorySystem", "ScaleformAllocator", "SmallBlockAllocator"})
+                crashgen_ignore = crashgen_ignore.union({"MemoryManager", "HavokMemorySystem", "ScaleformAllocator", "SmallBlockAllocator"})
             elif Has_BakaScrapHeap:
                 # To prevent two messages mentioning this parameter.
                 crashgen_ignore.add("MemoryManager")
