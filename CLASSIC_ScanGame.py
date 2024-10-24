@@ -251,14 +251,18 @@ def check_log_errors(folder_path: Path | str) -> str:
 def check_xse_plugins() -> str:  # RESERVED | Might be expanded upon in the future.
     message_list: list[str] = []
     plugins_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars["vr"]}_Info.Game_Folder_Plugins")
+    # TODO: Add NG version
     adlib_versions = {
         "VR Mode": ("version-1-2-72-0.csv", "Virtual Reality (VR) version", "https://www.nexusmods.com/fallout4/mods/64879?tab=files"),
         "Non-VR Mode": ("version-1-10-163-0.bin", "Non-VR (Regular) version", "https://www.nexusmods.com/fallout4/mods/47327?tab=files"),
     }
 
-    enabled_mode = "VR Mode" if CMain.classic_settings(bool, "VR Mode") else "Non-VR Mode"
-    selected_version = adlib_versions[enabled_mode]
-    other_version = adlib_versions["VR Mode" if enabled_mode == "Non-VR Mode" else "Non-VR Mode"]
+    if CMain.classic_settings(bool, "VR Mode"):
+        selected_version = adlib_versions["VR Mode"]
+        other_version = adlib_versions["Non-VR Mode"]
+    else:
+        selected_version = adlib_versions["Non-VR Mode"]
+        other_version = adlib_versions["VR Mode"]
 
     if plugins_path and plugins_path.joinpath(selected_version[0]).exists():
         message_list.append("✔️ You have the latest version of the Address Library file! \n-----\n")
@@ -398,7 +402,8 @@ def scan_wryecheck() -> str:
 # ================================================
 # CHECK MOD INI FILES
 # ================================================
-def scan_mod_inis() -> str:  # Mod INI files check.
+def scan_mod_inis() -> str:
+    """Check INI files for mods."""
     message_list: list[str] = []
     vsync_list: list[str] = []
     game_root_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game")
@@ -535,6 +540,7 @@ def scan_mods_unpacked() -> str:
                     )
                 # ================================================
                 # DETECT MODS WITH SCRIPT EXTENDER FILE COPIES
+                # TODO: Look only in the scripts folder specifically for these instead of walking all files.
                 elif any(filename.lower() == key.lower() for key in xse_scriptfiles) and "workshop framework" not in str(root).lower():
                     if f"Scripts\\{filename}" in str(file_path):
                         modscan_list.add(
@@ -542,6 +548,7 @@ def scan_mods_unpacked() -> str:
                         )
                 # ================================================
                 # DETECT MODS WITH PRECOMBINE / PREVIS FILES
+                # TODO: Look only in the previsibine folders specifically for these instead of walking all files.
                 elif filename.lower().endswith((".uvd", "_oc.nif")):
                     modscan_list.add(f"[!] CAUTION (-PREVIS-) : {root_main} > CONTAINS LOOSE PRECOMBINE / PREVIS FILES \n")
                 # ================================================
@@ -587,6 +594,7 @@ def scan_mods_archived() -> str:
     else:
         print("✔️ ALL REQUIREMENTS SATISFIED! NOW ANALYZING ALL BA2 MOD ARCHIVES...")
         message_list.append("\n========== RESULTS FROM ARCHIVED / BA2 FILES ==========\n")
+        # TODO: Remove dependency on bsarch by reading files directly.
         for root, _, files in mod_path.walk(top_down=False):
             root_main = root.relative_to(mod_path).parent
             for filename in files:
