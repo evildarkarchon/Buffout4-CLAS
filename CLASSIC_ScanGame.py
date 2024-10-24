@@ -756,7 +756,10 @@ def game_combined_result() -> str:
 
 
 def mods_combined_result() -> str:  # KEEP THESE SEPARATE SO THEY ARE NOT INCLUDED IN AUTOSCAN REPORTS
-    return scan_mods_unpacked() + scan_mods_archived()
+    unpacked = scan_mods_unpacked()
+    if unpacked.startswith("❌ MODS FOLDER PATH NOT PROVIDED"):
+        return unpacked
+    return unpacked + scan_mods_archived()
 
 
 def write_combined_results() -> None:
