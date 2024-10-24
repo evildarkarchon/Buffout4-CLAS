@@ -266,7 +266,10 @@ class YamlSettingsCache:
 def yaml_settings[T](_type: type[T], yaml_store: YAML, key_path: str, new_value: T | None = None) -> T | None:
     if yaml_cache is None:
         raise TypeError("CMain not initialized")
-    return yaml_cache.get_setting(_type, yaml_store, key_path, new_value)
+    setting = yaml_cache.get_setting(_type, yaml_store, key_path, new_value)
+    if _type is Path:
+        return Path(setting) if setting and isinstance(setting, str) else None  # type: ignore
+    return setting
 
 
 def classic_settings[T](_type: type[T], setting: str) -> T | None:
