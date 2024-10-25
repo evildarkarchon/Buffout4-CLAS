@@ -186,21 +186,22 @@ def check_log_errors(folder_path: Path | str) -> str:
     ignore_logs_errors_setting = CMain.yaml_settings(list[str], CMain.YAML.Main, "exclude_log_errors")
 
     catch_errors = catch_errors_setting if isinstance(catch_errors_setting, list) else []
+    catch_errors_lower = [item.lower() for item in catch_errors] if catch_errors else []
     ignore_logs_list = ignore_logs_list_setting if isinstance(ignore_logs_list_setting, list) else []
+    ignore_logs_list_lower = [item.lower() for item in ignore_logs_list] if ignore_logs_list else []
     ignore_logs_errors = ignore_logs_errors_setting if isinstance(ignore_logs_errors_setting, list) else []
+    ignore_logs_errors_lower = [item.lower() for item in ignore_logs_errors] if ignore_logs_errors else []
     message_list: list[str] = []
     errors_list: list[str] = []
 
     valid_log_files = [file for file in folder_path.glob("*.log") if "crash-" not in file.name]
     for file in valid_log_files:
-        if all(part.lower() not in str(file).lower() for part in ignore_logs_list):
+        if all(part not in str(file).lower() for part in ignore_logs_list_lower):
             try:
                 with CMain.open_file_with_encoding(file) as log_file:
                     log_data = log_file.readlines()
-                for line in log_data:
-                    line_lower = line.lower()
-                    if any(item.lower() in line_lower for item in catch_errors) and all(elem.lower() not in line_lower for elem in ignore_logs_errors):
-                        errors_list.append(f"ERROR > {line}")
+                    log_data_lower = (line.lower() for line in log_data)
+                    errors_list = [f"ERROR > {line}" for line in log_data_lower if any(item in line for item in catch_errors_lower) and all(elem not in line for elem in ignore_logs_errors_lower)]
 
                 if errors_list:
                     message_list.extend(["[!] CAUTION : THE FOLLOWING LOG FILE REPORTS ONE OR MORE ERRORS! \n",
