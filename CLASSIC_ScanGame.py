@@ -486,7 +486,7 @@ def scan_mods_unpacked() -> str:
     xse_acronym_setting = CMain.yaml_settings(str, CMain.YAML.Game, f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym")
     xse_scriptfiles_setting = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, f"Game{CMain.gamevars["vr"]}_Info.XSE_HashedScripts")
 
-    xse_acronym = xse_acronym_setting if isinstance(xse_acronym_setting, str) else ""
+    xse_acronym = xse_acronym_setting if isinstance(xse_acronym_setting, str) else "XSE"
     xse_scriptfiles = xse_scriptfiles_setting if isinstance(xse_scriptfiles_setting, dict) else {}
 
     backup_path = Path("CLASSIC Backup/Cleaned Files")
