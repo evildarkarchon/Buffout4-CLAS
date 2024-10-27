@@ -1,10 +1,9 @@
-import functools
 import io
 import os
 import shutil
 import struct
 import subprocess
-from collections.abc import Callable, ItemsView
+from collections.abc import ItemsView
 from configparser import NoOptionError, NoSectionError
 from pathlib import Path
 from typing import Any, Literal, TypedDict
@@ -15,6 +14,9 @@ import tomlkit
 from bs4 import BeautifulSoup, PageElement
 
 import CLASSIC_Main as CMain
+
+# For testing
+READONLY_MODE = True
 
 
 # ================================================
@@ -173,8 +175,9 @@ class ConfigFileCache:
             config.add_section(section)
         config.set(section, setting, value)
 
-        with cache["path"].open("w", encoding=cache["encoding"]) as f:
-            config.write(f)
+        if not READONLY_MODE:
+            with cache["path"].open("w", encoding=cache["encoding"]) as f:
+                config.write(f)
 
     def has(self, file_name_lower: str, section: str, setting: str) -> bool:
         if file_name_lower not in self._config_files:
@@ -203,8 +206,9 @@ def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | No
     # If a new value is provided, update the key
     if new_value is not None:
         data[section][key] = new_value  # pyright: ignore[reportIndexIssue]
-        with toml_path.open("w") as toml_file:
-            toml_file.write(data.as_string())
+        if not READONLY_MODE:
+            with toml_path.open("w") as toml_file:
+                toml_file.write(data.as_string())
     return current_value
 
 
@@ -623,7 +627,8 @@ def scan_mods_unpacked() -> str:
     xse_scriptfiles = xse_scriptfiles_setting if isinstance(xse_scriptfiles_setting, dict) else {}
 
     backup_path = Path("CLASSIC Backup/Cleaned Files")
-    backup_path.mkdir(parents=True, exist_ok=True)
+    if not READONLY_MODE:
+        backup_path.mkdir(parents=True, exist_ok=True)
     mod_path = CMain.classic_settings(Path, "MODS Folder Path")
     if not mod_path:
         message_list.append(str(CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_Path_Missing")))
@@ -646,7 +651,8 @@ def scan_mods_unpacked() -> str:
                     relative_path = fomod_folder_path.relative_to(mod_path)
                     new_folder_path = backup_path / relative_path
 
-                    shutil.move(fomod_folder_path, new_folder_path)
+                    if not READONLY_MODE:
+                        shutil.move(fomod_folder_path, new_folder_path)
                     cleanup_list.append(f"MOVED > '{relative_path.as_posix()}' FOLDER TO > '{backup_path.as_posix()}' \n")
 
             for filename in files:
@@ -693,8 +699,9 @@ def scan_mods_unpacked() -> str:
                 elif file_ext == ".txt" and any(name in filename.lower() for name in filter_names):
                     relative_path = file_path.relative_to(mod_path)
                     new_file_path = backup_path / relative_path
-                    new_file_path.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.move(file_path, new_file_path)
+                    if not READONLY_MODE:
+                        new_file_path.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.move(file_path, new_file_path)
                     cleanup_list.append(f"MOVED > '{relative_path.as_posix()}' FILE TO > '{backup_path.as_posix()}' \n")
 
         print("✔️ CLEANUP COMPLETE! NOW ANALYZING ALL UNPACKED/LOOSE MOD FILES...")
@@ -806,6 +813,9 @@ def scan_mods_archived() -> str:
 # BACKUP / RESTORE / REMOVE
 # ================================================
 def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REMOVE"] = "BACKUP") -> None:
+    if READONLY_MODE:
+        return
+
     game_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game")
     manage_list_setting = CMain.yaml_settings(list[str], CMain.YAML.Game, classic_list)
     manage_list = manage_list_setting if isinstance(manage_list_setting, list) else []
@@ -909,5 +919,6 @@ if __name__ == "__main__":
     CMain.main_generate_required()
     print(game_combined_result())
     print(mods_combined_result())
-    game_files_manage("Backup ENB")
-    os.system("pause")
+    if not READONLY_MODE:
+        game_files_manage("Backup ENB")
+        os.system("pause")
