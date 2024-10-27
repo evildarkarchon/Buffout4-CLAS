@@ -323,8 +323,11 @@ class CrashLogsScanWorker(QObject):
         try:
             CLogs.crashlogs_scan()
             self.notify_sound_signal.emit()  # Emit signal to play notify sound
-        except Exception:  # noqa: BLE001
-            self.error_sound_signal.emit()  # Emit signal to play error sound in case of exception
+        except Exception as e:  # noqa: BLE001
+            if CMain.classic_settings(bool, "Audio Notifications"):
+                self.error_sound_signal.emit()  # Emit signal to play error sound in case of exception
+            else:
+                ErrorDialog(str(e)).exec()
         finally:
             self.finished.emit()
 
@@ -342,8 +345,11 @@ class GameFilesScanWorker(QObject):
             print(CGame.mods_combined_result())
             CGame.write_combined_results()
             self.notify_sound_signal.emit()  # Emit signal to play notify sound
-        except Exception:  # noqa: BLE001
-            self.error_sound_signal.emit()  # Emit error sound if something fails
+        except Exception as e:  # noqa: BLE001
+            if CMain.classic_settings(bool, "Audio Notifications"):
+                self.error_sound_signal.emit()  # Emit signal to play error sound in case of exception
+            else:
+                ErrorDialog(str(e)).exec()
         finally:
             self.finished.emit()
 

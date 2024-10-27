@@ -58,7 +58,6 @@ def get_entry(formid: str, plugin: str) -> str | None:
 
     return None
 
-
 # ================================================
 # INITIAL REFORMAT FOR CRASH LOG FILES
 # ================================================
@@ -92,8 +91,7 @@ def crashlogs_get_files() -> list[Path]:
             if not destination_file.is_file():
                 shutil.copy2(crash_file, destination_file)
 
-    crash_files = list(CLASSIC_logs.glob("crash-*.log"))
-    crash_files.extend(list(CLASSIC_pastebin.glob("crash-*.log")))
+    crash_files = list(CLASSIC_logs.rglob("crash-*.log"))
     if CUSTOM_folder and CUSTOM_folder.is_dir():
         crash_files.extend(CUSTOM_folder.glob("crash-*.log"))
 
@@ -564,7 +562,7 @@ def crashlogs_scan() -> None:
                 "[ FCX Mode can be enabled in the exe or CLASSIC Settings.yaml located in your CLASSIC folder. ] \n\n",
             ))
             if Has_XCell:
-                crashgen_ignore.union({"MemoryManager", "HavokMemorySystem", "ScaleformAllocator", "SmallBlockAllocator"})
+                crashgen_ignore.update(("MemoryManager", "HavokMemorySystem", "ScaleformAllocator", "SmallBlockAllocator"))
             elif Has_BakaScrapHeap:
                 # To prevent two messages mentioning this parameter.
                 crashgen_ignore.add("MemoryManager")
