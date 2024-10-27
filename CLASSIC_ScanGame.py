@@ -72,13 +72,13 @@ def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | No
     with CMain.open_file_with_encoding(toml_path) as toml_file:
         data = tomlkit.parse(toml_file.read())
 
-    if section not in data or key in data[section]:  # type: ignore
+    if section not in data or key in data[section]:  # pyright: ignore[reportOperatorIssue]
         return None
-    current_value = data[section][key]  # type: ignore
+    current_value = data[section][key]  # pyright: ignore[reportIndexIssue]
 
     # If a new value is provided, update the key
     if new_value is not None:
-        data[section][key] = new_value  # type: ignore
+        data[section][key] = new_value  # pyright: ignore[reportIndexIssue]
         with toml_path.open("w") as toml_file:
             toml_file.write(data.as_string())
     return current_value
