@@ -435,6 +435,7 @@ def crashlogs_scan() -> None:
             trigger_plugins_loaded = True
 
         else:  # OTHERWISE, USE PLUGINS FROM CRASH LOG
+            # TODO: This only applies to OG logs. Add a version check and a message that load order indexes are incorrect for NG.
             for elem in segment_plugins:
                 if "[FF]" in elem:
                     trigger_plugin_limit = True
@@ -564,7 +565,7 @@ def crashlogs_scan() -> None:
                 "[ FCX Mode can be enabled in the exe or CLASSIC Settings.yaml located in your CLASSIC folder. ] \n\n",
             ))
             if Has_XCell:
-                crashgen_ignore.union({"MemoryManager", "HavokMemorySystem", "ScaleformAllocator", "SmallBlockAllocator"})
+                crashgen_ignore.update(("MemoryManager", "HavokMemorySystem", "ScaleformAllocator", "SmallBlockAllocator"))
             elif Has_BakaScrapHeap:
                 # To prevent two messages mentioning this parameter.
                 crashgen_ignore.add("MemoryManager")

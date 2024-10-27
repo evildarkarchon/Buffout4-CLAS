@@ -453,8 +453,7 @@ def scan_mods_unpacked() -> str:
         filter_names = ["readme", "changes", "changelog", "change log"]
         print("✔️ MODS FOLDER PATH FOUND! PERFORMING INITIAL MOD FILES CLEANUP...")
         for root, dirs, files in mod_path.walk(top_down=False):
-            main_path = root.relative_to(mod_path)
-            root_main = main_path.parts[1]
+            root_main = root.relative_to(mod_path).parent
             for dirname in dirs:
                 # ================================================
                 # DETECT MODS WITH AnimationFileData
@@ -467,8 +466,8 @@ def scan_mods_unpacked() -> str:
                     relative_path = fomod_folder_path.relative_to(mod_path)
                     new_folder_path = backup_path / relative_path
 
-                    cleanup_list.append(f"MOVED > {fomod_folder_path} FOLDER TO > {backup_path.as_posix()} \n")
                     shutil.move(fomod_folder_path, new_folder_path)
+                    cleanup_list.append(f"MOVED > '{relative_path.as_posix()}' FOLDER TO > '{backup_path.as_posix()}' \n")
 
             for filename in files:
                 # ================================================
@@ -509,8 +508,8 @@ def scan_mods_unpacked() -> str:
 
                     # Create subdirectories if they don't exist.
                     new_file_path.parent.mkdir(parents=True, exist_ok=True)
-                    cleanup_list.append(f"MOVED > {file_path} FILE TO > {backup_path.as_posix()} \n")
                     shutil.move(file_path, new_file_path)
+                    cleanup_list.append(f"MOVED > '{relative_path.as_posix()}' FILE TO > '{backup_path.as_posix()}' \n")
 
         print("✔️ CLEANUP COMPLETE! NOW ANALYZING ALL UNPACKED/LOOSE MOD FILES...")
         message_list.append(str(CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_Reminders")))
@@ -546,8 +545,7 @@ def scan_mods_archived() -> str:
         print("✔️ ALL REQUIREMENTS SATISFIED! NOW ANALYZING ALL BA2 MOD ARCHIVES...")
         message_list.append("\n========== RESULTS FROM ARCHIVED / BA2 FILES ==========\n")
         for root, _, files in mod_path.walk(top_down=False):
-            main_path = root.relative_to(mod_path)
-            root_main = main_path.parts[1]
+            root_main = root.relative_to(mod_path).parent
             for filename in files:
                 file_path = root / filename
 
