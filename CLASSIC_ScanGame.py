@@ -199,7 +199,7 @@ def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | No
     with CMain.open_file_with_encoding(toml_path) as toml_file:
         data = tomlkit.parse(toml_file.read())
 
-    if section not in data or key in data[section]:  # pyright: ignore[reportOperatorIssue]
+    if section not in data or key not in data[section]:  # pyright: ignore[reportOperatorIssue]
         return None
     current_value = data[section][key]  # pyright: ignore[reportIndexIssue]
 
