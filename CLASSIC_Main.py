@@ -45,11 +45,17 @@ type GameID = Literal["Fallout4", "Skyrim", "Starfield"] # Entries must correspo
 
 class YAML(Enum):
     Main = auto()
+    """CLASSIC Data/databases/CLASSIC Main.yaml"""
     Settings = auto()
+    """CLASSIC Settings.yaml"""
     Ignore = auto()
+    """CLASSIC Ignore.yaml"""
     Game = auto()
+    """CLASSIC Data/databases/CLASSIC Fallout4.yaml"""
     Game_Local = auto()
+    """CLASSIC Data/CLASSIC Fallout4 Local.yaml"""
     TEST = auto()
+    """tests/test_settings.yaml"""
 
 class GameVars(TypedDict):
     game: GameID
