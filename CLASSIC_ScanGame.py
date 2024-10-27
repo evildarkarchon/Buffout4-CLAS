@@ -453,7 +453,7 @@ def scan_mods_unpacked() -> str:
         filter_names = ["readme", "changes", "changelog", "change log"]
         print("✔️ MODS FOLDER PATH FOUND! PERFORMING INITIAL MOD FILES CLEANUP...")
         for root, dirs, files in mod_path.walk(top_down=False):
-            root_main = root.relative_to(mod_path).name
+            root_main = root.relative_to(mod_path).parent
             for dirname in dirs:
                 # ================================================
                 # DETECT MODS WITH AnimationFileData
@@ -545,7 +545,7 @@ def scan_mods_archived() -> str:
         print("✔️ ALL REQUIREMENTS SATISFIED! NOW ANALYZING ALL BA2 MOD ARCHIVES...")
         message_list.append("\n========== RESULTS FROM ARCHIVED / BA2 FILES ==========\n")
         for root, _, files in mod_path.walk(top_down=False):
-            root_main = root.relative_to(mod_path).name
+            root_main = root.relative_to(mod_path).parent
             for filename in files:
                 file_path = root / filename
 
