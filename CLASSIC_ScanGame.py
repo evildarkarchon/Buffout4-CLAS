@@ -533,7 +533,7 @@ def scan_mods_unpacked() -> str:
                             )
                 # ================================================
                 # DETECT INVALID TEXTURE FILE FORMATS
-                elif file_ext in {".tga", ".png"}:
+                elif file_ext in {".tga", ".png"} and "BodySlide" not in file_path.parts:
                     modscan_list.add(f"[-] NOTICE (-FORMAT-) : {file_path.as_posix()} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n")
                 # ================================================
                 # DETECT INVALID SOUND FILE FORMATS
