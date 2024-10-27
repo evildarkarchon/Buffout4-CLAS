@@ -1,11 +1,13 @@
 import functools
+import io
 import os
 import shutil
 import struct
 import subprocess
-from collections.abc import Callable
+from collections.abc import Callable, ItemsView
+from configparser import NoOptionError, NoSectionError
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TypedDict
 
 import chardet
 import iniparse
@@ -18,6 +20,177 @@ import CLASSIC_Main as CMain
 # ================================================
 # DEFINE MAIN FILE / YAML FUNCTIONS
 # ================================================
+class ConfigFile(TypedDict):
+    # bytes: bytes
+    encoding: str
+    path: Path
+    settings: iniparse.ConfigParser
+    text: str
+    # text_lower: str
+
+
+class ConfigFileCache:
+    _config_files: dict[str, Path]
+    _config_file_cache: dict[str, ConfigFile]
+    duplicate_files: dict[str, list[Path]]
+    _game_root_path: Path | None
+
+    def __init__(self) -> None:
+        self._config_files = {}
+        self.duplicate_files = {}
+
+        self._game_root_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game")
+        if self._game_root_path is None:
+            # TODO: Check if this needs to raise or return an error message instead. (See also: TODO in scan_mod_inis)
+            raise FileNotFoundError
+
+        for path, _dirs, files in self._game_root_path.walk():
+            for file in files:
+                file_lower = file.lower()
+                # if not file_lower.endswith((".ini", ".conf")):
+                if not file_lower.endswith(".ini") or file_lower != "dxvk.conf":  # or file_lower in config_ignores:
+                    continue
+
+                file_path = path / file
+                if file_lower in self._config_files:
+                    if file_lower in self.duplicate_files:
+                        self.duplicate_files[file_lower].append(file_path)
+                    else:
+                        self.duplicate_files[file_lower] = [file_path]
+                    continue
+
+                self._config_files[file_lower] = file_path
+
+    def __contains__(self, file_name_lower: str) -> bool:
+        return file_name_lower in self._config_files
+
+    # TODO: Useful for checking how many INIs found
+    # def __bool__(self) -> bool:
+    #     return bool(self._config_files)
+
+    # def __len__(self) -> int:
+    #     return len(self._config_files)
+
+    def __getitem__(self, file_name_lower: str) -> Path:
+        return self._config_files[file_name_lower]
+
+    def _load_config(self, file_name_lower: str) -> None:
+        if file_name_lower not in self._config_files:
+            raise FileNotFoundError
+
+        if file_name_lower in self._config_file_cache:
+            # Delete the cache and reload the file
+            del self._config_file_cache[file_name_lower]
+
+        file_path = self._config_files[file_name_lower]
+        with file_path.open("rb") as f:
+            file_bytes = f.read()
+        file_encoding = chardet.detect(file_bytes)["encoding"] or "utf-8"
+        file_text = file_bytes.decode(file_encoding)
+        config = iniparse.ConfigParser()
+        config.readfp(io.StringIO(file_text, newline=None))
+
+        self._config_file_cache[file_name_lower] = {
+            # "bytes": file_bytes,
+            "encoding": file_encoding,
+            "path": file_path,
+            "settings": config,
+            "text": file_text,
+            # "text_lower": file_text.lower(),
+        }
+
+    def get[T](self, value_type: type[T], file_name_lower: str, section: str, setting: str) -> T | None:
+        """Get the value of a setting, or None if the file or setting doesn't exist."""
+        if value_type is not str and value_type is not bool and value_type is not int and value_type is not float:
+            raise NotImplementedError
+
+        if file_name_lower not in self._config_files:
+            return None
+
+        if file_name_lower not in self._config_file_cache:
+            try:
+                self._load_config(file_name_lower)
+            except FileNotFoundError:
+                CMain.logger.error(f"ERROR: Config file not found - {file_name_lower}")
+                return None
+
+        config = self._config_file_cache[file_name_lower]["settings"]
+
+        if not config.has_section(section):
+            CMain.logger.error(f"ERROR: Section '{section}' does not exist in '{self._config_files[file_name_lower]}'")
+            return None
+
+        if not config.has_option(section, setting):
+            CMain.logger.error(f"ERROR: Key '{setting}' does not exist in section '{section}' of '{self._config_files[file_name_lower]}'")
+            return None
+
+        try:
+            if value_type is str:
+                return config.get(section, setting)
+            if value_type is bool:
+                return config.getboolean(section, setting)
+            if value_type is int:
+                return config.getint(section, setting)
+            if value_type is float:
+                return config.getfloat(section, setting)
+            raise NotImplementedError
+        except ValueError as e:
+            CMain.logger.error(f"ERROR: Unexpected value type - {e}")
+            return None
+        except (NoSectionError, NoOptionError):
+            return None
+
+    def get_strict[T](self, value_type: type[T], file: str, section: str, setting: str) -> T:
+        """Get the value of a setting, or a falsy default if the file or setting doesn't exist."""
+        value = self.get(value_type, file, section, setting)
+        if value is not None:
+            return value
+        if value_type is str:
+            return ""  # type: ignore[return-value]
+        if value_type is bool:
+            return False  # type: ignore[return-value]
+        if value_type is int:
+            return 0  # type: ignore[return-value]
+        if value_type is float:
+            return 0.0  # type: ignore[return-value]
+        raise NotImplementedError
+
+    def set[T](self, value_type: type[T], file_name_lower: str, section: str, setting: str, value: T) -> None:
+        if value_type is not str and value_type is not bool and value_type is not int and value_type is not float:
+            raise NotImplementedError
+
+        if file_name_lower not in self._config_file_cache:
+            try:
+                self._load_config(file_name_lower)
+            except FileNotFoundError:
+                CMain.logger.error(f"ERROR: Config file not found - {file_name_lower}")
+                return
+
+        cache = self._config_file_cache[file_name_lower]
+        config = cache["settings"]
+        value = ("true" if value else "false") if value_type is bool else str(value)  # type: ignore[assignment]
+        if not config.has_section(section):
+            config.add_section(section)
+        config.set(section, setting, value)
+
+        with cache["path"].open("w", encoding=cache["encoding"]) as f:
+            config.write(f)
+
+    def has(self, file_name_lower: str, section: str, setting: str) -> bool:
+        if file_name_lower not in self._config_files:
+            return False
+        try:
+            if file_name_lower not in self._config_file_cache:
+                self._load_config(file_name_lower)
+            config = self._config_file_cache[file_name_lower]["settings"]
+            return config.has_option(section, setting)
+        except (FileNotFoundError, NoSectionError):
+            return False
+
+    def items(self) -> ItemsView[str, Path]:
+        return self._config_files.items()
+
+
 def handle_ini_exceptions(func: Callable) -> Callable:
     @functools.wraps(func)
     def wrapper(*args: tuple[Any], **kwargs: dict[Any, Any]) -> Any | None:
@@ -520,6 +693,7 @@ def scan_mods_unpacked() -> str:
                 # ================================================
                 # DETECT DDS FILES WITH INCORRECT DIMENSIONS
                 file_path = root / filename
+                relative_path_str = file_path.relative_to(mod_path).as_posix()
                 file_ext = file_path.suffix.lower()
                 if file_ext == ".dds":
                     with file_path.open("rb") as dds_file:
@@ -529,12 +703,12 @@ def scan_mods_unpacked() -> str:
                         height = struct.unpack("<I", dds_data[16:20])[0]
                         if width % 2 != 0 or height % 2 != 0:
                             modscan_list.add(
-                                f"[!] CAUTION (DDS-DIMS) : {file_path.as_posix()} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n"
+                                f"[!] CAUTION (DDS-DIMS) : {relative_path_str} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n"
                             )
                 # ================================================
                 # DETECT INVALID TEXTURE FILE FORMATS
                 elif file_ext in {".tga", ".png"} and "BodySlide" not in file_path.parts:
-                    modscan_list.add(f"[-] NOTICE (-FORMAT-) : {file_path.as_posix()} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n")
+                    modscan_list.add(f"[-] NOTICE (-FORMAT-) : {relative_path_str} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n")
                 # ================================================
                 # DETECT INVALID SOUND FILE FORMATS
                 elif file_ext in {".mp3", ".m4a"}:
@@ -559,8 +733,6 @@ def scan_mods_unpacked() -> str:
                 elif file_ext == ".txt" and any(name in filename.lower() for name in filter_names):
                     relative_path = file_path.relative_to(mod_path)
                     new_file_path = backup_path / relative_path
-
-                    # Create subdirectories if they don't exist.
                     new_file_path.parent.mkdir(parents=True, exist_ok=True)
                     shutil.move(file_path, new_file_path)
                     cleanup_list.append(f"MOVED > '{relative_path.as_posix()}' FILE TO > '{backup_path.as_posix()}' \n")
@@ -745,17 +917,16 @@ def game_combined_result() -> str:
     docs_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Docs")
     game_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game")
 
-    if game_path and docs_path:
-        combined_return = (
-            check_xse_plugins(),
-            check_crashgen_settings(),
-            check_log_errors(docs_path),
-            check_log_errors(game_path),
-            scan_wryecheck(),
-            scan_mod_inis(),
-        )
-        return "".join(combined_return)
-    return ""
+    if not (game_path and docs_path):
+        return ""
+    return "".join((
+        check_xse_plugins(),
+        check_crashgen_settings(),
+        check_log_errors(docs_path),
+        check_log_errors(game_path),
+        scan_wryecheck(),
+        scan_mod_inis(),
+    ))
 
 
 def mods_combined_result() -> str:  # KEEP THESE SEPARATE SO THEY ARE NOT INCLUDED IN AUTOSCAN REPORTS
