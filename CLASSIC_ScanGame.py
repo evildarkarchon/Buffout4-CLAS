@@ -652,13 +652,13 @@ def scan_mods_unpacked() -> str:
 
                     if not READONLY_MODE:
                         shutil.move(fomod_folder_path, new_folder_path)
-                    cleanup_list.append(f"MOVED > '{relative_path.as_posix()}' FOLDER TO > '{backup_path.as_posix()}' \n")
+                    cleanup_list.append(f"MOVED > '{relative_path}' FOLDER TO > '{backup_path}' \n")
 
             for filename in files:
                 # ================================================
                 # DETECT DDS FILES WITH INCORRECT DIMENSIONS
                 file_path = root / filename
-                relative_path_str = file_path.relative_to(mod_path).as_posix()
+                relative_path_str = file_path.relative_to(mod_path)
                 file_ext = file_path.suffix.lower()
                 if file_ext == ".dds":
                     with file_path.open("rb") as dds_file:
@@ -701,7 +701,7 @@ def scan_mods_unpacked() -> str:
                     if not READONLY_MODE:
                         new_file_path.parent.mkdir(parents=True, exist_ok=True)
                         shutil.move(file_path, new_file_path)
-                    cleanup_list.append(f"MOVED > '{relative_path.as_posix()}' FILE TO > '{backup_path.as_posix()}' \n")
+                    cleanup_list.append(f"MOVED > '{relative_path}' FILE TO > '{backup_path}' \n")
 
         print("✔️ CLEANUP COMPLETE! NOW ANALYZING ALL UNPACKED/LOOSE MOD FILES...")
         message_list.extend((
@@ -737,7 +737,6 @@ def scan_mods_archived() -> str:
         message_list.append("\n========== RESULTS FROM ARCHIVED / BA2 FILES ==========\n")
         # TODO: Remove dependency on bsarch by reading files directly.
         for root, _, files in mod_path.walk(top_down=False):
-            root_main = root.relative_to(mod_path).parent
             for filename in files:
                 file_path = root / filename
 
@@ -760,13 +759,13 @@ def scan_mods_archived() -> str:
                                 height = dds_meta_split[2].replace("  CubeMap", "").strip()
                                 if (width.isdecimal() and int(width) % 2 != 0) or (height.isdecimal() and int(height) % 2 != 0):
                                     modscan_list.add(
-                                        f"[!] CAUTION (DDS-DIMS) : ({root_main}) {line} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n"
+                                        f"[!] CAUTION (DDS-DIMS) : ({filename}) {line} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n"
                                     )
                             # ================================================
                             # DETECT INVALID TEXTURE FILE FORMATS
                             elif any(ext in line.lower() for ext in (".tga", ".png")):
                                 modscan_list.add(
-                                    f"[-] NOTICE (-FORMAT-) : ({root_main}) {line} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n"
+                                    f"[-] NOTICE (-FORMAT-) : ({filename}) {line} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n"
                                 )
 
                 elif filename.lower().endswith("main.ba2"):
@@ -780,12 +779,12 @@ def scan_mods_archived() -> str:
                         # DETECT INVALID SOUND FILE FORMATS
                         if any(ext in archived_output.lower() for ext in (".mp3", ".m4a")):
                             modscan_list.add(
-                                f"[-] NOTICE (-FORMAT-) : {root_main} > BA2 ARCHIVE CONTAINS SOUND FILES IN THE WRONG FORMAT \n"
+                                f"[-] NOTICE (-FORMAT-) : {filename} > BA2 ARCHIVE CONTAINS SOUND FILES IN THE WRONG FORMAT \n"
                             )
                         # ================================================
                         # DETECT MODS WITH AnimationFileData
                         if "animationfiledata" in archived_output.lower():
-                            modscan_list.add(f"[-] NOTICE (ANIMDATA) : {root_main} > BA2 ARCHIVE CONTAINS CUSTOM ANIMATION FILE DATA \n")
+                            modscan_list.add(f"[-] NOTICE (ANIMDATA) : {filename} > BA2 ARCHIVE CONTAINS CUSTOM ANIMATION FILE DATA \n")
                         # ================================================
                         # DETECT MODS WITH SCRIPT EXTENDER FILE COPIES
                         if (
@@ -793,7 +792,7 @@ def scan_mods_archived() -> str:
                             and "workshop framework" not in str(root).lower()
                         ):
                             modscan_list.add(
-                                f"[!] CAUTION (XSE-COPY) : {root_main} > BA2 ARCHIVE CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES \n"
+                                f"[!] CAUTION (XSE-COPY) : {filename} > BA2 ARCHIVE CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES \n"
                             )
                         # ================================================
                         # DETECT MODS WITH PRECOMBINE / PREVIS FILES
@@ -802,7 +801,7 @@ def scan_mods_archived() -> str:
                             and "previs repair pack" not in str(root).lower()
                         ):
                             modscan_list.add(
-                                f"[-] NOTICE (-PREVIS-) : {root_main} > BA2 ARCHIVE CONTAINS CUSTOM PRECOMBINE / PREVIS FILES \n"
+                                f"[-] NOTICE (-PREVIS-) : {filename} > BA2 ARCHIVE CONTAINS CUSTOM PRECOMBINE / PREVIS FILES \n"
                             )
 
     return "".join(message_list) + "".join(sorted(modscan_list))
