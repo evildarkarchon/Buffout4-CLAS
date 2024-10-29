@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup, PageElement
 import CLASSIC_Main as CMain
 
 # For testing
-READONLY_MODE = True
+READONLY_MODE = False
 
 
 # ================================================
@@ -655,11 +655,29 @@ def scan_mods_unpacked() -> str:
                     cleanup_list.append(f"MOVED > '{relative_path}' FOLDER TO > '{backup_path}' \n")
 
             for filename in files:
+                filename_lower = filename.lower()
+                # ================================================
+                # (RE)MOVE REDUNDANT README / CHANGELOG FILES
+                if filename_lower.endswith(".txt") and any(name in filename_lower for name in filter_names):
+                    file_path = root / filename
+                    relative_path = file_path.relative_to(mod_path)
+                    new_file_path = backup_path / relative_path
+                    if not READONLY_MODE:
+                        new_file_path.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.move(file_path, new_file_path)
+                    cleanup_list.append(f"MOVED > '{relative_path}' FILE TO > '{backup_path}' \n")
+
+        print("✔️ CLEANUP COMPLETE! NOW ANALYZING ALL UNPACKED/LOOSE MOD FILES...")
+
+        for root, _, files in mod_path.walk(top_down=False):
+            root_main = root.relative_to(mod_path).parent
+            for filename in files:
+                filename_lower = filename.lower()
+                file_path = root / filename
+                relative_path = file_path.relative_to(mod_path)
+                file_ext = file_path.suffix.lower()
                 # ================================================
                 # DETECT DDS FILES WITH INCORRECT DIMENSIONS
-                file_path = root / filename
-                relative_path_str = file_path.relative_to(mod_path)
-                file_ext = file_path.suffix.lower()
                 if file_ext == ".dds":
                     with file_path.open("rb") as dds_file:
                         dds_data = dds_file.read(20)
@@ -668,12 +686,12 @@ def scan_mods_unpacked() -> str:
                         height = struct.unpack("<I", dds_data[16:20])[0]
                         if width % 2 != 0 or height % 2 != 0:
                             modscan_list.add(
-                                f"[!] CAUTION (DDS-DIMS) : {relative_path_str} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n"
+                                f"[!] CAUTION (DDS-DIMS) : {relative_path} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n"
                             )
                 # ================================================
                 # DETECT INVALID TEXTURE FILE FORMATS
                 elif file_ext in {".tga", ".png"} and "BodySlide" not in file_path.parts:
-                    modscan_list.add(f"[-] NOTICE (-FORMAT-) : {relative_path_str} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n")
+                    modscan_list.add(f"[-] NOTICE (-FORMAT-) : {relative_path} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n")
                 # ================================================
                 # DETECT INVALID SOUND FILE FORMATS
                 elif file_ext in {".mp3", ".m4a"}:
@@ -683,7 +701,7 @@ def scan_mods_unpacked() -> str:
                 # ================================================
                 # DETECT MODS WITH SCRIPT EXTENDER FILE COPIES
                 # TODO: Look only in the scripts folder specifically for these instead of walking all files.
-                elif any(filename.lower() == key.lower() for key in xse_scriptfiles) and "workshop framework" not in str(root).lower():
+                elif any(filename_lower == key.lower() for key in xse_scriptfiles) and "workshop framework" not in str(root).lower():
                     if f"Scripts\\{filename}" in str(file_path):
                         modscan_list.add(
                             f"[!] CAUTION (XSE-COPY) : {root_main} > CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES \n"
@@ -691,19 +709,10 @@ def scan_mods_unpacked() -> str:
                 # ================================================
                 # DETECT MODS WITH PRECOMBINE / PREVIS FILES
                 # TODO: Look only in the previsibine folders specifically for these instead of walking all files.
-                elif filename.lower().endswith((".uvd", "_oc.nif")):
+                elif filename_lower.endswith((".uvd", "_oc.nif")):
                     modscan_list.add(f"[!] CAUTION (-PREVIS-) : {root_main} > CONTAINS LOOSE PRECOMBINE / PREVIS FILES \n")
-                # ================================================
-                # (RE)MOVE REDUNDANT README / CHANGELOG FILES
-                elif file_ext == ".txt" and any(name in filename.lower() for name in filter_names):
-                    relative_path = file_path.relative_to(mod_path)
-                    new_file_path = backup_path / relative_path
-                    if not READONLY_MODE:
-                        new_file_path.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.move(file_path, new_file_path)
-                    cleanup_list.append(f"MOVED > '{relative_path}' FILE TO > '{backup_path}' \n")
 
-        print("✔️ CLEANUP COMPLETE! NOW ANALYZING ALL UNPACKED/LOOSE MOD FILES...")
+
         message_list.extend((
             str(CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_Reminders")),
             "========= RESULTS FROM UNPACKED / LOOSE FILES =========\n",
@@ -738,57 +747,84 @@ def scan_mods_archived() -> str:
         # TODO: Remove dependency on bsarch by reading files directly.
         for root, _, files in mod_path.walk(top_down=False):
             for filename in files:
+                if not filename.lower().endswith(".ba2"):
+                    continue
                 file_path = root / filename
 
-                if filename.lower().endswith("textures.ba2"):
+                try:
+                    with file_path.open("rb") as f:
+                        header = f.read(12)
+                except OSError:
+                    print("Failed to read file:", filename)
+                    continue
+
+                if header[:4] != b"BTDX" or header[8:] not in {b"DX10", b"GNRL"}:
+                    modscan_list.add(f"[!] NOTICE (-FORMAT-) : ({filename}) HAS AN UNKNOWN ARCHIVE FORMAT ({header!s})")
+                    continue
+
+                if header[8:] == b"DX10":
+                    # Texture-format BA2
                     command_dump = (bsarch_path, file_path, "-dump")
-                    archived_dump = subprocess.run(command_dump, shell=True, capture_output=True, text=True, check=False)
-                    if archived_dump.returncode != 0:
-                        print("Command failed with error:\n", archived_dump.stderr)
-                    else:
-                        archived_output = archived_dump.stdout
+                    archive_dump = subprocess.run(command_dump, shell=True, capture_output=True, text=True, check=False)
+                    if archive_dump.returncode != 0:
+                        print("BSArch command failed:", archive_dump.returncode, archive_dump.stderr)
+                        continue
+
+                    output_split = archive_dump.stdout.split("\n\n")
+                    error_check = output_split[-1]
+                    if error_check.startswith("Error:"):
+                        print("BSArch command failed:", error_check, archive_dump.stderr)
+                        continue
+
+                    for file_block in output_split[4:]:
+                        if not file_block:
+                            continue
+
+                        block_split = file_block.split("\n", 3)
+                        # Textures\Props\NukaColaQuantum_d.DDS
+                        #   DirHash: E10CD7B7  NameHash: ECE5A99C  Ext: dds
+                        #   Width:  512  Height:  512  CubeMap: No  Format: DXGI_FORMAT_BC1_UNORM
+
+                        # ================================================
+                        # DETECT INVALID TEXTURE FILE FORMATS
+                        if "Ext: dds" not in block_split[1]:
+                            modscan_list.add(
+                                f"[!] CAUTION (-FORMAT-) : ({filename}) {block_split[0]} HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS"
+                            )
+                            continue
+
                         # ================================================
                         # DETECT DDS FILES WITH INCORRECT DIMENSIONS
-                        output_split = archived_output.split("\n")
-                        output_list = [item for item in output_split if item]
-                        for index, line in enumerate(output_list):
-                            if ".dds" in line.lower():
-                                dds_meta = output_list[index + 2]
-                                dds_meta_split = dds_meta.split(":")
-                                width = dds_meta_split[1].replace("  Height", "").strip()
-                                height = dds_meta_split[2].replace("  CubeMap", "").strip()
-                                if (width.isdecimal() and int(width) % 2 != 0) or (height.isdecimal() and int(height) % 2 != 0):
-                                    modscan_list.add(
-                                        f"[!] CAUTION (DDS-DIMS) : ({filename}) {line} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n"
-                                    )
-                            # ================================================
-                            # DETECT INVALID TEXTURE FILE FORMATS
-                            elif any(ext in line.lower() for ext in (".tga", ".png")):
-                                modscan_list.add(
-                                    f"[-] NOTICE (-FORMAT-) : ({filename}) {line} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n"
-                                )
+                        _, width, _, height, _ = block_split[2].split(maxsplit=4)
+                        if (width.isdecimal() and int(width) % 2 != 0) or (height.isdecimal() and int(height) % 2 != 0):
+                            modscan_list.add(
+                                f"[!] CAUTION (DDS-DIMS) : ({filename}) {block_split[0]} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n"
+                            )
 
-                elif filename.lower().endswith("main.ba2"):
+                else:
+                    # General-format BA2
                     command_list = (bsarch_path, file_path, "-list")
-                    archived_list = subprocess.run(command_list, shell=True, capture_output=True, text=True, check=False)
-                    if archived_list.returncode != 0:
-                        print("BSArch command failed with the following error:\n", archived_list.stderr)
-                    else:
-                        archived_output = archived_list.stdout
+                    archive_list = subprocess.run(command_list, shell=True, capture_output=True, text=True, check=False)
+                    if archive_list.returncode != 0:
+                        print("BSArch command failed:", archive_list.returncode, archive_list.stderr)
+                        continue
+
+                    output_split = archive_list.stdout.lower().split("\n")
+                    for file in output_split[15:]:
                         # ================================================
                         # DETECT INVALID SOUND FILE FORMATS
-                        if any(ext in archived_output.lower() for ext in (".mp3", ".m4a")):
+                        if file.endswith((".mp3", ".m4a")):
                             modscan_list.add(
                                 f"[-] NOTICE (-FORMAT-) : {filename} > BA2 ARCHIVE CONTAINS SOUND FILES IN THE WRONG FORMAT \n"
                             )
                         # ================================================
                         # DETECT MODS WITH AnimationFileData
-                        if "animationfiledata" in archived_output.lower():
+                        if "animationfiledata" in file:
                             modscan_list.add(f"[-] NOTICE (ANIMDATA) : {filename} > BA2 ARCHIVE CONTAINS CUSTOM ANIMATION FILE DATA \n")
                         # ================================================
                         # DETECT MODS WITH SCRIPT EXTENDER FILE COPIES
                         if (
-                            any(f"scripts\\{key.lower()}" in archived_output.lower() for key in xse_scriptfiles)
+                            any(f"scripts\\{key.lower()}" in file for key in xse_scriptfiles)
                             and "workshop framework" not in str(root).lower()
                         ):
                             modscan_list.add(
@@ -796,10 +832,7 @@ def scan_mods_archived() -> str:
                             )
                         # ================================================
                         # DETECT MODS WITH PRECOMBINE / PREVIS FILES
-                        if (
-                            any(ext in archived_output.lower() for ext in (".uvd", "_oc.nif"))
-                            and "previs repair pack" not in str(root).lower()
-                        ):
+                        if file.endswith((".uvd", "_oc.nif")) and "previs repair pack" not in str(root).lower():
                             modscan_list.add(
                                 f"[-] NOTICE (-PREVIS-) : {filename} > BA2 ARCHIVE CONTAINS CUSTOM PRECOMBINE / PREVIS FILES \n"
                             )
