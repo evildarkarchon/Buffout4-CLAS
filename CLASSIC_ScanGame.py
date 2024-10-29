@@ -233,8 +233,8 @@ def check_crashgen_settings() -> str:
     if (crashgen_toml_og and crashgen_toml_og.is_file()) and (crashgen_toml_vr and crashgen_toml_vr.is_file()):
         message_list.extend((
             f"# ❌ CAUTION : BOTH VERSIONS OF {crashgen_name.upper()} TOML SETTINGS FILES WERE FOUND! #\n",
-            f"When editing {crashgen_name} toml settings, make sure you are editing the correct file. \n",
-            f"Please recheck your {crashgen_name} installation and delete any obsolete files. \n-----\n",
+            f"When editing {crashgen_name} toml settings, make sure you are editing the correct file.\n",
+            f"Please recheck your {crashgen_name} installation and delete any obsolete files.\n-----\n",
         ))
 
     xse_files: set[str] = {file.name.lower() for file in plugins_path.iterdir()} if plugins_path else set()
@@ -243,9 +243,9 @@ def check_crashgen_settings() -> str:
 
     if not crashgen_toml_main:
         message_list.extend((
-            f"# [!] NOTICE : Unable to find the {crashgen_name} config file, settings check will be skipped. # \n",
-            f"  To ensure this check doesn't get skipped, {crashgen_name} has to be installed manually. \n",
-            "  [ If you are using Mod Organizer 2, you need to run CLASSIC through a shortcut in MO2. ] \n-----\n",
+            f"# [!] NOTICE : Unable to find the {crashgen_name} config file, settings check will be skipped. #\n",
+            f"  To ensure this check doesn't get skipped, {crashgen_name} has to be installed manually.\n",
+            "  [ If you are using Mod Organizer 2, you need to run CLASSIC through a shortcut in MO2. ]\n-----\n",
         ))
         return "".join(message_list)
 
@@ -255,73 +255,73 @@ def check_crashgen_settings() -> str:
         and mod_toml_config(crashgen_toml_main, "Patches", "Achievements")
     ):
         message_list.extend((
-            "# ❌ CAUTION : The Achievements Mod and/or Unlimited Survival Mode is installed, but Achievements is set to TRUE # \n",
-            f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with {crashgen_name}. \n-----\n",
+            "# ❌ CAUTION : The Achievements Mod and/or Unlimited Survival Mode is installed, but Achievements is set to TRUE #\n",
+            f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with {crashgen_name}.\n-----\n",
         ))
         mod_toml_config(crashgen_toml_main, "Patches", "Achievements", "False")
     else:
-        message_list.append(f"✔️ Achievements parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+        message_list.append(f"✔️ Achievements parameter is correctly configured in your {crashgen_name} settings!\n-----\n")
 
     if Has_BakaScrapHeap and mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager"):
         message_list.extend((
-            f"# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but is redundant with {crashgen_name} # \n",
+            f"# ❌ CAUTION : The Baka ScrapHeap Mod is installed, but is redundant with {crashgen_name} #\n",
             f" FIX: Uninstall the Baka ScrapHeap Mod, this prevents conflicts with {crashgen_name}.\n-----\n",
         ))
         if not Has_XCell:
             mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", "True")
     elif Has_XCell and mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager"):
         message_list.extend((
-            "# ❌ CAUTION : The X-Cell Mod is installed, but MemoryManager parameter is set to TRUE # \n",
-            "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n",
+            "# ❌ CAUTION : The X-Cell Mod is installed, but MemoryManager parameter is set to TRUE #\n",
+            "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell.\n-----\n",
         ))
         mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", "False")
     else:
-        message_list.append(f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+        message_list.append(f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings!\n-----\n")
 
     if Has_XCell and mod_toml_config(crashgen_toml_main, "Patches", "HavokMemorySystem"):
         message_list.extend((
-            "# ❌ CAUTION : The X-Cell Mod is installed, but HavokMemorySystem parameter is set to TRUE # \n",
-            "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n",
+            "# ❌ CAUTION : The X-Cell Mod is installed, but HavokMemorySystem parameter is set to TRUE #\n",
+            "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell.\n-----\n",
         ))
         mod_toml_config(crashgen_toml_main, "Patches", "HavokMemorySystem", "False")
     else:
-        message_list.append(f"✔️ HavokMemorySystem parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+        message_list.append(f"✔️ HavokMemorySystem parameter is correctly configured in your {crashgen_name} settings!\n-----\n")
 
     if Has_XCell and mod_toml_config(crashgen_toml_main, "Patches", "BSTextureStreamerLocalHeap"):
         message_list.extend((
-            "# ❌ CAUTION : The X-Cell Mod is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE # \n",
-            "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n",
+            "# ❌ CAUTION : The X-Cell Mod is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE #\n",
+            "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell.\n-----\n",
         ))
         mod_toml_config(crashgen_toml_main, "Patches", "BSTextureStreamerLocalHeap", "False")
     else:
-        message_list.append(f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+        message_list.append(f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured in your {crashgen_name} settings!\n-----\n")
 
     if Has_XCell and mod_toml_config(crashgen_toml_main, "Patches", "ScaleformAllocator"):
         message_list.extend((
-            "# ❌ CAUTION : The X-Cell Mod is installed, but ScaleformAllocator parameter is set to TRUE # \n",
-            "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n",
+            "# ❌ CAUTION : The X-Cell Mod is installed, but ScaleformAllocator parameter is set to TRUE #\n",
+            "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell.\n-----\n",
         ))
         mod_toml_config(crashgen_toml_main, "Patches", "ScaleFormAllocator", "False")
     else:
-        message_list.append(f"✔️ ScaleformAllocator parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+        message_list.append(f"✔️ ScaleformAllocator parameter is correctly configured in your {crashgen_name} settings!\n-----\n")
 
     if Has_XCell and mod_toml_config(crashgen_toml_main, "Patches", "SmallBlockAllocator"):
         message_list.extend((
-            "# ❌ CAUTION : The X-Cell Mod is installed, but SmallBlockAllocator parameter is set to TRUE # \n",
-            "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell. \n-----\n",
+            "# ❌ CAUTION : The X-Cell Mod is installed, but SmallBlockAllocator parameter is set to TRUE #\n",
+            "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell.\n-----\n",
         ))
         mod_toml_config(crashgen_toml_main, "Patches", "SmallBlockAllocator", "False")
     else:
-        message_list.append(f"✔️ SmallBlockAllocator parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+        message_list.append(f"✔️ SmallBlockAllocator parameter is correctly configured in your {crashgen_name} settings!\n-----\n")
 
     if xse_files and mod_toml_config(crashgen_toml_main, "Compatibility", "F4EE") and any("f4ee" in file for file in xse_files):
         message_list.extend((
-            "# ❌ CAUTION : Looks Menu is installed, but F4EE parameter under [Compatibility] is set to FALSE # \n",
-            "    Auto Scanner will change this parameter to TRUE to prevent bugs and crashes from Looks Menu. \n-----\n",
+            "# ❌ CAUTION : Looks Menu is installed, but F4EE parameter under [Compatibility] is set to FALSE #\n",
+            "    Auto Scanner will change this parameter to TRUE to prevent bugs and crashes from Looks Menu.\n-----\n",
         ))
         mod_toml_config(crashgen_toml_main, "Compatibility", "F4EE", "True")
     else:
-        message_list.append(f"✔️ F4EE (Looks Menu) parameter is correctly configured in your {crashgen_name} settings! \n-----\n")
+        message_list.append(f"✔️ F4EE (Looks Menu) parameter is correctly configured in your {crashgen_name} settings!\n-----\n")
 
     return "".join(message_list)
 
@@ -360,11 +360,11 @@ def check_log_errors(folder_path: Path | str) -> str:
 
                 if errors_list:
                     message_list.extend((
-                        "[!] CAUTION : THE FOLLOWING LOG FILE REPORTS ONE OR MORE ERRORS! \n",
-                        "[ Errors do not necessarily mean that the mod is not working. ] \n",
-                        f"\nLOG PATH > {file} \n",
+                        "[!] CAUTION : THE FOLLOWING LOG FILE REPORTS ONE OR MORE ERRORS!\n",
+                        "[ Errors do not necessarily mean that the mod is not working. ]\n",
+                        f"\nLOG PATH > {file}\n",
                         *errors_list,
-                        f"\n* TOTAL NUMBER OF DETECTED LOG ERRORS * : {len(errors_list)} \n",
+                        f"\n* TOTAL NUMBER OF DETECTED LOG ERRORS * : {len(errors_list)}\n",
                     ))
 
             except OSError:
@@ -395,19 +395,19 @@ def check_xse_plugins() -> str:  # RESERVED | Might be expanded upon in the futu
         other_version = adlib_versions["VR Mode"]
 
     if plugins_path and plugins_path.joinpath(selected_version[0]).exists():
-        message_list.append("✔️ You have the latest version of the Address Library file! \n-----\n")
+        message_list.append("✔️ You have the latest version of the Address Library file!\n-----\n")
     elif plugins_path and plugins_path.joinpath(other_version[0]).exists():
         message_list.extend((
-            "❌ CAUTION : You have installed the wrong version of the Address Library file! \n",
+            "❌ CAUTION : You have installed the wrong version of the Address Library file!\n",
             f"  Remove the current Address Library file and install the {selected_version[1]}.\n",
-            f"  Link: {selected_version[2]} \n-----\n",
+            f"  Link: {selected_version[2]}\n-----\n",
         ))
     else:
         message_list.extend((
-            "❓ NOTICE : Unable to locate Address Library \n",
-            "  If you have Address Library installed, please check the path in your settings. \n",
-            "  If you don't have it installed, you can find it on the Nexus. \n",
-            f"  Link: {selected_version[2]} \n-----\n",
+            "❓ NOTICE : Unable to locate Address Library\n",
+            "  If you have Address Library installed, please check the path in your settings.\n",
+            "  If you don't have it installed, you can find it on the Nexus.\n",
+            f"  Link: {selected_version[2]}\n-----\n",
         ))
 
     return "".join(message_list)
@@ -447,9 +447,9 @@ def papyrus_logging() -> tuple[str, int]:
         ))
     else:
         message_list.extend((
-            "[!] ERROR : UNABLE TO FIND *Papyrus.0.log* (LOGGING IS DISABLED OR YOU DIDN'T RUN THE GAME) \n",
-            "ENABLE PAPYRUS LOGGING MANUALLY OR WITH BETHINI AND START THE GAME TO GENERATE THE LOG FILE \n",
-            "BethINI Link | Use Manual Download : https://www.nexusmods.com/site/mods/631?tab=files \n",
+            "[!] ERROR : UNABLE TO FIND *Papyrus.0.log* (LOGGING IS DISABLED OR YOU DIDN'T RUN THE GAME)\n",
+            "ENABLE PAPYRUS LOGGING MANUALLY OR WITH BETHINI AND START THE GAME TO GENERATE THE LOG FILE\n",
+            "BethINI Link | Use Manual Download : https://www.nexusmods.com/site/mods/631?tab=files\n",
         ))
 
     message_output = "".join(message_list)  # Debug print
@@ -470,9 +470,9 @@ def scan_wryecheck() -> str:
 
     if wrye_plugincheck and wrye_plugincheck.is_file():
         message_list.extend((
-            "\n✔️ WRYE BASH PLUGIN CHECKER REPORT WAS FOUND! ANALYZING CONTENTS... \n",
-            f"  [This report is located in your Documents/My Games/{CMain.gamevars["game"]} folder.] \n",
-            "  [To hide this report, remove *ModChecker.html* from the same folder.] \n",
+            "\n✔️ WRYE BASH PLUGIN CHECKER REPORT WAS FOUND! ANALYZING CONTENTS...\n",
+            f"  [This report is located in your Documents/My Games/{CMain.gamevars["game"]} folder.]\n",
+            "  [To hide this report, remove *ModChecker.html* from the same folder.]\n",
         ))
         with CMain.open_file_with_encoding(wrye_plugincheck) as WB_Check:
             WB_HTML = WB_Check.read()
@@ -504,22 +504,22 @@ def scan_wryecheck() -> str:
 
             if title == "ESL Capable":
                 message_list.extend((
-                    f"❓ There are {len(plugin_list)} plugins that can be given the ESL flag. This can be done with \n",
-                    "  the SimpleESLify script to avoid reaching the plugin limit (254 esm/esp). \n",
-                    "  SimpleESLify: https://www.nexusmods.com/skyrimspecialedition/mods/27568 \n  -----\n",
+                    f"❓ There are {len(plugin_list)} plugins that can be given the ESL flag. This can be done with\n",
+                    "  the SimpleESLify script to avoid reaching the plugin limit (254 esm/esp).\n",
+                    "  SimpleESLify: https://www.nexusmods.com/skyrimspecialedition/mods/27568\n  -----\n",
                 ))
 
             message_list.extend([warn_desc for warn_name, warn_desc in wrye_warnings.items() if warn_name in title])
 
             if title not in {"ESL Capable", "Active Plugins:"}:
-                message_list.extend([f"    > {elem} \n" for elem in plugin_list])
+                message_list.extend([f"    > {elem}\n" for elem in plugin_list])
 
         message_list.extend((
-            "\n❔ For more info about the above detected problems, see the WB Advanced Readme \n",
-            "  For more details about solutions, read the Advanced Troubleshooting Article \n",
-            "  Advanced Troubleshooting: https://www.nexusmods.com/fallout4/articles/4141 \n",
-            "  Wrye Bash Advanced Readme Documentation: https://wrye-bash.github.io/docs/ \n",
-            "  [ After resolving any problems, run Plugin Checker in Wrye Bash again! ] \n\n",
+            "\n❔ For more info about the above detected problems, see the WB Advanced Readme\n",
+            "  For more details about solutions, read the Advanced Troubleshooting Article\n",
+            "  Advanced Troubleshooting: https://www.nexusmods.com/fallout4/articles/4141\n",
+            "  Wrye Bash Advanced Readme Documentation: https://wrye-bash.github.io/docs/\n",
+            "  [ After resolving any problems, run Plugin Checker in Wrye Bash again! ]\n\n",
         ))
     elif wrye_missinghtml is not None:
         message_list.append(wrye_missinghtml)
@@ -547,55 +547,55 @@ def scan_mod_inis() -> str:
     for file_lower, file_path in config_files.items():
         if file_lower.startswith(game_lower) and config_files.has(file_lower, "General", "sStartingConsoleCommand"):
             message_list.extend((
-                f"[!] NOTICE: {file_path} contains the *sStartingConsoleCommand* setting. \n",
-                "In rare cases, this setting can slow down the initial game startup time for some players. \n",
-                "You can test your initial startup time difference by removing this setting from the INI file. \n-----\n",
+                f"[!] NOTICE: {file_path} contains the *sStartingConsoleCommand* setting.\n",
+                "In rare cases, this setting can slow down the initial game startup time for some players.\n",
+                "You can test your initial startup time difference by removing this setting from the INI file.\n-----\n",
             ))
 
     if config_files.get(bool, "dxvk.conf", f"{CMain.gamevars["game"]}.exe", "dxgi.syncInterval"):
-        vsync_list.append(f"{config_files["dxvk.conf"]} | SETTING: dxgi.syncInterval \n")
+        vsync_list.append(f"{config_files["dxvk.conf"]} | SETTING: dxgi.syncInterval\n")
     if config_files.get(bool, "enblocal.ini", "ENGINE", "ForceVSync"):
-        vsync_list.append(f"{config_files["enblocal.ini"]} | SETTING: ForceVSync \n")
+        vsync_list.append(f"{config_files["enblocal.ini"]} | SETTING: ForceVSync\n")
     if config_files.get(bool, "longloadingtimesfix.ini", "Limiter", "EnableVSync"):
-        vsync_list.append(f"{config_files["longloadingtimesfix.ini"]} | SETTING: EnableVSync \n")
+        vsync_list.append(f"{config_files["longloadingtimesfix.ini"]} | SETTING: EnableVSync\n")
     if config_files.get(bool, "reshade.ini", "APP", "ForceVsync"):
-        vsync_list.append(f"{config_files["reshade.ini"]} | SETTING: ForceVsync \n")
+        vsync_list.append(f"{config_files["reshade.ini"]} | SETTING: ForceVsync\n")
     if config_files.get(bool, "fallout4_test.ini", "CreationKit", "VSyncRender"):
-        vsync_list.append(f"{config_files["fallout4_test.ini"]} | SETTING: VSyncRender \n")
+        vsync_list.append(f"{config_files["fallout4_test.ini"]} | SETTING: VSyncRender\n")
 
     if "; F10" in config_files.get_strict(str, "espexplorer.ini", "General", "HotKey"):
         config_files.set(str, "espexplorer.ini", "General", "HotKey", "0x79")
         CMain.logger.info(f"> > > PERFORMED INI HOTKEY FIX FOR {config_files["espexplorer.ini"]}")
-        message_list.append(f"> Performed INI Hotkey Fix For : {config_files["espexplorer.ini"]} \n")
+        message_list.append(f"> Performed INI Hotkey Fix For : {config_files["espexplorer.ini"]}\n")
 
     if config_files.get_strict(int, "epo.ini", "Particles", "iMaxDesired") > 5000:
         config_files.set(int, "epo.ini", "Particles", "iMaxDesired", 5000)
         CMain.logger.info(f"> > > PERFORMED INI PARTICLE COUNT FIX FOR {config_files["epo.ini"]}")
-        message_list.append(f"> Performed INI Particle Count Fix For : {config_files["epo.ini"]} \n")
+        message_list.append(f"> Performed INI Particle Count Fix For : {config_files["epo.ini"]}\n")
 
     if "f4ee.ini" in config_files:
         if config_files.get(int, "f4ee.ini", "CharGen", "bUnlockHeadParts") == 0:
             config_files.set(int, "f4ee.ini", "CharGen", "bUnlockHeadParts", 1)
             CMain.logger.info(f"> > > PERFORMED INI HEAD PARTS UNLOCK FOR {config_files["f4ee.ini"]}")
-            message_list.append(f"> Performed INI Head Parts Unlock For : {config_files["f4ee.ini"]} \n")
+            message_list.append(f"> Performed INI Head Parts Unlock For : {config_files["f4ee.ini"]}\n")
 
         if config_files.get(int, "f4ee.ini", "CharGen", "bUnlockTints") == 0:
             config_files.set(int, "f4ee.ini", "CharGen", "bUnlockTints", 1)
             CMain.logger.info(f"> > > PERFORMED INI FACE TINTS UNLOCK FOR {config_files["f4ee.ini"]}")
-            message_list.append(f"> Performed INI Face Tints Unlock For : {config_files["f4ee.ini"]} \n")
+            message_list.append(f"> Performed INI Face Tints Unlock For : {config_files["f4ee.ini"]}\n")
 
     if "highfpsphysicsfix.ini" in config_files:
         if config_files.get(bool, "highfpsphysicsfix.ini", "Main", "EnableVSync"):
-            vsync_list.append(f"{config_files["highfpsphysicsfix.ini"]} | SETTING: EnableVSync \n")
+            vsync_list.append(f"{config_files["highfpsphysicsfix.ini"]} | SETTING: EnableVSync\n")
 
         if config_files.get_strict(float, "highfpsphysicsfix.ini", "Limiter", "LoadingScreenFPS") < 600.0:
             config_files.set(float, "highfpsphysicsfix.ini", "Limiter", "LoadingScreenFPS", 600.0)
             CMain.logger.info(f"> > > PERFORMED INI LOADING SCREEN FPS FIX FOR {config_files["highfpsphysicsfix.ini"]}")
-            message_list.append(f"> Performed INI Loading Screen FPS Fix For : {config_files["highfpsphysicsfix.ini"]} \n")
+            message_list.append(f"> Performed INI Loading Screen FPS Fix For : {config_files["highfpsphysicsfix.ini"]}\n")
 
     if vsync_list:
         message_list.extend((
-            "* NOTICE : VSYNC IS CURRENTLY ENABLED IN THE FOLLOWING FILES * \n",
+            "* NOTICE : VSYNC IS CURRENTLY ENABLED IN THE FOLLOWING FILES *\n",
             *vsync_list,
         ))
 
@@ -606,7 +606,7 @@ def scan_mod_inis() -> str:
         all_duplicates.extend([fp for f, fp in config_files.items() if f in config_files.duplicate_files])
         # all_duplicates = [*p for p in config_files.duplicate_files.values()] + [str(fp) for f, fp in config_files.items() if f in config_files.duplicate_files]
         message_list.extend((
-            "* NOTICE : DUPLICATES FOUND OF THE FOLLOWING FILES * \n",
+            "* NOTICE : DUPLICATES FOUND OF THE FOLLOWING FILES *\n",
             *[str(p) for p in sorted(all_duplicates, key=lambda p: p.name)],
         ))
     return "".join(message_list)
@@ -642,7 +642,7 @@ def scan_mods_unpacked() -> str:
                 # ================================================
                 # DETECT MODS WITH AnimationFileData
                 if dirname.lower() == "animationfiledata":
-                    modscan_list.add(f"[-] NOTICE (ANIMDATA) : {root_main} > CONTAINS CUSTOM ANIMATION FILE DATA \n")
+                    modscan_list.add(f"[-] NOTICE (ANIMDATA) : {root_main} > CONTAINS CUSTOM ANIMATION FILE DATA\n")
                 # ================================================
                 # (RE)MOVE REDUNDANT FOMOD FOLDERS
                 elif dirname.lower() == "fomod":
@@ -652,7 +652,7 @@ def scan_mods_unpacked() -> str:
 
                     if not READONLY_MODE:
                         shutil.move(fomod_folder_path, new_folder_path)
-                    cleanup_list.append(f"MOVED > '{relative_path}' FOLDER TO > '{backup_path}' \n")
+                    cleanup_list.append(f"MOVED > '{relative_path}' FOLDER TO > '{backup_path}'\n")
 
             for filename in files:
                 filename_lower = filename.lower()
@@ -665,7 +665,7 @@ def scan_mods_unpacked() -> str:
                     if not READONLY_MODE:
                         new_file_path.parent.mkdir(parents=True, exist_ok=True)
                         shutil.move(file_path, new_file_path)
-                    cleanup_list.append(f"MOVED > '{relative_path}' FILE TO > '{backup_path}' \n")
+                    cleanup_list.append(f"MOVED > '{relative_path}' FILE TO > '{backup_path}'\n")
 
         print("✔️ CLEANUP COMPLETE! NOW ANALYZING ALL UNPACKED/LOOSE MOD FILES...")
 
@@ -686,17 +686,17 @@ def scan_mods_unpacked() -> str:
                         height = struct.unpack("<I", dds_data[16:20])[0]
                         if width % 2 != 0 or height % 2 != 0:
                             modscan_list.add(
-                                f"[!] CAUTION (DDS-DIMS) : {relative_path} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n"
+                                f"[!] CAUTION (DDS-DIMS) : {relative_path} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2\n"
                             )
                 # ================================================
                 # DETECT INVALID TEXTURE FILE FORMATS
                 elif file_ext in {".tga", ".png"} and "BodySlide" not in file_path.parts:
-                    modscan_list.add(f"[-] NOTICE (-FORMAT-) : {relative_path} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS \n")
+                    modscan_list.add(f"[-] NOTICE (-FORMAT-) : {relative_path} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS\n")
                 # ================================================
                 # DETECT INVALID SOUND FILE FORMATS
                 elif file_ext in {".mp3", ".m4a"}:
                     modscan_list.add(
-                        f"[-] NOTICE (-FORMAT-) : {root_main} > {filename} > HAS THE WRONG SOUND FORMAT, SHOULD BE XWM OR WAV \n"
+                        f"[-] NOTICE (-FORMAT-) : {root_main} > {filename} > HAS THE WRONG SOUND FORMAT, SHOULD BE XWM OR WAV\n"
                     )
                 # ================================================
                 # DETECT MODS WITH SCRIPT EXTENDER FILE COPIES
@@ -704,14 +704,13 @@ def scan_mods_unpacked() -> str:
                 elif any(filename_lower == key.lower() for key in xse_scriptfiles) and "workshop framework" not in str(root).lower():
                     if f"Scripts\\{filename}" in str(file_path):
                         modscan_list.add(
-                            f"[!] CAUTION (XSE-COPY) : {root_main} > CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES \n"
+                            f"[!] CAUTION (XSE-COPY) : {root_main} > CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES\n"
                         )
                 # ================================================
                 # DETECT MODS WITH PRECOMBINE / PREVIS FILES
                 # TODO: Look only in the previsibine folders specifically for these instead of walking all files.
                 elif filename_lower.endswith((".uvd", "_oc.nif")):
-                    modscan_list.add(f"[!] CAUTION (-PREVIS-) : {root_main} > CONTAINS LOOSE PRECOMBINE / PREVIS FILES \n")
-
+                    modscan_list.add(f"[!] CAUTION (-PREVIS-) : {root_main} > CONTAINS LOOSE PRECOMBINE / PREVIS FILES\n")
 
         message_list.extend((
             str(CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_Reminders")),
@@ -759,7 +758,7 @@ def scan_mods_archived() -> str:
                     continue
 
                 if header[:4] != b"BTDX" or header[8:] not in {b"DX10", b"GNRL"}:
-                    modscan_list.add(f"[!] NOTICE (-FORMAT-) : ({filename}) HAS AN UNKNOWN ARCHIVE FORMAT ({header!s})")
+                    modscan_list.add(f"[!] NOTICE (-FORMAT-) : ({filename}) HAS AN UNKNOWN ARCHIVE FORMAT ({header!s})\n")
                     continue
 
                 if header[8:] == b"DX10":
@@ -789,7 +788,7 @@ def scan_mods_archived() -> str:
                         # DETECT INVALID TEXTURE FILE FORMATS
                         if "Ext: dds" not in block_split[1]:
                             modscan_list.add(
-                                f"[!] CAUTION (-FORMAT-) : ({filename}) {block_split[0]} HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS"
+                                f"[!] CAUTION (-FORMAT-) : ({filename}) {block_split[0]} HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS\n"
                             )
                             continue
 
@@ -798,7 +797,7 @@ def scan_mods_archived() -> str:
                         _, width, _, height, _ = block_split[2].split(maxsplit=4)
                         if (width.isdecimal() and int(width) % 2 != 0) or (height.isdecimal() and int(height) % 2 != 0):
                             modscan_list.add(
-                                f"[!] CAUTION (DDS-DIMS) : ({filename}) {block_split[0]} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 \n"
+                                f"[!] CAUTION (DDS-DIMS) : ({filename}) {block_split[0]} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2\n"
                             )
 
                 else:
@@ -814,13 +813,11 @@ def scan_mods_archived() -> str:
                         # ================================================
                         # DETECT INVALID SOUND FILE FORMATS
                         if file.endswith((".mp3", ".m4a")):
-                            modscan_list.add(
-                                f"[-] NOTICE (-FORMAT-) : {filename} > BA2 ARCHIVE CONTAINS SOUND FILES IN THE WRONG FORMAT \n"
-                            )
+                            modscan_list.add(f"[-] NOTICE (-FORMAT-) : {filename} > BA2 ARCHIVE CONTAINS SOUND FILES IN THE WRONG FORMAT\n")
                         # ================================================
                         # DETECT MODS WITH AnimationFileData
                         if "animationfiledata" in file:
-                            modscan_list.add(f"[-] NOTICE (ANIMDATA) : {filename} > BA2 ARCHIVE CONTAINS CUSTOM ANIMATION FILE DATA \n")
+                            modscan_list.add(f"[-] NOTICE (ANIMDATA) : {filename} > BA2 ARCHIVE CONTAINS CUSTOM ANIMATION FILE DATA\n")
                         # ================================================
                         # DETECT MODS WITH SCRIPT EXTENDER FILE COPIES
                         if (
@@ -828,13 +825,13 @@ def scan_mods_archived() -> str:
                             and "workshop framework" not in str(root).lower()
                         ):
                             modscan_list.add(
-                                f"[!] CAUTION (XSE-COPY) : {filename} > BA2 ARCHIVE CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES \n"
+                                f"[!] CAUTION (XSE-COPY) : {filename} > BA2 ARCHIVE CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES\n"
                             )
                         # ================================================
                         # DETECT MODS WITH PRECOMBINE / PREVIS FILES
                         if file.endswith((".uvd", "_oc.nif")) and "previs repair pack" not in str(root).lower():
                             modscan_list.add(
-                                f"[-] NOTICE (-PREVIS-) : {filename} > BA2 ARCHIVE CONTAINS CUSTOM PRECOMBINE / PREVIS FILES \n"
+                                f"[-] NOTICE (-PREVIS-) : {filename} > BA2 ARCHIVE CONTAINS CUSTOM PRECOMBINE / PREVIS FILES\n"
                             )
 
     return "".join(message_list) + "".join(sorted(modscan_list))
@@ -872,7 +869,7 @@ def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REM
                         elif destination_file.is_file():
                             destination_file.unlink(missing_ok=True)
                         shutil.copytree(file, destination_file)
-            print(f"✔️ SUCCESSFULLY CREATED A BACKUP OF {list_name} FILES \n")
+            print(f"✔️ SUCCESSFULLY CREATED A BACKUP OF {list_name} FILES\n")
         except PermissionError:
             print(f"❌ ERROR : UNABLE TO BACKUP {list_name} FILES DUE TO FILE PERMISSIONS!")
             print("    TRY RUNNING CLASSIC.EXE IN ADMIN MODE TO RESOLVE THIS PROBLEM.\n")
@@ -891,7 +888,7 @@ def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REM
                         elif file.exists():
                             file.unlink(missing_ok=True)
                         shutil.copytree(destination_file, file)
-            print(f"✔️ SUCCESSFULLY RESTORED {list_name} FILES TO THE GAME FOLDER \n")
+            print(f"✔️ SUCCESSFULLY RESTORED {list_name} FILES TO THE GAME FOLDER\n")
         except PermissionError:
             print(f"❌ ERROR : UNABLE TO RESTORE {list_name} FILES DUE TO FILE PERMISSIONS!")
             print("    TRY RUNNING CLASSIC.EXE IN ADMIN MODE TO RESOLVE THIS PROBLEM.\n")
@@ -905,7 +902,7 @@ def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REM
                         file.unlink(missing_ok=True)
                     elif file.is_dir():
                         os.removedirs(file)
-            print(f"✔️ SUCCESSFULLY REMOVED {list_name} FILES FROM THE GAME FOLDER \n")
+            print(f"✔️ SUCCESSFULLY REMOVED {list_name} FILES FROM THE GAME FOLDER\n")
         except PermissionError:
             print(f"❌ ERROR : UNABLE TO REMOVE {list_name} FILES DUE TO FILE PERMISSIONS!")
             print("  TRY RUNNING CLASSIC.EXE IN ADMIN MODE TO RESOLVE THIS PROBLEM.\n")
