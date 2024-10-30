@@ -191,7 +191,7 @@ class ConfigFileCache:
         return self._config_files.items()
 
 
-def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | None = None) -> Any | None:
+def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | bool | int | None = None) -> Any | None:
     """Read the TOML file"""
     with CMain.open_file_with_encoding(toml_path) as toml_file:
         data = tomlkit.parse(toml_file.read())
@@ -262,7 +262,7 @@ def check_crashgen_settings() -> str:
             "# ❌ CAUTION : The Achievements Mod and/or Unlimited Survival Mode is installed, but Achievements is set to TRUE #\n",
             f"    Auto Scanner will change this parameter to FALSE to prevent conflicts with {crashgen_name}.\n-----\n",
         ))
-        mod_toml_config(crashgen_toml_main, "Patches", "Achievements", "False")
+        mod_toml_config(crashgen_toml_main, "Patches", "Achievements", False)
     else:
         message_list.append(f"✔️ Achievements parameter is correctly configured in your {crashgen_name} settings!\n-----\n")
 
@@ -272,13 +272,13 @@ def check_crashgen_settings() -> str:
             f" FIX: Uninstall the Baka ScrapHeap Mod, this prevents conflicts with {crashgen_name}.\n-----\n",
         ))
         if not Has_XCell:
-            mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", "True")
+            mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", True)
     elif Has_XCell and mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager"):
         message_list.extend((
             "# ❌ CAUTION : The X-Cell Mod is installed, but MemoryManager parameter is set to TRUE #\n",
             "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell.\n-----\n",
         ))
-        mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", "False")
+        mod_toml_config(crashgen_toml_main, "Patches", "MemoryManager", False)
     else:
         message_list.append(f"✔️ Memory Manager parameter is correctly configured in your {crashgen_name} settings!\n-----\n")
 
@@ -287,7 +287,7 @@ def check_crashgen_settings() -> str:
             "# ❌ CAUTION : The X-Cell Mod is installed, but HavokMemorySystem parameter is set to TRUE #\n",
             "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell.\n-----\n",
         ))
-        mod_toml_config(crashgen_toml_main, "Patches", "HavokMemorySystem", "False")
+        mod_toml_config(crashgen_toml_main, "Patches", "HavokMemorySystem", False)
     else:
         message_list.append(f"✔️ HavokMemorySystem parameter is correctly configured in your {crashgen_name} settings!\n-----\n")
 
@@ -296,7 +296,7 @@ def check_crashgen_settings() -> str:
             "# ❌ CAUTION : The X-Cell Mod is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE #\n",
             "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell.\n-----\n",
         ))
-        mod_toml_config(crashgen_toml_main, "Patches", "BSTextureStreamerLocalHeap", "False")
+        mod_toml_config(crashgen_toml_main, "Patches", "BSTextureStreamerLocalHeap", False)
     else:
         message_list.append(f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured in your {crashgen_name} settings!\n-----\n")
 
@@ -305,7 +305,7 @@ def check_crashgen_settings() -> str:
             "# ❌ CAUTION : The X-Cell Mod is installed, but ScaleformAllocator parameter is set to TRUE #\n",
             "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell.\n-----\n",
         ))
-        mod_toml_config(crashgen_toml_main, "Patches", "ScaleFormAllocator", "False")
+        mod_toml_config(crashgen_toml_main, "Patches", "ScaleFormAllocator", False)
     else:
         message_list.append(f"✔️ ScaleformAllocator parameter is correctly configured in your {crashgen_name} settings!\n-----\n")
 
@@ -314,7 +314,7 @@ def check_crashgen_settings() -> str:
             "# ❌ CAUTION : The X-Cell Mod is installed, but SmallBlockAllocator parameter is set to TRUE #\n",
             "    Auto Scanner will change this parameter to FALSE to prevent conflicts with X-Cell.\n-----\n",
         ))
-        mod_toml_config(crashgen_toml_main, "Patches", "SmallBlockAllocator", "False")
+        mod_toml_config(crashgen_toml_main, "Patches", "SmallBlockAllocator", False)
     else:
         message_list.append(f"✔️ SmallBlockAllocator parameter is correctly configured in your {crashgen_name} settings!\n-----\n")
 
@@ -323,7 +323,7 @@ def check_crashgen_settings() -> str:
             "# ❌ CAUTION : Looks Menu is installed, but F4EE parameter under [Compatibility] is set to FALSE #\n",
             "    Auto Scanner will change this parameter to TRUE to prevent bugs and crashes from Looks Menu.\n-----\n",
         ))
-        mod_toml_config(crashgen_toml_main, "Compatibility", "F4EE", "True")
+        mod_toml_config(crashgen_toml_main, "Compatibility", "F4EE", True)
     else:
         message_list.append(f"✔️ F4EE (Looks Menu) parameter is correctly configured in your {crashgen_name} settings!\n-----\n")
 
