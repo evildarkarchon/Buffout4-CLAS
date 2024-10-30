@@ -15,20 +15,19 @@ from bs4 import BeautifulSoup, PageElement
 
 import CLASSIC_Main as CMain
 
-# For testing
-READONLY_MODE = False
+# For comparing results across runs.
+# Skips moving/editing files; outputs to 'CLASSIC GFS Report.md' instead of console.
+TEST_MODE = False
 
 
 # ================================================
 # DEFINE MAIN FILE / YAML FUNCTIONS
 # ================================================
 class ConfigFile(TypedDict):
-    # bytes: bytes
     encoding: str
     path: Path
     settings: iniparse.ConfigParser
     text: str
-    # text_lower: str
 
 
 class ConfigFileCache:
@@ -41,7 +40,7 @@ class ConfigFileCache:
         self._config_files = {}
         self.duplicate_files = {}
 
-        self._game_root_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game")
+        self._game_root_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars['vr']}_Info.Root_Folder_Game")
         if self._game_root_path is None:
             # TODO: Check if this needs to raise or return an error message instead. (See also: TODO in scan_mod_inis)
             raise FileNotFoundError
@@ -93,12 +92,10 @@ class ConfigFileCache:
         config.readfp(io.StringIO(file_text, newline=None))
 
         self._config_file_cache[file_name_lower] = {
-            # "bytes": file_bytes,
             "encoding": file_encoding,
             "path": file_path,
             "settings": config,
             "text": file_text,
-            # "text_lower": file_text.lower(),
         }
 
     def get[T](self, value_type: type[T], file_name_lower: str, section: str, setting: str) -> T | None:
@@ -175,7 +172,7 @@ class ConfigFileCache:
             config.add_section(section)
         config.set(section, setting, value)
 
-        if not READONLY_MODE:
+        if not TEST_MODE:
             with cache["path"].open("w", encoding=cache["encoding"]) as f:
                 config.write(f)
 
@@ -206,7 +203,7 @@ def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | No
     # If a new value is provided, update the key
     if new_value is not None:
         data[section][key] = new_value  # pyright: ignore[reportIndexIssue]
-        if not READONLY_MODE:
+        if not TEST_MODE:
             with toml_path.open("w") as toml_file:
                 toml_file.write(data.as_string())
     return current_value
@@ -217,8 +214,8 @@ def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | No
 # ================================================
 def check_crashgen_settings() -> str:
     message_list: list[str] = []
-    plugins_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars["vr"]}_Info.Game_Folder_Plugins")
-    crashgen_name_setting = CMain.yaml_settings(str, CMain.YAML.Game, f"Game{CMain.gamevars["vr"]}_Info.CRASHGEN_LogName")
+    plugins_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars['vr']}_Info.Game_Folder_Plugins")
+    crashgen_name_setting = CMain.yaml_settings(str, CMain.YAML.Game, f"Game{CMain.gamevars['vr']}_Info.CRASHGEN_LogName")
     crashgen_name = crashgen_name_setting if isinstance(crashgen_name_setting, str) else ""
 
     crashgen_toml_og = plugins_path / "Buffout4/config.toml" if plugins_path else None
@@ -380,7 +377,7 @@ def check_log_errors(folder_path: Path | str) -> str:
 # ================================================
 def check_xse_plugins() -> str:  # RESERVED | Might be expanded upon in the future.
     message_list: list[str] = []
-    plugins_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars["vr"]}_Info.Game_Folder_Plugins")
+    plugins_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars['vr']}_Info.Game_Folder_Plugins")
     # TODO: Add NG version
     adlib_versions = {
         "VR Mode": ("version-1-2-72-0.csv", "Virtual Reality (VR) version", "https://www.nexusmods.com/fallout4/mods/64879?tab=files"),
@@ -418,7 +415,7 @@ def check_xse_plugins() -> str:  # RESERVED | Might be expanded upon in the futu
 # ================================================
 def papyrus_logging() -> tuple[str, int]:
     message_list: list[str] = []
-    papyrus_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars["vr"]}_Info.Docs_File_PapyrusLog")
+    papyrus_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars['vr']}_Info.Docs_File_PapyrusLog")
 
     count_dumps = count_stacks = count_warnings = count_errors = 0
     if papyrus_path and papyrus_path.exists():
@@ -462,7 +459,7 @@ def papyrus_logging() -> tuple[str, int]:
 def scan_wryecheck() -> str:
     message_list: list[str] = []
     wrye_missinghtml_setting = CMain.yaml_settings(str, CMain.YAML.Game, "Warnings_MODS.Warn_WRYE_MissingHTML")
-    wrye_plugincheck = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars["vr"]}_Info.Docs_File_WryeBashPC")
+    wrye_plugincheck = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars['vr']}_Info.Docs_File_WryeBashPC")
     wrye_warnings_setting = CMain.yaml_settings(dict[str, str], CMain.YAML.Main, "Warnings_WRYE")
 
     wrye_missinghtml = wrye_missinghtml_setting if isinstance(wrye_missinghtml_setting, str) else None
@@ -471,7 +468,7 @@ def scan_wryecheck() -> str:
     if wrye_plugincheck and wrye_plugincheck.is_file():
         message_list.extend((
             "\n✔️ WRYE BASH PLUGIN CHECKER REPORT WAS FOUND! ANALYZING CONTENTS...\n",
-            f"  [This report is located in your Documents/My Games/{CMain.gamevars["game"]} folder.]\n",
+            f"  [This report is located in your Documents/My Games/{CMain.gamevars['game']} folder.]\n",
             "  [To hide this report, remove *ModChecker.html* from the same folder.]\n",
         ))
         with CMain.open_file_with_encoding(wrye_plugincheck) as WB_Check:
@@ -498,7 +495,7 @@ def scan_wryecheck() -> str:
                     diff = 32 - len(title)
                     left = diff // 2
                     right = diff - left
-                    message_list.append(f"\n   {"=" * left} {title} {"=" * right}\n")
+                    message_list.append(f"\n   {'=' * left} {title} {'=' * right}\n")
                 else:
                     message_list.append(title)
 
@@ -552,46 +549,47 @@ def scan_mod_inis() -> str:
                 "You can test your initial startup time difference by removing this setting from the INI file.\n-----\n",
             ))
 
-    if config_files.get(bool, "dxvk.conf", f"{CMain.gamevars["game"]}.exe", "dxgi.syncInterval"):
-        vsync_list.append(f"{config_files["dxvk.conf"]} | SETTING: dxgi.syncInterval\n")
+    # TODO: Support for other exe file names
+    if config_files.get(bool, "dxvk.conf", f"{CMain.gamevars['game']}.exe", "dxgi.syncInterval"):
+        vsync_list.append(f"{config_files['dxvk.conf']} | SETTING: dxgi.syncInterval\n")
     if config_files.get(bool, "enblocal.ini", "ENGINE", "ForceVSync"):
-        vsync_list.append(f"{config_files["enblocal.ini"]} | SETTING: ForceVSync\n")
+        vsync_list.append(f"{config_files['enblocal.ini']} | SETTING: ForceVSync\n")
     if config_files.get(bool, "longloadingtimesfix.ini", "Limiter", "EnableVSync"):
-        vsync_list.append(f"{config_files["longloadingtimesfix.ini"]} | SETTING: EnableVSync\n")
+        vsync_list.append(f"{config_files['longloadingtimesfix.ini']} | SETTING: EnableVSync\n")
     if config_files.get(bool, "reshade.ini", "APP", "ForceVsync"):
-        vsync_list.append(f"{config_files["reshade.ini"]} | SETTING: ForceVsync\n")
+        vsync_list.append(f"{config_files['reshade.ini']} | SETTING: ForceVsync\n")
     if config_files.get(bool, "fallout4_test.ini", "CreationKit", "VSyncRender"):
-        vsync_list.append(f"{config_files["fallout4_test.ini"]} | SETTING: VSyncRender\n")
+        vsync_list.append(f"{config_files['fallout4_test.ini']} | SETTING: VSyncRender\n")
 
     if "; F10" in config_files.get_strict(str, "espexplorer.ini", "General", "HotKey"):
         config_files.set(str, "espexplorer.ini", "General", "HotKey", "0x79")
-        CMain.logger.info(f"> > > PERFORMED INI HOTKEY FIX FOR {config_files["espexplorer.ini"]}")
-        message_list.append(f"> Performed INI Hotkey Fix For : {config_files["espexplorer.ini"]}\n")
+        CMain.logger.info(f"> > > PERFORMED INI HOTKEY FIX FOR {config_files['espexplorer.ini']}")
+        message_list.append(f"> Performed INI Hotkey Fix For : {config_files['espexplorer.ini']}\n")
 
     if config_files.get_strict(int, "epo.ini", "Particles", "iMaxDesired") > 5000:
         config_files.set(int, "epo.ini", "Particles", "iMaxDesired", 5000)
-        CMain.logger.info(f"> > > PERFORMED INI PARTICLE COUNT FIX FOR {config_files["epo.ini"]}")
-        message_list.append(f"> Performed INI Particle Count Fix For : {config_files["epo.ini"]}\n")
+        CMain.logger.info(f"> > > PERFORMED INI PARTICLE COUNT FIX FOR {config_files['epo.ini']}")
+        message_list.append(f"> Performed INI Particle Count Fix For : {config_files['epo.ini']}\n")
 
     if "f4ee.ini" in config_files:
         if config_files.get(int, "f4ee.ini", "CharGen", "bUnlockHeadParts") == 0:
             config_files.set(int, "f4ee.ini", "CharGen", "bUnlockHeadParts", 1)
-            CMain.logger.info(f"> > > PERFORMED INI HEAD PARTS UNLOCK FOR {config_files["f4ee.ini"]}")
-            message_list.append(f"> Performed INI Head Parts Unlock For : {config_files["f4ee.ini"]}\n")
+            CMain.logger.info(f"> > > PERFORMED INI HEAD PARTS UNLOCK FOR {config_files['f4ee.ini']}")
+            message_list.append(f"> Performed INI Head Parts Unlock For : {config_files['f4ee.ini']}\n")
 
         if config_files.get(int, "f4ee.ini", "CharGen", "bUnlockTints") == 0:
             config_files.set(int, "f4ee.ini", "CharGen", "bUnlockTints", 1)
-            CMain.logger.info(f"> > > PERFORMED INI FACE TINTS UNLOCK FOR {config_files["f4ee.ini"]}")
-            message_list.append(f"> Performed INI Face Tints Unlock For : {config_files["f4ee.ini"]}\n")
+            CMain.logger.info(f"> > > PERFORMED INI FACE TINTS UNLOCK FOR {config_files['f4ee.ini']}")
+            message_list.append(f"> Performed INI Face Tints Unlock For : {config_files['f4ee.ini']}\n")
 
     if "highfpsphysicsfix.ini" in config_files:
         if config_files.get(bool, "highfpsphysicsfix.ini", "Main", "EnableVSync"):
-            vsync_list.append(f"{config_files["highfpsphysicsfix.ini"]} | SETTING: EnableVSync\n")
+            vsync_list.append(f"{config_files['highfpsphysicsfix.ini']} | SETTING: EnableVSync\n")
 
         if config_files.get_strict(float, "highfpsphysicsfix.ini", "Limiter", "LoadingScreenFPS") < 600.0:
             config_files.set(float, "highfpsphysicsfix.ini", "Limiter", "LoadingScreenFPS", 600.0)
-            CMain.logger.info(f"> > > PERFORMED INI LOADING SCREEN FPS FIX FOR {config_files["highfpsphysicsfix.ini"]}")
-            message_list.append(f"> Performed INI Loading Screen FPS Fix For : {config_files["highfpsphysicsfix.ini"]}\n")
+            CMain.logger.info(f"> > > PERFORMED INI LOADING SCREEN FPS FIX FOR {config_files['highfpsphysicsfix.ini']}")
+            message_list.append(f"> Performed INI Loading Screen FPS Fix For : {config_files['highfpsphysicsfix.ini']}\n")
 
     if vsync_list:
         message_list.extend((
@@ -604,7 +602,6 @@ def scan_mod_inis() -> str:
         for paths in config_files.duplicate_files.values():
             all_duplicates.extend(paths)
         all_duplicates.extend([fp for f, fp in config_files.items() if f in config_files.duplicate_files])
-        # all_duplicates = [*p for p in config_files.duplicate_files.values()] + [str(fp) for f, fp in config_files.items() if f in config_files.duplicate_files]
         message_list.extend((
             "* NOTICE : DUPLICATES FOUND OF THE FOLLOWING FILES *\n",
             *[str(p) for p in sorted(all_duplicates, key=lambda p: p.name)],
@@ -616,118 +613,191 @@ def scan_mod_inis() -> str:
 # CHECK ALL UNPACKED / LOOSE MOD FILES
 # ================================================
 def scan_mods_unpacked() -> str:
-    message_list: list[str] = []
-    cleanup_list: list[str] = []
-    modscan_list: set[str] = set()
-    xse_acronym_setting = CMain.yaml_settings(str, CMain.YAML.Game, f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym")
-    xse_scriptfiles_setting = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, f"Game{CMain.gamevars["vr"]}_Info.XSE_HashedScripts")
+    message_list: list[str] = [
+        "=================== MOD FILES SCAN ====================\n",
+        "========= RESULTS FROM UNPACKED / LOOSE FILES =========\n",
+    ]
+    cleanup_list: set[str] = set()
+    animdata_list: set[str] = set()
+    tex_dims_list: set[str] = set()
+    tex_frmt_list: set[str] = set()
+    snd_frmt_list: set[str] = set()
+    xse_file_list: set[str] = set()
+    previs_list: set[str] = set()
+    xse_acronym_setting = CMain.yaml_settings(str, CMain.YAML.Game, f"Game{CMain.gamevars['vr']}_Info.XSE_Acronym")
+    xse_scriptfiles_setting = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, f"Game{CMain.gamevars['vr']}_Info.XSE_HashedScripts")
 
     xse_acronym = xse_acronym_setting if isinstance(xse_acronym_setting, str) else "XSE"
     xse_scriptfiles = xse_scriptfiles_setting if isinstance(xse_scriptfiles_setting, dict) else {}
 
     backup_path = Path("CLASSIC Backup/Cleaned Files")
-    if not READONLY_MODE:
+    if not TEST_MODE:
         backup_path.mkdir(parents=True, exist_ok=True)
+
     mod_path = CMain.classic_settings(Path, "MODS Folder Path")
     if not mod_path:
-        message_list.append(str(CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_Path_Missing")))
-    elif not mod_path.is_dir():
-        message_list.append(str(CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_Path_Invalid")))
-    else:
-        filter_names = ("readme", "changes", "changelog", "change log")
-        print("✔️ MODS FOLDER PATH FOUND! PERFORMING INITIAL MOD FILES CLEANUP...")
-        for root, dirs, files in mod_path.walk(top_down=False):
-            root_main = root.relative_to(mod_path).parent
-            for dirname in dirs:
-                # ================================================
-                # DETECT MODS WITH AnimationFileData
-                if dirname.lower() == "animationfiledata":
-                    modscan_list.add(f"[-] NOTICE (ANIMDATA) : {root_main} > CONTAINS CUSTOM ANIMATION FILE DATA\n")
-                # ================================================
-                # (RE)MOVE REDUNDANT FOMOD FOLDERS
-                elif dirname.lower() == "fomod":
-                    fomod_folder_path = root / dirname
-                    relative_path = fomod_folder_path.relative_to(mod_path)
-                    new_folder_path = backup_path / relative_path
+        return str(CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_Path_Missing"))
 
-                    if not READONLY_MODE:
-                        shutil.move(fomod_folder_path, new_folder_path)
-                    cleanup_list.append(f"MOVED > '{relative_path}' FOLDER TO > '{backup_path}'\n")
+    if not mod_path.is_dir():
+        return str(CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_Path_Invalid"))
 
-            for filename in files:
-                filename_lower = filename.lower()
-                # ================================================
-                # (RE)MOVE REDUNDANT README / CHANGELOG FILES
-                if filename_lower.endswith(".txt") and any(name in filename_lower for name in filter_names):
-                    file_path = root / filename
-                    relative_path = file_path.relative_to(mod_path)
-                    new_file_path = backup_path / relative_path
-                    if not READONLY_MODE:
-                        new_file_path.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.move(file_path, new_file_path)
-                    cleanup_list.append(f"MOVED > '{relative_path}' FILE TO > '{backup_path}'\n")
+    print("✔️ MODS FOLDER PATH FOUND! PERFORMING INITIAL MOD FILES CLEANUP...")
 
-        print("✔️ CLEANUP COMPLETE! NOW ANALYZING ALL UNPACKED/LOOSE MOD FILES...")
+    filter_names = ("readme", "changes", "changelog", "change log")
+    for root, dirs, files in mod_path.walk(top_down=False):
+        root_main = root.relative_to(mod_path).parent
+        has_anim_data = False
+        for dirname in dirs:
+            dirname_lower = dirname.lower()
+            # ================================================
+            # DETECT MODS WITH AnimationFileData
+            if not has_anim_data and dirname_lower == "animationfiledata":
+                has_anim_data = True
+                animdata_list.add(f"  - {root_main}\n")
+            # ================================================
+            # (RE)MOVE REDUNDANT FOMOD FOLDERS
+            elif dirname_lower == "fomod":
+                fomod_folder_path = root / dirname
+                relative_path = fomod_folder_path.relative_to(mod_path)
+                new_folder_path = backup_path / relative_path
 
-        for root, _, files in mod_path.walk(top_down=False):
-            root_main = root.relative_to(mod_path).parent
-            for filename in files:
-                filename_lower = filename.lower()
+                if not TEST_MODE:
+                    shutil.move(fomod_folder_path, new_folder_path)
+                cleanup_list.add(f"  - {relative_path}\n")
+
+        for filename in files:
+            filename_lower = filename.lower()
+            # ================================================
+            # (RE)MOVE REDUNDANT README / CHANGELOG FILES
+            if filename_lower.endswith(".txt") and any(name in filename_lower for name in filter_names):
                 file_path = root / filename
                 relative_path = file_path.relative_to(mod_path)
-                file_ext = file_path.suffix.lower()
-                # ================================================
-                # DETECT DDS FILES WITH INCORRECT DIMENSIONS
-                if file_ext == ".dds":
-                    with file_path.open("rb") as dds_file:
-                        dds_data = dds_file.read(20)
-                    if dds_data[:4] == b"DDS ":
-                        width = struct.unpack("<I", dds_data[12:16])[0]
-                        height = struct.unpack("<I", dds_data[16:20])[0]
-                        if width % 2 != 0 or height % 2 != 0:
-                            modscan_list.add(
-                                f"[!] CAUTION (DDS-DIMS) : {relative_path} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2\n"
-                            )
-                # ================================================
-                # DETECT INVALID TEXTURE FILE FORMATS
-                elif file_ext in {".tga", ".png"} and "BodySlide" not in file_path.parts:
-                    modscan_list.add(f"[-] NOTICE (-FORMAT-) : {relative_path} > HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS\n")
-                # ================================================
-                # DETECT INVALID SOUND FILE FORMATS
-                elif file_ext in {".mp3", ".m4a"}:
-                    modscan_list.add(
-                        f"[-] NOTICE (-FORMAT-) : {root_main} > {filename} > HAS THE WRONG SOUND FORMAT, SHOULD BE XWM OR WAV\n"
-                    )
-                # ================================================
-                # DETECT MODS WITH SCRIPT EXTENDER FILE COPIES
-                # TODO: Look only in the scripts folder specifically for these instead of walking all files.
-                elif any(filename_lower == key.lower() for key in xse_scriptfiles) and "workshop framework" not in str(root).lower():
-                    if f"Scripts\\{filename}" in str(file_path):
-                        modscan_list.add(
-                            f"[!] CAUTION (XSE-COPY) : {root_main} > CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES\n"
-                        )
-                # ================================================
-                # DETECT MODS WITH PRECOMBINE / PREVIS FILES
-                # TODO: Look only in the previsibine folders specifically for these instead of walking all files.
-                elif filename_lower.endswith((".uvd", "_oc.nif")):
-                    modscan_list.add(f"[!] CAUTION (-PREVIS-) : {root_main} > CONTAINS LOOSE PRECOMBINE / PREVIS FILES\n")
+                new_file_path = backup_path / relative_path
+                if not TEST_MODE:
+                    new_file_path.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.move(file_path, new_file_path)
+                cleanup_list.add(f"  - {relative_path}\n")
 
-        message_list.extend((
-            str(CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_Reminders")),
-            "========= RESULTS FROM UNPACKED / LOOSE FILES =========\n",
-        ))
+    print("✔️ CLEANUP COMPLETE! NOW ANALYZING ALL UNPACKED/LOOSE MOD FILES...")
 
-    return f"{"".join(message_list)}{"".join(cleanup_list)}{"".join(sorted(modscan_list))}"
+    for root, _, files in mod_path.walk(top_down=False):
+        root_main = root.relative_to(mod_path).parent
+
+        has_previs_files = False
+        has_xse_files = False
+        for filename in files:
+            filename_lower = filename.lower()
+            file_path = root / filename
+            relative_path = file_path.relative_to(mod_path)
+            file_ext = file_path.suffix.lower()
+            # ================================================
+            # DETECT DDS FILES WITH INCORRECT DIMENSIONS
+            if file_ext == ".dds":
+                with file_path.open("rb") as dds_file:
+                    dds_data = dds_file.read(20)
+                if dds_data[:4] == b"DDS ":
+                    # TODO: Warn if magic bytes differ
+                    width = struct.unpack("<I", dds_data[12:16])[0]
+                    height = struct.unpack("<I", dds_data[16:20])[0]
+                    if width % 2 != 0 or height % 2 != 0:
+                        tex_dims_list.add(f"  - {relative_path} ({width}x{height})")
+            # ================================================
+            # DETECT INVALID TEXTURE FILE FORMATS
+            elif file_ext in {".tga", ".png"} and "BodySlide" not in file_path.parts:
+                tex_frmt_list.add(f"  - {file_ext[1:].upper()} : {relative_path}\n")
+            # ================================================
+            # DETECT INVALID SOUND FILE FORMATS
+            elif file_ext in {".mp3", ".m4a"}:
+                snd_frmt_list.add(f"  - {file_ext[1:].upper()} : {relative_path}\n")
+            # ================================================
+            # DETECT MODS WITH SCRIPT EXTENDER FILE COPIES
+            elif (
+                not has_xse_files
+                and any(filename_lower == key.lower() for key in xse_scriptfiles)
+                and "workshop framework" not in str(root).lower()
+                and f"Scripts\\{filename}" in str(file_path)
+            ):
+                has_xse_files = True
+                xse_file_list.add(f"  - {root_main}\n")
+            # ================================================
+            # DETECT MODS WITH PRECOMBINE / PREVIS FILES
+            elif not has_previs_files and filename_lower.endswith((".uvd", "_oc.nif")):
+                has_previs_files = True
+                previs_list.add(f"  - {root_main}\n")
+
+    if xse_file_list:
+        message_list.extend([
+            f"\n# ⚠️ FOLDERS CONTAIN COPIES OF *{xse_acronym}* SCRIPT FILES ⚠️\n",
+            "▶️ Any mods with copies of original Script Extender files\n",
+            "  may cause script related problems or crashes.\n\n",
+            *sorted(xse_file_list),
+        ])
+    if previs_list:
+        message_list.extend([
+            "\n# ⚠️ FOLDERS CONTAIN LOOSE PRECOMBINE / PREVIS FILES ⚠️\n",
+            "▶️ Any mods that contain custom precombine/previs files\n",
+            "  should load after the PRP.esp plugin from Previs Repair Pack (PRP).\n",
+            "  Otherwise, see if there is a PRP patch available for these mods.\n\n",
+            *sorted(previs_list),
+        ])
+    if tex_dims_list:
+        message_list.extend([
+            "\n# ⚠️ DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 ⚠️\n",
+            "▶️ Any mods that have texture files with incorrect dimensions\n",
+            "  are very likely to cause a *Texture (DDS) Crash*. For further details,\n",
+            "  read the *How To Read Crash Logs.pdf* included with the CLASSIC exe.\n\n",
+            *sorted(tex_dims_list),
+        ])
+    if tex_frmt_list:
+        message_list.extend([
+            "\n# ❓ TEXTURE FILES HAVE INCORRECT FORMAT, SHOULD BE DDS ❓\n",
+            "▶️ Any files with an incorrect file format will not work.\n",
+            "  Mod authors should convert these files to their proper game format.\n",
+            "  If possible, notify the original mod authors about these problems.\n\n",
+            *sorted(tex_frmt_list),
+        ])
+    if snd_frmt_list:
+        message_list.extend([
+            "\n# ❓ SOUND FILES HAVE INCORRECT FORMAT, SHOULD BE XWM OR WAV ❓\n",
+            "▶️ Any files with an incorrect file format will not work.\n",
+            "  Mod authors should convert these files to their proper game format.\n",
+            "  If possible, notify the original mod authors about these problems.\n\n",
+            *sorted(snd_frmt_list),
+        ])
+    if animdata_list:
+        message_list.extend([
+            "\n# ❓ FOLDERS CONTAIN CUSTOM ANIMATION FILE DATA ❓\n",
+            "▶️ Any mods that have their own custom Animation File Data\n",
+            "  may rarely cause an *Animation Corruption Crash*. For further details,\n",
+            "  read the *How To Read Crash Logs.pdf* included with the CLASSIC exe.\n\n",
+            *sorted(animdata_list),
+        ])
+    if cleanup_list:
+        message_list.extend([
+            "\n# 📄 DOCUMENTATION FILES MOVED TO 'CLASSIC Backup\\Cleaned Files' 📄\n",
+            *sorted(cleanup_list),
+        ])
+
+    return "".join(message_list)
 
 
 # ================================================
 # CHECK ALL ARCHIVED / BA2 MOD FILES
 # ================================================
 def scan_mods_archived() -> str:
-    message_list: list[str] = []
-    modscan_list: set[str] = set()
-    xse_acronym_setting = CMain.yaml_settings(str, CMain.YAML.Game, f"Game{CMain.gamevars["vr"]}_Info.XSE_Acronym")
-    xse_scriptfiles_setting = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, f"Game{CMain.gamevars["vr"]}_Info.XSE_HashedScripts")
+    message_list: list[str] = [
+        "\n========== RESULTS FROM ARCHIVED / BA2 FILES ==========\n",
+    ]
+    ba2_frmt_list: set[str] = set()
+    animdata_list: set[str] = set()
+    tex_dims_list: set[str] = set()
+    tex_frmt_list: set[str] = set()
+    snd_frmt_list: set[str] = set()
+    xse_file_list: set[str] = set()
+    previs_list: set[str] = set()
+
+    xse_acronym_setting = CMain.yaml_settings(str, CMain.YAML.Game, f"Game{CMain.gamevars['vr']}_Info.XSE_Acronym")
+    xse_scriptfiles_setting = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, f"Game{CMain.gamevars['vr']}_Info.XSE_HashedScripts")
 
     xse_acronym = xse_acronym_setting if isinstance(xse_acronym_setting, str) else ""
     xse_scriptfiles = xse_scriptfiles_setting if isinstance(xse_scriptfiles_setting, dict) else {}
@@ -735,116 +805,173 @@ def scan_mods_archived() -> str:
     bsarch_path = Path.cwd() / "CLASSIC Data/BSArch.exe"
     mod_path = CMain.classic_settings(Path, "MODS Folder Path")
     if not mod_path:
-        message_list.append(str(CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_Path_Missing")))
-    elif not mod_path.exists():
-        message_list.append(str(CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_Path_Invalid")))
-    elif not bsarch_path.exists():
-        message_list.append(str(CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_BSArch_Missing")))
-    else:
-        print("✔️ ALL REQUIREMENTS SATISFIED! NOW ANALYZING ALL BA2 MOD ARCHIVES...")
-        message_list.append("\n========== RESULTS FROM ARCHIVED / BA2 FILES ==========\n")
-        # TODO: Remove dependency on bsarch by reading files directly.
-        for root, _, files in mod_path.walk(top_down=False):
-            for filename in files:
-                if not filename.lower().endswith(".ba2"):
-                    continue
-                file_path = root / filename
+        return str(CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_Path_Missing"))
 
-                try:
-                    with file_path.open("rb") as f:
-                        header = f.read(12)
-                except OSError:
-                    print("Failed to read file:", filename)
+    if not mod_path.exists():
+        return str(CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_Path_Invalid"))
+
+    if not bsarch_path.exists():
+        return str(CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_BSArch_Missing"))
+
+    print("✔️ ALL REQUIREMENTS SATISFIED! NOW ANALYZING ALL BA2 MOD ARCHIVES...")
+
+    for root, _, files in mod_path.walk(top_down=False):
+        for filename in files:
+            filename_lower = filename.lower()
+            if not filename_lower.endswith(".ba2") or filename_lower == "prp - main.ba2":
+                continue
+            file_path = root / filename
+
+            try:
+                with file_path.open("rb") as f:
+                    header = f.read(12)
+            except OSError:
+                print("Failed to read file:", filename)
+                continue
+
+            if header[:4] != b"BTDX" or header[8:] not in {b"DX10", b"GNRL"}:
+                ba2_frmt_list.add(f"  - {filename} : {header!s}\n")
+                continue
+
+            if header[8:] == b"DX10":
+                # Texture-format BA2
+                command_dump = (bsarch_path, file_path, "-dump")
+                archive_dump = subprocess.run(command_dump, shell=True, capture_output=True, text=True, check=False)
+                if archive_dump.returncode != 0:
+                    print("BSArch command failed:", archive_dump.returncode, archive_dump.stderr)
                     continue
 
-                if header[:4] != b"BTDX" or header[8:] not in {b"DX10", b"GNRL"}:
-                    modscan_list.add(f"[!] NOTICE (-FORMAT-) : ({filename}) HAS AN UNKNOWN ARCHIVE FORMAT ({header!s})\n")
+                output_split = archive_dump.stdout.split("\n\n")
+                error_check = output_split[-1]
+                if error_check.startswith("Error:"):
+                    print("BSArch command failed:", error_check, archive_dump.stderr)
                     continue
 
-                if header[8:] == b"DX10":
-                    # Texture-format BA2
-                    command_dump = (bsarch_path, file_path, "-dump")
-                    archive_dump = subprocess.run(command_dump, shell=True, capture_output=True, text=True, check=False)
-                    if archive_dump.returncode != 0:
-                        print("BSArch command failed:", archive_dump.returncode, archive_dump.stderr)
+                for file_block in output_split[4:]:
+                    if not file_block:
                         continue
 
-                    output_split = archive_dump.stdout.split("\n\n")
-                    error_check = output_split[-1]
-                    if error_check.startswith("Error:"):
-                        print("BSArch command failed:", error_check, archive_dump.stderr)
+                    block_split = file_block.split("\n", 3)
+                    # Textures\Props\NukaColaQuantum_d.DDS
+                    #   DirHash: E10CD7B7  NameHash: ECE5A99C  Ext: dds
+                    #   Width:  512  Height:  512  CubeMap: No  Format: DXGI_FORMAT_BC1_UNORM
+
+                    # ================================================
+                    # DETECT INVALID TEXTURE FILE FORMATS
+                    if "Ext: dds" not in block_split[1]:
+                        tex_frmt_list.add(f"  - {block_split[0].rsplit('.', 1)[-1].upper()} : {filename} > {block_split[0]}\n")
                         continue
 
-                    for file_block in output_split[4:]:
-                        if not file_block:
-                            continue
+                    # ================================================
+                    # DETECT DDS FILES WITH INCORRECT DIMENSIONS
+                    _, width, _, height, _ = block_split[2].split(maxsplit=4)
+                    if (width.isdecimal() and int(width) % 2 != 0) or (height.isdecimal() and int(height) % 2 != 0):
+                        tex_dims_list.add(f"  - {width}x{height} : {filename} > {block_split[0]}")
 
-                        block_split = file_block.split("\n", 3)
-                        # Textures\Props\NukaColaQuantum_d.DDS
-                        #   DirHash: E10CD7B7  NameHash: ECE5A99C  Ext: dds
-                        #   Width:  512  Height:  512  CubeMap: No  Format: DXGI_FORMAT_BC1_UNORM
+            else:
+                # General-format BA2
+                command_list = (bsarch_path, file_path, "-list")
+                archive_list = subprocess.run(command_list, shell=True, capture_output=True, text=True, check=False)
+                if archive_list.returncode != 0:
+                    print("BSArch command failed:", archive_list.returncode, archive_list.stderr)
+                    continue
 
-                        # ================================================
-                        # DETECT INVALID TEXTURE FILE FORMATS
-                        if "Ext: dds" not in block_split[1]:
-                            modscan_list.add(
-                                f"[!] CAUTION (-FORMAT-) : ({filename}) {block_split[0]} HAS THE WRONG TEXTURE FORMAT, SHOULD BE DDS\n"
-                            )
-                            continue
+                output_split = archive_list.stdout.lower().split("\n")
+                # Output is a simple list of file paths
+                # Textures\Props\NukaColaQuantum_d.DDS
 
-                        # ================================================
-                        # DETECT DDS FILES WITH INCORRECT DIMENSIONS
-                        _, width, _, height, _ = block_split[2].split(maxsplit=4)
-                        if (width.isdecimal() and int(width) % 2 != 0) or (height.isdecimal() and int(height) % 2 != 0):
-                            modscan_list.add(
-                                f"[!] CAUTION (DDS-DIMS) : ({filename}) {block_split[0]} > {width}x{height} > DDS DIMENSIONS ARE NOT DIVISIBLE BY 2\n"
-                            )
+                has_previs_files = False
+                has_anim_data = False
+                has_xse_files = False
+                for file in output_split[15:]:
+                    # ================================================
+                    # DETECT INVALID SOUND FILE FORMATS
+                    if file.endswith((".mp3", ".m4a")):
+                        snd_frmt_list.add(f"  - {file[-3:].upper()} : {filename} > {file}\n")
+                    # ================================================
+                    # DETECT MODS WITH AnimationFileData
+                    elif not has_anim_data and "animationfiledata" in file:
+                        has_anim_data = True
+                        animdata_list.add(f"  - {filename}\n")
+                    # ================================================
+                    # DETECT MODS WITH SCRIPT EXTENDER FILE COPIES
+                    elif (
+                        not has_xse_files
+                        and any(f"scripts\\{key.lower()}" in file for key in xse_scriptfiles)
+                        and "workshop framework" not in str(root).lower()
+                    ):
+                        has_xse_files = True
+                        xse_file_list.add(f"  - {filename}\n")
+                    # ================================================
+                    # DETECT MODS WITH PRECOMBINE / PREVIS FILES
+                    elif not has_previs_files and file.endswith((".uvd", "_oc.nif")):
+                        has_previs_files = True
+                        previs_list.add(f"  - {filename}\n")
 
-                else:
-                    # General-format BA2
-                    command_list = (bsarch_path, file_path, "-list")
-                    archive_list = subprocess.run(command_list, shell=True, capture_output=True, text=True, check=False)
-                    if archive_list.returncode != 0:
-                        print("BSArch command failed:", archive_list.returncode, archive_list.stderr)
-                        continue
+    if xse_file_list:
+        message_list.extend([
+            f"\n# ⚠️ BA2 ARCHIVES CONTAIN COPIES OF *{xse_acronym}* SCRIPT FILES ⚠️\n",
+            "▶️ Any mods with copies of original Script Extender files\n",
+            "  may cause script related problems or crashes.\n\n",
+            *sorted(xse_file_list),
+        ])
+    if previs_list:
+        message_list.extend([
+            "\n# ⚠️ BA2 ARCHIVES CONTAIN CUSTOM PRECOMBINE / PREVIS FILES ⚠️\n",
+            "▶️ Any mods that contain custom precombine/previs files\n",
+            "  should load after the PRP.esp plugin from Previs Repair Pack (PRP).\n",
+            "  Otherwise, see if there is a PRP patch available for these mods.\n\n",
+            *sorted(previs_list),
+        ])
+    if tex_dims_list:
+        message_list.extend([
+            "\n# ⚠️ DDS DIMENSIONS ARE NOT DIVISIBLE BY 2 ⚠️\n",
+            "▶️ Any mods that have texture files with incorrect dimensions\n",
+            "  are very likely to cause a *Texture (DDS) Crash*. For further details,\n",
+            "  read the *How To Read Crash Logs.pdf* included with the CLASSIC exe.\n\n",
+            *sorted(tex_dims_list),
+        ])
+    if tex_frmt_list:
+        message_list.extend([
+            "\n# ❓ TEXTURE FILES HAVE INCORRECT FORMAT, SHOULD BE DDS ❓\n",
+            "▶️ Any files with an incorrect file format will not work.\n",
+            "  Mod authors should convert these files to their proper game format.\n",
+            "  If possible, notify the original mod authors about these problems.\n\n",
+            *sorted(tex_frmt_list),
+        ])
+    if snd_frmt_list:
+        message_list.extend([
+            "\n# ❓ SOUND FILES HAVE INCORRECT FORMAT, SHOULD BE XWM OR WAV ❓\n",
+            "▶️ Any files with an incorrect file format will not work.\n",
+            "  Mod authors should convert these files to their proper game format.\n",
+            "  If possible, notify the original mod authors about these problems.\n\n",
+            *sorted(snd_frmt_list),
+        ])
+    if animdata_list:
+        message_list.extend([
+            "\n# ❓ BA2 ARCHIVES CONTAIN CUSTOM ANIMATION FILE DATA ❓\n",
+            "▶️ Any mods that have their own custom Animation File Data\n",
+            "  may rarely cause an *Animation Corruption Crash*. For further details,\n",
+            "  read the *How To Read Crash Logs.pdf* included with the CLASSIC exe.\n\n",
+            *sorted(animdata_list),
+        ])
+    if ba2_frmt_list:
+        message_list.extend([
+            "\n# ❓ BA2 ARCHIVES HAVE INCORRECT FORMAT, SHOULD BE BTDX-GNRL OR BTDX-DX10 ❓\n",
+            "▶️ Any files with an incorrect file format will not work.\n",
+            "  Mod authors should convert these files to their proper game format.\n",
+            "  If possible, notify the original mod authors about these problems.\n\n",
+            *sorted(ba2_frmt_list),
+        ])
 
-                    output_split = archive_list.stdout.lower().split("\n")
-                    for file in output_split[15:]:
-                        # ================================================
-                        # DETECT INVALID SOUND FILE FORMATS
-                        if file.endswith((".mp3", ".m4a")):
-                            modscan_list.add(f"[-] NOTICE (-FORMAT-) : {filename} > BA2 ARCHIVE CONTAINS SOUND FILES IN THE WRONG FORMAT\n")
-                        # ================================================
-                        # DETECT MODS WITH AnimationFileData
-                        if "animationfiledata" in file:
-                            modscan_list.add(f"[-] NOTICE (ANIMDATA) : {filename} > BA2 ARCHIVE CONTAINS CUSTOM ANIMATION FILE DATA\n")
-                        # ================================================
-                        # DETECT MODS WITH SCRIPT EXTENDER FILE COPIES
-                        if (
-                            any(f"scripts\\{key.lower()}" in file for key in xse_scriptfiles)
-                            and "workshop framework" not in str(root).lower()
-                        ):
-                            modscan_list.add(
-                                f"[!] CAUTION (XSE-COPY) : {filename} > BA2 ARCHIVE CONTAINS ONE OR SEVERAL COPIES OF *{xse_acronym}* SCRIPT FILES\n"
-                            )
-                        # ================================================
-                        # DETECT MODS WITH PRECOMBINE / PREVIS FILES
-                        if file.endswith((".uvd", "_oc.nif")) and "previs repair pack" not in str(root).lower():
-                            modscan_list.add(
-                                f"[-] NOTICE (-PREVIS-) : {filename} > BA2 ARCHIVE CONTAINS CUSTOM PRECOMBINE / PREVIS FILES\n"
-                            )
-
-    return "".join(message_list) + "".join(sorted(modscan_list))
+    return "".join(message_list)
 
 
 # ================================================
 # BACKUP / RESTORE / REMOVE
 # ================================================
 def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REMOVE"] = "BACKUP") -> None:
-    if READONLY_MODE:
-        return
-
-    game_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game")
+    game_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars['vr']}_Info.Root_Folder_Game")
     manage_list_setting = CMain.yaml_settings(list[str], CMain.YAML.Game, classic_list)
     manage_list = manage_list_setting if isinstance(manage_list_setting, list) else []
 
@@ -912,8 +1039,8 @@ def game_files_manage(classic_list: str, mode: Literal["BACKUP", "RESTORE", "REM
 # COMBINED RESULTS
 # ================================================
 def game_combined_result() -> str:
-    docs_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Docs")
-    game_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars["vr"]}_Info.Root_Folder_Game")
+    docs_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars['vr']}_Info.Root_Folder_Docs")
+    game_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars['vr']}_Info.Root_Folder_Game")
 
     if not (game_path and docs_path):
         return ""
@@ -945,8 +1072,10 @@ def write_combined_results() -> None:
 if __name__ == "__main__":
     CMain.initialize()
     CMain.main_generate_required()
-    print(game_combined_result())
-    print(mods_combined_result())
-    if not READONLY_MODE:
+    if TEST_MODE:
+        write_combined_results()
+    else:
+        print(game_combined_result())
+        print(mods_combined_result())
         game_files_manage("Backup ENB")
         os.system("pause")
