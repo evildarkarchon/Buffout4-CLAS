@@ -38,6 +38,7 @@ class ConfigFileCache:
 
     def __init__(self) -> None:
         self._config_files = {}
+        self._config_file_cache = {}
         self.duplicate_files = {}
 
         self._game_root_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars['vr']}_Info.Root_Folder_Game")
@@ -49,7 +50,7 @@ class ConfigFileCache:
             for file in files:
                 file_lower = file.lower()
                 # if not file_lower.endswith((".ini", ".conf")):
-                if not file_lower.endswith(".ini") or file_lower != "dxvk.conf":  # or file_lower in config_ignores:
+                if not file_lower.endswith(".ini") and file_lower != "dxvk.conf":
                     continue
 
                 file_path = path / file
@@ -173,7 +174,7 @@ class ConfigFileCache:
         config.set(section, setting, value)
 
         if not TEST_MODE:
-            with cache["path"].open("w", encoding=cache["encoding"]) as f:
+            with cache["path"].open("w", encoding=cache["encoding"], newline="") as f:
                 config.write(f)
 
     def has(self, file_name_lower: str, section: str, setting: str) -> bool:
