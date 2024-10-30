@@ -196,15 +196,22 @@ def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | No
     with CMain.open_file_with_encoding(toml_path) as toml_file:
         data = tomlkit.parse(toml_file.read())
 
+    with toml_path.open("rb") as f:
+        file_bytes = f.read()
+    file_encoding = chardet.detect(file_bytes)["encoding"] or "utf-8"
+    file_text = file_bytes.decode(file_encoding)
+    data = tomlkit.parse(file_text)
+
     if section not in data or key not in data[section]:  # pyright: ignore[reportOperatorIssue]
         return None
     current_value = data[section][key]  # pyright: ignore[reportIndexIssue]
 
     # If a new value is provided, update the key
     if new_value is not None:
+        current_value = new_value
         data[section][key] = new_value  # pyright: ignore[reportIndexIssue]
         if not TEST_MODE:
-            with toml_path.open("w") as toml_file:
+            with toml_path.open("w", encoding=file_encoding, newline="") as toml_file:
                 toml_file.write(data.as_string())
     return current_value
 
