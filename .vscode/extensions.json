@@ -9,5 +9,6 @@
 		"tamasfe.even-better-toml",
 		"GitHub.vscode-pull-request-github",
 		"redhat.vscode-yaml",
+		"Gruntfuggly.todo-tree",
 	],
 }

@@ -44,10 +44,21 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
 enable_incomplete_feature = ["NewGenericSyntax"]
+disable_error_code = [
+	"import-untyped",
+	"index",          # Redundant with Pyright reportIndexIssue
+	"name-defined",   # Redundant with Ruff F821
+	"operator",       # Redundant with Pyright reportOperatorIssue
+]
 
 [tool.pyright]
 typeCheckingMode = "standard"
-reportUnusedImport = false    # Redundant with Ruff F401
+reportArgumentType = false         # Redundant with Mypy arg-type
+reportAssignmentType = false       # Redundant with Mypy assignment
+reportMissingParameterType = false # Redundant with Ruff ANN001
+reportReturnType = false           # Redundant with Mypy return-type
+reportUndefinedVariable = false    # Redundant with Ruff F821
+reportUnusedImport = false         # Redundant with Ruff F401
 
 [tool.ruff]
 indent-width = 4
@@ -67,6 +78,7 @@ ignore = [
 	"E501",    # Duplicate of B950 line-too-long
 	"E722",    # Duplicate of B001 bare-except
 	"PLR0904", # too-many-public-methods
+	"PLR0911", # too-many-return-statements
 	"PLR0912", # too-many-branches
 	"PLR0914", # too-many-local-variables
 	"PLR0915", # too-many-statements

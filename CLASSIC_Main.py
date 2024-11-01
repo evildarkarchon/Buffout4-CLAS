@@ -45,11 +45,17 @@ type GameID = Literal["Fallout4", "Skyrim", "Starfield"] # Entries must correspo
 
 class YAML(Enum):
     Main = auto()
+    """CLASSIC Data/databases/CLASSIC Main.yaml"""
     Settings = auto()
+    """CLASSIC Settings.yaml"""
     Ignore = auto()
+    """CLASSIC Ignore.yaml"""
     Game = auto()
+    """CLASSIC Data/databases/CLASSIC Fallout4.yaml"""
     Game_Local = auto()
+    """CLASSIC Data/CLASSIC Fallout4 Local.yaml"""
     TEST = auto()
+    """tests/test_settings.yaml"""
 
 class GameVars(TypedDict):
     game: GameID
@@ -243,7 +249,7 @@ class YamlSettingsCache:
 
         # If new_value is provided, update the value
         if new_value is not None:
-            setting_container[keys[-1]] = new_value  # type: ignore
+            setting_container[keys[-1]] = new_value  # type: ignore[assignment]
 
             # Write changes back to the YAML file
             with yaml_path.open("w", encoding="utf-8") as yaml_file:
@@ -260,13 +266,16 @@ class YamlSettingsCache:
         setting_value = setting_container.get(keys[-1])
         if setting_value is None and keys[-1] not in SETTINGS_IGNORE_NONE:
             print(f"❌ ERROR (yaml_settings) : Trying to grab a None value for : '{key_path}'")
-        return setting_value  # type: ignore
+        return setting_value  # type: ignore[return-value]
 
 
 def yaml_settings[T](_type: type[T], yaml_store: YAML, key_path: str, new_value: T | None = None) -> T | None:
     if yaml_cache is None:
         raise TypeError("CMain not initialized")
-    return yaml_cache.get_setting(_type, yaml_store, key_path, new_value)
+    setting = yaml_cache.get_setting(_type, yaml_store, key_path, new_value)
+    if _type is Path:
+        return Path(setting) if setting and isinstance(setting, str) else None  # type: ignore[return-value]
+    return setting
 
 
 def classic_settings[T](_type: type[T], setting: str) -> T | None:
@@ -482,8 +491,8 @@ def docs_path_find() -> None:
 
     def get_windows_docs_path() -> None:
         try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders") as key: # type: ignore
-                documents_path = Path(winreg.QueryValueEx(key, "Personal")[0])  # type: ignore
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders") as key:  # pyright: ignore[reportPossiblyUnboundVariable]
+                documents_path = Path(winreg.QueryValueEx(key, "Personal")[0])  # pyright: ignore[reportPossiblyUnboundVariable]
         except OSError:
             # Fallback to a default path if registry key is not found
             documents_path = Path.home() / "Documents"
@@ -588,10 +597,10 @@ def game_path_find() -> None:
 
     try:
         # Open the registry key
-        reg_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, rf"SOFTWARE\WOW6432Node\Bethesda Softworks\{gamevars["game"]}{gamevars["vr"]}")  # type: ignore
+        reg_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, rf"SOFTWARE\WOW6432Node\Bethesda Softworks\{gamevars["game"]}{gamevars["vr"]}")  # pyright: ignore[reportPossiblyUnboundVariable]
         # Query the 'installed path' value
-        path, _ = winreg.QueryValueEx(reg_key, "installed path") # type: ignore
-        winreg.CloseKey(reg_key) # type: ignore
+        path, _ = winreg.QueryValueEx(reg_key, "installed path")  # pyright: ignore[reportPossiblyUnboundVariable]
+        winreg.CloseKey(reg_key)  # pyright: ignore[reportPossiblyUnboundVariable]
     except (UnboundLocalError, OSError):
         game_path = None
     else:
@@ -861,7 +870,7 @@ def docs_check_ini(ini_name: str) -> str:
             remove_readonly(ini_path)
 
             INI_config = configparser.ConfigParser()
-            INI_config.optionxform = str  # type: ignore
+            INI_config.optionxform = str  # type: ignore[method-assign, assignment]
             INI_config.read(ini_path)
             message_list.append(f"✔️ No obvious corruption detected in {ini_name}, file seems OK! \n-----\n")
 
