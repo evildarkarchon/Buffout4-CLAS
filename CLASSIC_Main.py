@@ -31,9 +31,6 @@ with contextlib.suppress(ImportError):
     ❓ (..., encoding="utf-8", errors="ignore") needs to go with every opened file because of unicode & charmap errors.
     ❓ import shelve if you want to store persistent data that you do not want regular users to access or modify.
     ❓ Globals are generally used to standardize game paths and INI files naming conventions.
-    -----
-    CO-AUTHOR NOTES (EvilDarkArchon):
-    ❓ We're going to have to special-case (or disable) Starfield Script Extender update checks because it's on Nexus, not silverlock.org.
 """
 
 type YAMLLiteral = str | int | bool
@@ -41,7 +38,7 @@ type YAMLSequence = list[str]
 type YAMLMapping = dict[str, "YAMLValue"]
 type YAMLValue = YAMLMapping | YAMLSequence | YAMLLiteral
 type YAMLValueOptional = YAMLValue | None
-type GameID = Literal["Fallout4", "Skyrim", "Starfield"] # Entries must correspond to the game's My Games folder name.
+type GameID = Literal["Fallout4", "Fallout4VR", "Skyrim", "Starfield"] # Entries must correspond to the game's My Games folder name (only applies to Fallout 4 and Starfield).
 
 class YAML(Enum):
     Main = auto()
@@ -118,9 +115,8 @@ def open_file_with_encoding(file_path: Path | str | os.PathLike) -> Iterator[Tex
     """Read only file open with encoding detection. Only for text files."""
     if not isinstance(file_path, Path):
         file_path = Path(file_path)
-    with file_path.open("rb") as f:
-        raw_data = f.read()
-        encoding = chardet.detect(raw_data)["encoding"]
+    raw_data = file_path.read_bytes()
+    encoding = chardet.detect(raw_data)["encoding"]
 
     file_handle = file_path.open(encoding=encoding, errors="ignore")
     try:
@@ -237,10 +233,10 @@ class YamlSettingsCache:
         data = self.load_yaml(yaml_path)
         keys = key_path.split(".")
 
-        def setdefault(d: dict[str, YAMLValue], k: str) -> dict[str, YAMLValue]:
-            if k not in d:
-                d[k] = {}
-            next_value = d[k]
+        def setdefault(dictionary: dict[str, YAMLValue], key: str) -> dict[str, YAMLValue]:
+            if key not in dictionary:
+                dictionary[key] = {}
+            next_value = dictionary[key]
             if not isinstance(next_value, dict):
                 raise TypeError
             return next_value
@@ -485,39 +481,47 @@ async def is_latest_version(quiet: bool = False, gui_request: bool = True) -> bo
 # =========== CHECK DOCUMENTS FOLDER PATH -> GET GAME DOCUMENTS FOLDER ===========
 def docs_path_find() -> None:
     logger.debug("- - - INITIATED DOCS PATH CHECK")
+
+    # Retrieve the document name from YAML settings
     docs_name = yaml_settings(str, YAML.Game, f"Game{gamevars["vr"]}_Info.Main_Docs_Name")
     if not isinstance(docs_name, str):
         docs_name = gamevars["game"]
 
     def get_windows_docs_path() -> None:
         try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders") as key:  # pyright: ignore[reportPossiblyUnboundVariable]
-                documents_path = Path(winreg.QueryValueEx(key, "Personal")[0])  # pyright: ignore[reportPossiblyUnboundVariable]
-        except OSError:
+            # Open the registry key to get the user's documents path
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders") as key:  # pyright:ignore[reportPossiblyUnboundVariable]
+                documents_path = Path(winreg.QueryValueEx(key, "Personal")[0]) # pyright: ignore[reportPossiblyUnboundVariable]
+        except (OSError, UnboundLocalError):
             # Fallback to a default path if registry key is not found
             documents_path = Path.home() / "Documents"
 
-        # Construct the full path
+        # Construct the full path to the game's documents folder
         win_docs = str(documents_path / "My Games" / docs_name)
 
-        # Update the YAML settings (assuming this function exists)
+        # Update the YAML settings with the documents path
         yaml_settings(str, YAML.Game_Local, f"Game{gamevars["vr"]}_Info.Root_Folder_Docs", win_docs)
 
     def get_linux_docs_path() -> None:
+        # Retrieve the Steam ID from YAML settings
         game_sid = yaml_settings(int, YAML.Game, f"Game{gamevars["vr"]}_Info.Main_SteamID")
         if not isinstance(game_sid, int):
             raise TypeError
-        libraryfolders_path = Path.home().joinpath(".local", "share", "Steam", "steamapps", "common", "libraryfolders.vdf")
+
+        # Path to the Steam library folders configuration file
+        libraryfolders_path = Path.home() / ".local/share/Steam/steamapps/common/libraryfolders.vdf"
+
         if libraryfolders_path.is_file():
             library_path = Path()
             with libraryfolders_path.open(encoding="utf-8", errors="ignore") as steam_library_raw:
                 steam_library = steam_library_raw.readlines()
+
             for library_line in steam_library:
                 if "path" in library_line:
                     library_path = Path(library_line.split('"')[3])
                 if str(game_sid) in library_line:
-                    library_path = library_path.joinpath("steamapps")
-                    linux_docs = library_path.joinpath("compatdata", str(game_sid), "pfx", "drive_c", "users", "steamuser", "My Documents", "My Games", docs_name)
+                    library_path = library_path / "steamapps"
+                    linux_docs = library_path / "compatdata" / str(game_sid) / "pfx/drive_c/users/steamuser/My Documents/My Games" / docs_name
                     yaml_settings(str, YAML.Game_Local, f"Game{gamevars["vr"]}_Info.Root_Folder_Docs", str(linux_docs))
 
     def get_manual_docs_path() -> None:
