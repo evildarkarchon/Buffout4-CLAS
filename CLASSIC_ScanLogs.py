@@ -524,18 +524,19 @@ def crashlogs_scan() -> None:
             for signal in signal_list:
                 if "|" in signal:
                     signal_modifier, signal_string = signal.split("|", 1)
-                    if signal_modifier == "ME-REQ":
-                        has_required_item = True
-                        if signal_string in crashlog_mainerror:
-                            error_req_found = True
-                    elif signal_modifier == "ME-OPT":
-                        if signal_string in crashlog_mainerror:
-                            error_opt_found = True
-                    elif signal_modifier.isdecimal():
-                        if segment_callstack_intact.count(signal_string) >= int(signal_modifier):
-                            stack_found = True
-                    elif signal_modifier == "NOT" and signal_string in segment_callstack_intact:
-                        break
+                    match signal_modifier:
+                        case "ME-REQ":
+                            has_required_item = True
+                            if signal_string in crashlog_mainerror:
+                                error_req_found = True
+                        case "ME-OPT":
+                            if signal_string in crashlog_mainerror:
+                                error_opt_found = True
+                        case _ if signal_modifier.isdecimal():
+                            if segment_callstack_intact.count(signal_string) >= int(signal_modifier):
+                                stack_found = True
+                        case "NOT" if signal_string in segment_callstack_intact:
+                            break
                 elif signal in segment_callstack_intact:
                     stack_found = True
 
