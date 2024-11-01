@@ -400,8 +400,8 @@ def crashlogs_scan() -> None:
         if segment_crashgen:
             for elem in segment_crashgen:
                 if ":" in elem:
-                    k, v = elem.split(":", 1)
-                    crashgen[k] = True if v == " true" else False if v == " false" else int(v) if v.isdecimal() else v.strip()
+                    key, value = elem.split(":", 1)
+                    crashgen[key] = True if value == " true" else False if value == " false" else int(value) if value.isdecimal() else value.strip()
 
         if not segment_plugins:
             stats_crashlog_incomplete += 1
