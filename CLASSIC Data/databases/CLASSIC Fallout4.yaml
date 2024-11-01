@@ -16,7 +16,6 @@ Game_Info:
     - WaitForDebugger
     - Achievements
     - InputSwitch
-    - MemoryManager
     - AutoOpen
     - PromptUpload
     - MemoryManagerDebug
@@ -58,7 +57,7 @@ Game_Info:
     Utility.pex: e10d65904d0a1e9ee568bdaba02636f0183bfa9565b4056758b1461540f9be75
     WaterType.pex: c4f8589ed33f72265e95a6bec2c9cab58667795e972bcf5f7d17c40deed43207
     Weapon.pex: f39cf899d90d47d694873ccaa2a72308c6717f5e36a302d6f95243e53672d77d
-  
+
 
 GameVR_Info:
   Main_Root_Name: Fallout 4 VR
@@ -70,7 +69,7 @@ GameVR_Info:
   CRASHGEN_Acronym: BO4 NG
   CRASHGEN_LogName: Buffout 4
   CRASHGEN_DLL_File: buffout4.dll
-  CRASHGEN_LatestVer: Buffout 4 v1.31.1 Feb 28 2023 00:32:02
+  CRASHGEN_LatestVer: Buffout 4 v1.36.0 Oct 13 2024 01:09:30
   CRASHGEN_Ignore:
     - F4EE
     - WaitForDebugger
@@ -118,7 +117,7 @@ GameVR_Info:
     Utility.pex: 9bff49b59e18636ea84033f362b45f1962c2b3740eb36ad9e9dcae94556f3490
     WaterType.pex: 8711f4a818c1fed8b549f9cfb0fc49186bf6875cd2c8b0146c4e3154da91028f
     Weapon.pex: e9a18d4f7e3aa6b67fb79dee501b221e62e4fbe10baad0b47fb087735f7fb7a9
-  
+
 # =============== GAME FILES BACKUP ==============
 
 Backup ENB:  # BACKUP FOR ENB
@@ -137,7 +136,7 @@ Backup ENB:  # BACKUP FOR ENB
   - enbseries.ini
   - license_en.txt
   - readme_en.txt
-  
+
 Backup RESHADE:  # BACKUP FOR RESHADE
   - ReShade.ini
   - ReShadePreset.ini
@@ -154,7 +153,7 @@ Backup VULKAN:  # BACKUP FOR VULKAN RENDERER
   - vulkaninfo.exe
   - VulkanRT
   - MAGPIE
-  
+
 Backup XSE:  # BACKUP FOR SCRIPT EXTENDER
   - CustomControlMap.txt
   - f4se_loader.exe
@@ -197,9 +196,9 @@ Default_CustomINI: |  # Default settings for *Fallout4Custom.ini* if that file d
 
 Default_FIDMods: |  # Default text for *FO4 FID Mods.yaml* if that file doesn't already exist.
   >>> THIS IS ONLY A PLACEHOLDER | YOU NEED TO GENERATE THIS FILE WITH FO4EDIT!
-  
+
   - CLASSIC can automatically look up (most) values of mod FormIDs, you just need to generate your own FormID List.
-  
+
   - To generate the FormID List:
     1) Place the *Generate FormID List.pas* from the CLASSIC Config folder into your FO4Edit/Edit Scripts folder.
     2) Now run FO4Edit.exe and check all plugins you wish to include in the FormID List (I RECOMMEND YOU CHECK ALL PLUGINS).
@@ -209,19 +208,19 @@ Default_FIDMods: |  # Default text for *FO4 FID Mods.yaml* if that file doesn't 
     6) Now place your own generated *FO4 FID Mods.txt* file into the CLASSIC Config folder and overwrite the existing *FO4 FID Mods* file.
        (Make sure the original *FO4 FID Mods.txt* gets overwritten! If it doesn't, check the name or change the file extension to .txt)
     7) Run CLASSIC, enable *Show FID Values* under CLASSIC Settings and that's it! Scan your crash logs, the autoscan will do the rest.
-    
+
     [!] REMINDERS
-    
+
       - Once you overwrite the original *FO4 FID Mods.txt* (this file), crash log file scan will take (much) longer.
       To ensure the scan doesn't take as long, only scan a few crash logs (less than 10) at any given time.
       [ Delete or move any extra crash log files to another folder so CLASSIC can't find them. ]
-    
+
       - The script will not be able to generate values for ALL FormIDs, around 12% don't have usable names that CLASSIC can display.
       You will see [CHECK MANUALLY WITH XEDIT] for these FormIDs. These are usually NavMesh records, but check with FO4Edit anyway.
-    
+
       - To stop CLASSIC from checking the FormID List, either delete, rename or move your generated *FO4 FID Mods.txt* file somewhere else.
       CLASSIC will simply create this placeholder file again if needed and stop checking FormID values until a new FormID List is provided.
-    
+
 
 Warnings_CRASHGEN:
   Warn_TOML_Achievements: |
@@ -382,7 +381,7 @@ Crashlog_Stack_Check:
 
   5 | Antivirus Crash: [ME-OPT|24A48D48, ME-OPT|bdhkm64.dll, usvfs::hook_DeleteFileW, ::Manager, ::zlibStreamDetail]
 
-  5 | BA2 Limit Crash: [LooseFileAsyncStream]
+  6 | BA2 Limit Crash: [LooseFileAsyncStream]
 
   5 | Grid Scrap Crash: [GridAdjacencyMapNode, PowerUtils]
 
@@ -487,6 +486,23 @@ Mods_CORE:  # 0) MODS THAT EVERY PLAYER SHOULD HAVE INSTALLED
     This is a mandatory patch / fix required for almost all Nvidia GPUs.
     Link: https://www.nexusmods.com/fallout4/mods/48078?tab=files
 
+  NVIDIA_Reflex.dll | Nvidia Reflex Support: |
+    This is a highly recommended mod that can improve performance on Nvidia GPUs.
+    Link: https://www.nexusmods.com/fallout4/mods/64459?tab=files
+
+Mods_CORE_FOLON:
+  CanarySaveFileMonitor | Canary Save File Monitor: |
+    This is a highly recommended mod that can detect save file corruption.
+    Link: https://www.nexusmods.com/fallout4/mods/44949?tab=files
+  HighFPSPhysicsFix | High FPS Physics Fix: |
+    This is a mandatory patch / fix that prevents game engine problems.
+    Link: https://www.nexusmods.com/fallout4/mods/44798?tab=files
+  vulkan-1.dll | Vulkan Renderer: |
+    This is a highly recommended mod that can improve performance on AMD GPUs.
+    Link: https://www.nexusmods.com/fallout4/mods/48053?tab=files
+  WeaponDebrisCrashFix.dll | Nvidia Weapon Debris Fix: |
+    This is a mandatory patch / fix required for almost all Nvidia GPUs.
+    Link: https://www.nexusmods.com/fallout4/mods/48078?tab=files
   NVIDIA_Reflex.dll | Nvidia Reflex Support: |
     This is a highly recommended mod that can improve performance on Nvidia GPUs.
     Link: https://www.nexusmods.com/fallout4/mods/64459?tab=files
@@ -617,7 +633,7 @@ Mods_CONF:  # 2) MODS THAT CONFLICT WITH OTHER MODS
         Both mods likely use the same DLL hooks. This can crash the game or cause weird mod behavior.
         If you encounter problems or crashes, use only one of these mods, not both at the same time.
         -----
-        
+
   vulkan | NVIDIA_Reflex: |
     Vulkan Renderer ❌ CONFLICTS WITH : Nvidia Reflex Support
         Vulkan Renderer can break GPU recognition from NV Reflex Support. This can crash the game or cause weird mod behavior.
@@ -629,28 +645,54 @@ Mods_CONF:  # 2) MODS THAT CONFLICT WITH OTHER MODS
         Both mods make changes to the in-game camera. CLASSIC suggests using Camera Tweaks only, since it's an updated alternative.
         -----
 
-  UniquePlayer | chw: |
+  UniquePlayer | ClassicHolsteredWeapons: |
     Unique Player ❌ CONFLICTS WITH : Classic Holstered Weapons
         Classic Holstered Weapons will not work correctly with mods that modify the player skeleton or add new skeleton paths.
         If you encounter problems or crashes, see here how to add additional skeletons: https://www.nexusmods.com/fallout4/articles/2496
         -----
 
-  HHS | chw: |
+  HHS | ClassicHolsteredWeapons: |
     High Heels System ❌ CONFLICTS WITH : Classic Holstered Weapons
         Classic Holstered Weapons will not work correctly with mods that modify the player skeleton or add new skeleton paths.
         If you encounter problems or crashes, see here how to add additional skeletons: https://www.nexusmods.com/fallout4/articles/2496
         -----
 
-  cbp | chw: |
+  cbp | ClassicHolsteredWeapons: |
     CBP Physics ❌ CONFLICTS WITH : Classic Holstered Weapons
         Classic Holstered Weapons will not work correctly with mods that modify the player skeleton or add new skeleton paths.
         If you encounter problems or crashes, see here how to add additional skeletons: https://www.nexusmods.com/fallout4/articles/2496
         -----
 
-  awkcr | SKKCraftableWeaponsAmmo: |
+  ArmorKeywords | SKKCraftableWeaponsAmmo: |
     Armor And Weapon Keywords ❌ CONFLICTS WITH : SKK Craft Weapons And Scrap Ammo
         SKK Craft Weapons & Ammo Version 008 is incompatible with AWKCR and will cause crashes while saving the game.
         If you encounter problems or crashes, remove AWKCR and / or switch to Equipment and Crafting Overhaul instead.
+        -----
+  fallrimpriority | x-cell-fo4: |
+    Fallout Priority ❌ CONFLICTS WITH : X-Cell
+        X-Cell has equivalent functionality to Fallout Priority when the threads feature is enabled.
+        -----
+  prioritymod | x-cell-fo4: |
+    Fallout Priority ❌ CONFLICTS WITH : X-Cell
+        X-Cell has equivalent functionality to Fallout Priority when the threads feature is enabled.
+        -----
+  bakascrapheap | x-cell-fo4: |
+    Baka ScrapHeap ❌ CONFLICTS WITH : X-Cell
+        X-Cell has equivalent functionality to Baka ScrapHeap when the memory feature is enabled.
+        -----
+  PrivateProfileRedirector | x-cell-fo4: |
+    Private Profile Redirector ❌ CONFLICTS WITH : X-Cell
+        X-Cell has equivalent functionality to Private Profile Redirector when the io feature (changed to profile in v1.2-b2+) is enabled.
+        -----
+  libdiskCacheEnabler | x-cell-fo4: |
+    Disk Cache Enabler ❌ CONFLICTS WITH : X-Cell
+        X-Cell has equivalent functionality to Disk Cache Enabler when the io feature is enabled.
+        -----
+
+  SovietPowerArmor | OpenLexington: |
+    Soviet Power Armor ❌ CONFLICTS WITH : Open Lexington
+        Both mods modify the same location and can cause crashes.
+        You can download a compatibility patch here: https://www.nexusmods.com/fallout4/mods/84930
         -----
 
 
@@ -677,7 +719,7 @@ Mods_SOLU:  # 3) MODS WITH SOLUTIONS & COMMUNITY PATCHES
           Skeleton Fixes: https://www.nexusmods.com/fallout4/mods/56101
         -----
 
-  AWKCR: |
+  ArmorKeywords: |
     Armor And Weapons Keywords
         - If you don't rely on AWKCR, consider switching to Equipment and Crafting Overhaul
           Better Alternative: https://www.nexusmods.com/fallout4/mods/67679?tab=files

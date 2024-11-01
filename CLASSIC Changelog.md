@@ -1,6 +1,96 @@
 =====================================================================================================
 # CLASSIC CHANGELOG #
 
+7.30.3
+*CHANGES*
+- Now queries the registry for the game's install directory first before falling back to parsing the F4SE log
+- Add the ability to toggle the audio notifications, also now uses Qt's built-in sound effect library so we no longer need to bundle NumPy (which was a dependency of the old audio library)
+- Logs copied from F4SE directory now go into a new "Crash Logs" folder (which is automatically created if it doesn't exist). Existing logs in the main CLASSIC directory will be moved to this folder.
+- No longer automatically checks for latest F4SE version since it is obsolete because F4SE is now doing new releases on Nexus.
+
+7.30.2
+*CHANGES*
+- Game installation directory is now properly saved to the local data file.
+- Removed the FormID database creation code and opted for bundling a premade database
+There is also a second database for you to add your own mods form ids to, just add the bundled xEdit script in CLASSIC Data to create the list and use the included tools to add them.
+
+
+7.30.1
+*CHANGES*
+- Prompts for INI directory and Game directory will be handled in the GUI
+- Fixed typos that prevented the detection of X-Cell in FCX mode.
+
+*KNOWN ISSUES*
+The Papyrus log monitor is still a WIP
+
+7.30 (Formerly known as 7.26.1 Unofficial)
+*CHANGE SUMMARY*
+- CLASSIC now uses a database cache, generated on startup, to improve query speed for the "Show FID Values" feature.
+- Fixes the NoneType error, which was caused by the initialization code failing to store the location of the F4SE Address Library.
+- FCX mode no longer crashes when duplicate section entries are found in an INI file or a section it's looking for doesn't exist.
+- Fix FCX mode for Fallout 4 VR. Turns out F4SEVR also uses the F4SE directory and not a separate F4SEVR directory in the "My Games" folder.
+- Add caching code for YAML file lookups to minimize the number of times a file actually needs to be read.
+- Add conflict and configuration checks for perchik71's X-Cell mod.
+- Bump BA2 Limit check's severity to 6 because any other crash suspects are likely the result of the BA2 limit crash.
+- Reclassified loose previsibine files as a *CAUTION* instead of a *NOTICE* since current conensus is that loose previsibine files are problematic.
+- Add separate core mod list for Fallout: London (Right now, it's pretty much the same as the vanilla one, just removes UFO4P and PRP since they are incompatible with FOLON)
+- Brand new UI made with the goal of making the window no longer confined to "650x950". It's still not resizable, but the groundwork is laid to make it scale better for larger resolutions.
+This new UI also no longer pops up a console window, all console output is now printed in a text box in the main window.
+- Custom crash handler that has a button to instantly copy the traceback message to the clipboard.
+- Scans now run off the main thread so the window no longer freezes while scans are running.
+- Update the current Buffout 4 NG version to 1.35.1.
+- Fix plugin tests running when no plugin list was loaded.
+- More fixes and optimizations that didn't make the changelogs of the past.
+
+7.26.1 Unofficial
+*BUG FIXES*
+- Papyrus Monitor no longer launches a new instance of CLASSIC.
+- Fixed formatting errors in Papyrus Monitor that were hidden by the old display method.
+- Revert the initialization threading changes from the previous versions hotfixes.
+
+7.26 Unofficial
+*NEW UI*
+- Scans run off the main thread, so the window no longer freezes when scans are running.
+- Terminal is now embedded into the window, in the text box formerly reserved for the credits.
+- Credits have been moved to an about screen, the button for it is next to the help button.
+I think it looks better like that, anyways.
+- No more custom widgets, which will make maintainance and feature development easier.
+- Crash dialog with a button to easily copy the traceback to the clipboard.
+
+*WHAT'S NOT PORTED YET*
+- The background image, still working on how to integrate it.
+- The game selection box, until there are other games to switch to (Skyrim support is coming someday), there's no point for it to be there.
+
+7.25.12 Unofficial
+*CHANGES*
+- Add encoding detection to INI file checks to prevent issues with some non-latin encodings
+- Update Check will now display in the window instead of the terminal.
+- Minor consistency changes
+- Bump BA2 Limit check to severity 6 because other suspects might actually be triggered by the BA2 limit.
+- Minor backend optimizations
+- Fixed plugin detection for FONG logs.
+
+7.25.11 Unofficial
+*CHANGES*
+- Add separate core mod list for Fallout: London
+
+7.25.10 Unofficial
+*CHANGES*
+- Add Buffout 4 configuration fixes to FCX mode.
+- Added conflict between X-Cell and PrivateProfileRedirector (from 7.25.9-hotfix2)
+
+7.25.9 Unofficial
+*CHANGES*
+- Add conflict and configuration checks for perchik71's X-Cell mod.
+
+7.25.8 Unofficial
+*CHANGES*
+- Check the registry instead of shell32.dll for the location of the "Documents" directory
+- Add a cache to the YAML lookup code to improve performance (hopefully)
+- Reclassified loose previsibine files as a *CAUTION* instead of a *NOTICE* since current conensus is that loose previsibine files are problematic.
+- Fix log stat counting.
+- Change latest Buffout 4 NG version to 1.35.1
+
 7.25.7 Unofficial
 *CHANGES*
 - Further improve exception handling when parsing INI files with FCX mode or Scan Game Files.

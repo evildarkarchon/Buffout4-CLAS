@@ -1,0 +1,34 @@
+{
+	"[python]": {
+		"editor.defaultFormatter": "charliermarsh.ruff",
+	},
+	"files.exclude": {
+		".coverage": true,
+		".git/": true,
+		".venv/": true,
+		".vscode/": false,
+		"*.build/": true,
+		"*.dist/": true,
+		"*.onefile-build/": true,
+		"**/__pycache__/": true,
+		"**/.mypy_cache/": true,
+		"**/.pytest_cache/": true,
+		"**/*.dll": true,
+		"**/*.exe": true,
+		"**/*.lock": true,
+		"**/*.pdf": true,
+		"**/*.zip": true,
+		"**/lcov.info": true,
+		"build/": true,
+		"CLASSIC Data/graphics/": true,
+		"CLASSIC Data/sounds/": true,
+		"dist/": true,
+	},
+	"python.testing.autoTestDiscoverOnSaveEnabled": true,
+	"python.testing.cwd": "${workspaceFolder}",
+	"python.testing.pytestEnabled": true,
+	"python.testing.unittestEnabled": false,
+	"[markdown]": {
+		"files.trimTrailingWhitespace": false
+	},
+}

@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+.mypy_cache/
+.ruff_cache/
+.venv
+*.lock
+*.py[cod]
+*$py.class
+poetry.toml
+venv/
+
+# VSCode
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/tasks.json
+*.code-workspace
+lcov.info
+
+# exe Build Files
+*.build/
+*.dist/
+*.exe
+*.onefile-build/
+*.pdb
+*.spec
+build/
+dist/
+_internal/
+
+# CLASSIC Runtime-Created Files
+*-AUTOSCAN.md
+*.db
+*.log
+*Local.yaml
+CLASSIC Backup/
+CLASSIC GFS Report.md
+CLASSIC Ignore.yaml
+CLASSIC Settings.yaml
+Fallout4 FID*.txt
+FormID_List*
+
+# Test/Dev Files
+.coverage
+.pytest_cache/
+*.bak
+*.dat
+*.dll
+*.old
+*.pyproj
+*.sqbpro
+*.sqdbpro
+*.temp
+*.tmp
+*.xml
+game_vars.py
+test.*
+
+# User Files
+*.zip
+*.7z
+Archive/
+Release/
+Crash Logs/
+compile.py

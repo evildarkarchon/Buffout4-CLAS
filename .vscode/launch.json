@@ -1,0 +1,57 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Run GUI",
+			"type": "debugpy",
+			"request": "launch",
+			"noDebug": true,
+			"cwd": "${workspaceFolder}",
+			"program": "CLASSIC_Interface.py",
+			"console": "integratedTerminal",
+		},
+		{
+			"name": "Run GUI (Clean)",
+			"type": "debugpy",
+			"request": "launch",
+			"noDebug": true,
+			"cwd": "${workspaceFolder}",
+			"program": "CLASSIC_Interface.py",
+			"preLaunchTask": "cleanup",
+			"console": "integratedTerminal",
+		},
+		{
+			"name": "[D] Run GUI",
+			"type": "debugpy",
+			"request": "launch",
+			"cwd": "${workspaceFolder}",
+			"program": "CLASSIC_Interface.py",
+			"console": "integratedTerminal",
+		},
+		{
+			"name": "[D] Run GUI (Clean)",
+			"type": "debugpy",
+			"request": "launch",
+			"cwd": "${workspaceFolder}",
+			"program": "CLASSIC_Interface.py",
+			"preLaunchTask": "cleanup",
+			"console": "integratedTerminal",
+		},
+		{
+			"name": "Compile EXE",
+			"type": "debugpy",
+			"request": "launch",
+			"noDebug": true,
+			"console": "integratedTerminal",
+			"stopOnEntry": false,
+			"justMyCode": true,
+			"cwd": "${workspaceFolder}",
+			"python": "${command:python.interpreterPath}",
+			"module": "poetry run pyinstaller --clean ${workspaceFolder}\\CLASSIC.spec",
+			"postDebugTask": "cleanup-pyinstaller-folders",
+			// Uncomment and edit this if UPX is not added to your PATH environment variable.
+			// It should point to the folder containing upx.exe
+			//"args": "--upx-dir 'C:\\Path\\to\\UPX'",
+		},
+	]
+}
