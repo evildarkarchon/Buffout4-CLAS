@@ -274,7 +274,7 @@ def crashgen_version_gen(input_string: str) -> Version:
     return Version("0.0.0")
 
 @dataclass
-class ClassicScanLogsConfig:
+class ClassicScanLogsInfo:
     classic_game_hints: list[str] = field(default_factory=list)
     classic_records_list: list[str] = field(default_factory=list)
     classic_version: str = ""
@@ -342,7 +342,7 @@ def crashlogs_scan() -> None:
     scan_start_time = time.perf_counter()
     # ================================================
     # Grabbing YAML values is time expensive, so keep these out of the main file loop.
-    yamldata = ClassicScanLogsConfig()  # Moved to a class for better organization.
+    yamldata = ClassicScanLogsInfo()  # Moved to a class for better organization.
 
     xse_acronym = yamldata.xse_acronym.lower()
     fcx_mode = CMain.classic_settings(bool, "FCX Mode")
