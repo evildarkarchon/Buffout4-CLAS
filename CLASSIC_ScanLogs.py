@@ -332,7 +332,6 @@ class ClassicScanLogsInfo:
 # ================================================
 def crashlogs_scan() -> None:
     pluginsearch = re.compile(r"\s*\[(FE:([0-9A-F]{3})|[0-9A-F]{2})\]\s*(.+?(?:\.es[pml])+)", flags=re.IGNORECASE)
-    # is_ng_log = re.compile(r"\s*\[([0-9A-F]{2})\]([^\s]+.*)", flags=re.IGNORECASE)
     crashlog_list = crashlogs_get_files()
     print("REFORMATTING CRASH LOGS, PLEASE WAIT...\n")
     remove_list = CMain.yaml_settings(list[str], CMain.YAML.Main, "exclude_log_records") or []
