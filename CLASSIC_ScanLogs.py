@@ -468,10 +468,6 @@ def crashlogs_scan() -> None:
                     trigger_plugin_limit = True
                 pluginmatch = pluginsearch.match(elem, concurrent=True)
                 if pluginmatch is not None:
-                    # if ng_log_match and ng_log_match.group(1) and ng_log_match.group(2):
-                    #     plugin_fid = pluginmatch.group(2)
-                    # else:
-                    #     plugin_fid = pluginmatch.group(1)
                     plugin_fid = pluginmatch.group(1)
                     plugin_name = pluginmatch.group(3)
                     if plugin_fid is not None and all(plugin_name not in item for item in crashlog_plugins):
@@ -480,12 +476,6 @@ def crashlogs_scan() -> None:
                         crashlog_plugins[plugin_name] = "DLL"
                     else:
                         crashlog_plugins[plugin_name] = "???"
-
-                # if " " in elem:
-                #     elem = elem.replace("     ", " ").strip()
-                #     elem_parts = elem.split(" ", 1)
-                #     elem_parts[0] = elem_parts[0].replace("[", "").replace(":", "").replace("]", "")
-                #     crashlog_plugins[elem_parts[1]] = elem_parts[0]
 
         for elem in xsemodules:
             if all(elem not in item for item in crashlog_plugins):
