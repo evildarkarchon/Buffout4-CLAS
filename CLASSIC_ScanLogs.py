@@ -203,7 +203,7 @@ def detect_mods_important(
 
 
 # Replacement for crashlog_generate_segment()
-def find_segments(crash_data: list[str], xse_acronym: str, crashgen_name: str) -> tuple[str, str, list[list[str]]]:
+def find_segments(crash_data: list[str], xse_acronym: str, crashgen_name: str) -> tuple[str, str, str, list[list[str]]]:
     """Divide the log up into segments."""
     xse = xse_acronym.upper()
     segment_boundaries = (
@@ -221,10 +221,14 @@ def find_segments(crash_data: list[str], xse_acronym: str, crashgen_name: str) -
     index_start = 0
     total = len(crash_data)
     current_index = 0
+    crashlog_gameversion = None
     crashlog_crashgen = None
     crashlog_mainerror = None
+    game_root_name = CMain.yaml_settings(str, CMain.YAML.Game, f"Game_{CMain.gamevars["vr"]}Info.Main_Root_Name")
     while current_index < total:
         line = crash_data[current_index]
+        if crashlog_gameversion is None and game_root_name and line.startswith(game_root_name):
+                crashlog_gameversion = line.strip()
         if crashlog_crashgen is None:
             if line.startswith(crashgen_name):
                 crashlog_crashgen = line.strip()
@@ -259,7 +263,7 @@ def find_segments(crash_data: list[str], xse_acronym: str, crashgen_name: str) -
     if missing_segments > 0:
         segment_results.extend([[]] * missing_segments)
     # Set default values incase actual index is not found.
-    return crashlog_crashgen or "UNKNOWN", crashlog_mainerror or "UNKNOWN", segment_results
+    return crashlog_gameversion or "UNKNOWN", crashlog_crashgen or "UNKNOWN", crashlog_mainerror or "UNKNOWN", segment_results
 
 
 def crashgen_version_gen(input_string: str) -> Version:
@@ -298,6 +302,10 @@ class ClassicScanLogsInfo:
     game_mods_freq: dict[str, str] = field(default_factory=dict)
     game_mods_opc2: dict[str, str] = field(default_factory=dict)
     game_mods_solu: dict[str, str] = field(default_factory=dict)
+    game_version: Version = field(default=Version("0.0.0"), init=False)
+    game_version_new: Version = field(default=Version("0.0.0"), init=False)
+    game_version_vr: Version = field(default=Version("0.0.0"), init=False)
+
 
 
     def __post_init__(self) -> None:
@@ -326,6 +334,9 @@ class ClassicScanLogsInfo:
         self.game_mods_freq=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_FREQ") or {}
         self.game_mods_opc2=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_OPC2") or {}
         self.game_mods_solu=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_SOLU") or {}
+        self.game_version = Version(CMain.yaml_settings(str, CMain.YAML.Game, "Game_Info.GameVersion") or "0.0.0")
+        self.game_version_new = Version(CMain.yaml_settings(str, CMain.YAML.Game, "Game_Info.GameVersionNEW") or "0.0.0")
+        self.game_version_vr = Version(CMain.yaml_settings(str, CMain.YAML.Game, "GameVR_Info.GameVersion") or "0.0.0")
 
 # ================================================
 # CRASH LOG SCAN START
@@ -377,6 +388,7 @@ def crashlogs_scan() -> None:
         # 1) GENERATE REQUIRED SEGMENTS FROM THE CRASH LOG
         # ================================================
         (
+            crashlog_gameversion,
             crashlog_crashgen,
             crashlog_mainerror,
             (
@@ -389,6 +401,8 @@ def crashlogs_scan() -> None:
             ),
         ) = find_segments(crash_data, xse_acronym, yamldata.crashgen_name)
         segment_callstack_intact = "".join(segment_callstack)
+
+        game_version = crashgen_version_gen(crashlog_gameversion)
 
         # SOME IMPORTANT DLLs HAVE A VERSION, REMOVE IT
         xsemodules = (
@@ -464,7 +478,7 @@ def crashlogs_scan() -> None:
         else:  # OTHERWISE, USE PLUGINS FROM CRASH LOG
             # TODO: This only applies to OG logs. Add a version check and a message that load order indexes are incorrect for NG.
             for elem in segment_plugins:
-                if "[FF]" in elem:
+                if "[FF]" in elem and game_version in (yamldata.game_version, yamldata.game_version_vr):
                     trigger_plugin_limit = True
                 pluginmatch = pluginsearch.match(elem, concurrent=True)
                 if pluginmatch is not None:
