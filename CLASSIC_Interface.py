@@ -341,8 +341,6 @@ class GameFilesScanWorker(QObject):
     @Slot()
     def run(self) -> None:
         try:
-            print(CGame.game_combined_result())
-            print(CGame.mods_combined_result())
             CGame.write_combined_results()
             self.notify_sound_signal.emit()  # Emit signal to play notify sound
         except Exception as e:  # noqa: BLE001
