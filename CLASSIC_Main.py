@@ -281,8 +281,7 @@ def classic_settings[T](_type: type[T], setting: str) -> T | None:
         if not isinstance(default_settings, str):
             raise ValueError("Invalid Default Settings in 'CLASSIC Main.yaml'")
 
-        with settings_path.open("w", encoding="utf-8") as file:
-            file.write(default_settings)
+        settings_path.write_text(default_settings, encoding="utf-8")
 
     return yaml_settings(_type, YAML.Settings, f"CLASSIC_Settings.{setting}")
 
@@ -297,16 +296,14 @@ def classic_generate_files() -> None:
         default_ignorefile = yaml_settings(str, YAML.Main, "CLASSIC_Info.default_ignorefile")
         if not isinstance(default_ignorefile, str):
             raise TypeError
-        with ignore_path.open("w", encoding="utf-8") as file:
-            file.write(default_ignorefile)
+        ignore_path.write_text(default_ignorefile, encoding="utf-8")
 
     local_path = Path(f"CLASSIC Data/CLASSIC {gamevars["game"]} Local.yaml")
     if not local_path.exists():
         default_yaml = yaml_settings(str, YAML.Main, "CLASSIC_Info.default_localyaml")
         if not isinstance(default_yaml, str):
             raise TypeError
-        with local_path.open("w", encoding="utf-8", errors="ignore") as file:
-            file.write(default_yaml)
+        local_path.write_text(default_yaml, encoding="utf-8")
 
 
 def classic_data_extract() -> None:
@@ -490,7 +487,7 @@ def docs_path_find() -> None:
     def get_windows_docs_path() -> None:
         try:
             # Open the registry key to get the user's documents path
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders") as key:  # pyright:ignore[reportPossiblyUnboundVariable]
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders") as key:  # pyright: ignore[reportPossiblyUnboundVariable]
                 documents_path = Path(winreg.QueryValueEx(key, "Personal")[0]) # pyright: ignore[reportPossiblyUnboundVariable]
         except (OSError, UnboundLocalError):
             # Fallback to a default path if registry key is not found
@@ -940,12 +937,15 @@ def main_files_backup() -> None:
 
     with open_file_with_encoding(xse_log_file) as xse_log:
         xse_data = xse_log.readlines()
+        xse_data_lower = [line.lower() for line in xse_data]
+
     # Grab current xse version to create a folder with that name.
-    line_xse = next(line for _, line in enumerate(xse_data) if "version = " in line.lower())
+    line_xse = next(line for _, line in enumerate(xse_data_lower) if "version = " in line)
     split_xse = line_xse.split(" ")
     version_xse = xse_ver_latest
+
     for index, item in enumerate(split_xse):
-        if "version" in item.lower():
+        if "version" in item:
             index_xse = int(index + 2)
             version_xse = split_xse[index_xse]
             break
@@ -953,9 +953,11 @@ def main_files_backup() -> None:
     # If there is no folder for current xse version, create it.
     backup_path = Path(f"CLASSIC Backup/Game Files/{version_xse}")
     backup_path.mkdir(parents=True, exist_ok=True)
+
     # Backup the file if backup of file does not already exist.
     game_files = list(Path(game_path).glob("*.*")) if game_path else []
     backup_files = [file.name for file in backup_path.glob("*.*")]
+
     for file in game_files:
         if file.name not in backup_files and any(file.name in item for item in backup_list):
             destination_file = backup_path / file.name

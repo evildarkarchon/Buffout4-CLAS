@@ -478,8 +478,12 @@ def crashlogs_scan() -> None:
         else:  # OTHERWISE, USE PLUGINS FROM CRASH LOG
             # TODO: This only applies to OG logs. Add a version check and a message that load order indexes are incorrect for NG.
             for elem in segment_plugins:
-                if "[FF]" in elem and game_version in (yamldata.game_version, yamldata.game_version_vr):
-                    trigger_plugin_limit = True
+                if "[FF]" in elem:
+                    if game_version in (yamldata.game_version, yamldata.game_version_vr):
+                        trigger_plugin_limit = True
+                    elif game_version >= yamldata.game_version_new:
+                        autoscan_report.extend(("❌ WARNING : Crash logs for the current game version do not report plugin indexes correctly! \n",
+                                                "The plugin limit check will be disabled for this scan. \n\n"))
                 pluginmatch = pluginsearch.match(elem, concurrent=True)
                 if pluginmatch is not None:
                     plugin_fid = pluginmatch.group(1)
@@ -505,7 +509,8 @@ def crashlogs_scan() -> None:
 
         # CHECK IF THERE ARE ANY PLUGINS IN THE IGNORE YAML
         if ignore_plugins_list:
-            for signal in ignore_plugins_list:
+            ignore_plugins_list_lower = [item.lower() for item in ignore_plugins_list]
+            for signal in ignore_plugins_list_lower:
                 if any(signal.lower() == plugin.lower() for plugin in crashlog_plugins):
                     del crashlog_plugins[signal]
 
