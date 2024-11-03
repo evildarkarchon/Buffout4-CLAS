@@ -509,9 +509,8 @@ def crashlogs_scan() -> None:
 
         # CHECK IF THERE ARE ANY PLUGINS IN THE IGNORE YAML
         if ignore_plugins_list:
-            ignore_plugins_list_lower = [item.lower() for item in ignore_plugins_list]
-            for signal in ignore_plugins_list_lower:
-                if any(signal.lower() == plugin.lower() for plugin in crashlog_plugins):
+            for signal in ignore_plugins_list:
+                if any(signal == plugin.lower() for plugin in crashlog_plugins):
                     del crashlog_plugins[signal]
 
         autoscan_report.extend((
