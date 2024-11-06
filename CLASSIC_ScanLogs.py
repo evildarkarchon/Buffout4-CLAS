@@ -507,10 +507,12 @@ def crashlogs_scan() -> None:
                 if all(elem_parts[0] not in item for item in crashlog_plugins):
                     crashlog_plugins[elem_parts[0]] = elem_parts[1]
 
+        crashlog_plugins_lower = {plugin.lower() for plugin in crashlog_plugins}
+
         # CHECK IF THERE ARE ANY PLUGINS IN THE IGNORE YAML
         if ignore_plugins_list:
             for signal in ignore_plugins_list:
-                if any(signal == plugin.lower() for plugin in crashlog_plugins):
+                if any(signal == plugin for plugin in crashlog_plugins_lower):
                     del crashlog_plugins[signal]
 
         autoscan_report.extend((
@@ -830,14 +832,14 @@ def crashlogs_scan() -> None:
 
         autoscan_report.append("# LIST OF (POSSIBLE) PLUGIN SUSPECTS #\n")
         plugins_matches: list[str] = []
-        lower_crashlog_plugins = {plugin.lower() for plugin in crashlog_plugins}
-        lower_game_ignore_plugins = {ignore.lower() for ignore in yamldata.game_ignore_plugins}
+        game_ignore_plugins_lower = {ignore.lower() for ignore in yamldata.game_ignore_plugins}
+        segment_callstack_lower = [line.lower() for line in segment_callstack]
 
         plugins_matches = [
             plugin
-            for line in segment_callstack
-            for plugin in lower_crashlog_plugins
-            if plugin in line.lower() and "modified by:" not in line.lower() and all(ignore not in plugin for ignore in lower_game_ignore_plugins)
+            for line in segment_callstack_lower
+            for plugin in crashlog_plugins_lower
+            if plugin in line and "modified by:" not in line and all(ignore not in plugin for ignore in game_ignore_plugins_lower)
         ]
 
         if plugins_matches:
