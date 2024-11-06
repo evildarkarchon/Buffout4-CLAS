@@ -38,7 +38,7 @@ type YAMLSequence = list[str]
 type YAMLMapping = dict[str, "YAMLValue"]
 type YAMLValue = YAMLMapping | YAMLSequence | YAMLLiteral
 type YAMLValueOptional = YAMLValue | None
-type GameID = Literal["Fallout4", "Fallout4VR", "Skyrim", "Starfield"] # Entries must correspond to the game's My Games folder name (only applies to Fallout 4 and Starfield).
+type GameID = Literal["Fallout4", "Fallout4VR", "Skyrim", "Starfield"] # Entries must correspond to the game's Main ESM or EXE file name.
 
 class YAML(Enum):
     Main = auto()
