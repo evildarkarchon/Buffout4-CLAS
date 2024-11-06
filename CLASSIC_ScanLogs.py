@@ -298,7 +298,7 @@ class ClassicScanLogsInfo:
     ignore_list: list[str] = field(default_factory=list)
     game_mods_conf: dict[str, str] = field(default_factory=dict)
     game_mods_core: dict[str, str] = field(default_factory=dict)
-    games_mods_core_folon: dict[str, str] = field(default_factory=dict)
+    game_mods_core_folon: dict[str, str] = field(default_factory=dict)
     game_mods_freq: dict[str, str] = field(default_factory=dict)
     game_mods_opc2: dict[str, str] = field(default_factory=dict)
     game_mods_solu: dict[str, str] = field(default_factory=dict)
@@ -330,7 +330,7 @@ class ClassicScanLogsInfo:
         self.ignore_list=CMain.yaml_settings(list[str], CMain.YAML.Ignore, f"CLASSIC_Ignore_{CMain.gamevars['game']}") or []
         self.game_mods_conf=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_CONF") or {}
         self.game_mods_core=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_CORE") or {}
-        self.games_mods_core_folon=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_CORE_FOLON") or {}
+        self.game_mods_core_folon=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_CORE_FOLON") or {}
         self.game_mods_freq=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_FREQ") or {}
         self.game_mods_opc2=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_OPC2") or {}
         self.game_mods_solu=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_SOLU") or {}
@@ -810,7 +810,7 @@ def crashlogs_scan() -> None:
 
         if trigger_plugins_loaded:
             if any("londonworldspace" in plugin.lower() for plugin in crashlog_plugins):
-                detect_mods_important(yamldata.games_mods_core_folon, crashlog_plugins, autoscan_report, gpu_rival)
+                detect_mods_important(yamldata.game_mods_core_folon, crashlog_plugins, autoscan_report, gpu_rival)
             else:
                 detect_mods_important(yamldata.game_mods_core, crashlog_plugins, autoscan_report, gpu_rival)
         else:
