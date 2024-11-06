@@ -440,7 +440,7 @@ def crashlogs_scan() -> None:
         ))
 
         # ======= REQUIRED LISTS, DICTS AND CHECKS =======
-        ignore_plugins_list = [item.lower() for item in yamldata.ignore_list] if yamldata.ignore_list else []
+        ignore_plugins_list = {item.lower() for item in yamldata.ignore_list} if yamldata.ignore_list else set()
 
         crashlog_plugins: dict[str, str] = {}
 
