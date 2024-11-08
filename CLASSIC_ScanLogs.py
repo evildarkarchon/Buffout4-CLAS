@@ -371,6 +371,7 @@ def crashlogs_scan() -> None:
     user_folder = Path.home()
     stats_crashlog_scanned = stats_crashlog_incomplete = stats_crashlog_failed = 0
     CMain.logger.info(f"- - - INITIATED CRASH LOG FILE SCAN >>> CURRENTLY SCANNING {len(crashlog_list)} FILES")
+    # TODO: Figure out how to parallelize this loop.
     for crashlog_file in crashlog_list:
         autoscan_report: list[str] = []
         trigger_plugin_limit = trigger_plugins_loaded = trigger_scan_failed = False
@@ -405,8 +406,9 @@ def crashlogs_scan() -> None:
         game_version = crashgen_version_gen(crashlog_gameversion)
 
         # SOME IMPORTANT DLLs HAVE A VERSION, REMOVE IT
+        segment_xsemodules_lower = {x.lower() for x in segment_xsemodules}
         xsemodules = (
-            {x.split(" v", 1)[0].strip().lower() if "dll v" in x else x.strip().lower() for x in segment_xsemodules}
+            {x.split(" v", 1)[0].strip() if "dll v" in x else x.strip() for x in segment_xsemodules_lower}
             if segment_xsemodules
             else set()
         )
@@ -894,8 +896,7 @@ def crashlogs_scan() -> None:
                 record.lower() not in lower_line for record in yamldata.game_ignore_records
             ):
                 if "[RSP+" in line:
-                    line = line[30:].strip()
-                    records_matches.append(line)
+                    records_matches.append(line[30:].strip())
                 else:
                     records_matches.append(line.strip())
         if records_matches:
