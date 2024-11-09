@@ -180,14 +180,12 @@ def detect_mods_important(
     gpu_rival: Literal["nvidia", "amd"] | None,
 ) -> None:
     """Detect one important Core and GPU specific mod per loop in YAML dict."""
-    yaml_dict_lower = {k.lower(): v for k, v in yaml_dict.items()}
-    crashlog_plugins_lower = {k.lower(): v for k, v in crashlog_plugins.items()}
-
-    for mod_name, mod_warn in yaml_dict_lower.items():
+    for mod_name in yaml_dict:
+        mod_warn = yaml_dict.get(mod_name, "")
         mod_split = mod_name.split(" | ", 1)
         mod_found = False
-        for plugin_name in crashlog_plugins_lower:
-            if mod_split[0] in plugin_name:
+        for plugin_name in crashlog_plugins:
+            if mod_split[0].lower() in plugin_name.lower():
                 mod_found = True
                 continue
         if mod_found:
