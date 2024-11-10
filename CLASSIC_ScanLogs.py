@@ -385,7 +385,7 @@ def crashlogs_scan() -> None:
     user_folder = Path.home()
     stats_crashlog_scanned = stats_crashlog_incomplete = stats_crashlog_failed = 0
     CMain.logger.info(f"- - - INITIATED CRASH LOG FILE SCAN >>> CURRENTLY SCANNING {len(crashlog_list)} FILES")
-    # TODO: Figure out how to parallelize this loop.
+
     crashlogs = SQLiteReader(crashlog_list)
 
     for crashlog_file in crashlog_list:
