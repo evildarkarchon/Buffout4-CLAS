@@ -276,16 +276,11 @@ def crashgen_version_gen(input_string: str) -> Version:
     return Version("0.0.0")
 
 class SQLiteReader:
-    def __init__(self, db: sqlite3.Connection) -> None:
-        self.db = db
-
-    @classmethod
-    def crashlogsdb(cls: type["SQLiteReader"], log_list: list[Path]) -> "SQLiteReader":
-        db = sqlite3.connect(":memory:")
-        db.execute("CREATE TABLE crashlogs (logname TEXT UNIQUE, logdata BLOB)")
-        db.execute("CREATE INDEX idx_logname ON crashlogs (logname)")
-        db.executemany("INSERT INTO crashlogs VALUES (?, ?)", ((file.name, file.read_bytes()) for file in log_list))
-        return cls(db)
+    def __init__(self, logfiles: list[Path]) -> None:
+        self.db = sqlite3.connect(":memory:")
+        self.db.execute("CREATE TABLE crashlogs (logname TEXT UNIQUE, logdata BLOB)")
+        self.db.execute("CREATE INDEX idx_logname ON crashlogs (logname)")
+        self.db.executemany("INSERT INTO crashlogs VALUES (?, ?)", ((file.name, file.read_bytes()) for file in logfiles))
 
     def read_log(self, logname: str) -> list[str]:
         with self.db as conn:
@@ -390,7 +385,8 @@ def crashlogs_scan() -> None:
     user_folder = Path.home()
     stats_crashlog_scanned = stats_crashlog_incomplete = stats_crashlog_failed = 0
     CMain.logger.info(f"- - - INITIATED CRASH LOG FILE SCAN >>> CURRENTLY SCANNING {len(crashlog_list)} FILES")
-    crashlogs = SQLiteReader.crashlogsdb(crashlog_list)
+    # TODO: Figure out how to parallelize this loop.
+    crashlogs = SQLiteReader(crashlog_list)
 
     for crashlog_file in crashlog_list:
         autoscan_report: list[str] = []
