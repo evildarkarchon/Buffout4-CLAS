@@ -278,7 +278,6 @@ def crashgen_version_gen(input_string: str) -> Version:
 class SQLiteReader:
     def __init__(self, logfiles: list[Path]) -> None:
         self.db = sqlite3.connect(":memory:")
-        print("LOADING CRASH LOGS INTO MEMORY DATABASE...")
         self.db.execute("CREATE TABLE crashlogs (logname TEXT UNIQUE, logdata BLOB)")
         self.db.execute("CREATE INDEX idx_logname ON crashlogs (logname)")
         self.db.executemany("INSERT INTO crashlogs VALUES (?, ?)", ((file.name, file.read_bytes()) for file in logfiles))
