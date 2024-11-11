@@ -346,7 +346,6 @@ def check_log_errors(folder_path: Path | str) -> str:
     ignore_logs_errors = ignore_logs_errors_setting if isinstance(ignore_logs_errors_setting, list) else []
     ignore_logs_errors_lower = [item.lower() for item in ignore_logs_errors] if ignore_logs_errors else []
     message_list: list[str] = []
-    errors_list: list[str] = []
 
     valid_log_files = [file for file in folder_path.glob("*.log") if "crash-" not in file.name]
     for file in valid_log_files:
