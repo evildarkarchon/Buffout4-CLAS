@@ -372,6 +372,8 @@ Crashlog_Error_Check:
 Crashlog_Stack_Check:
   5 | DLL Crash: [DLCBannerDLC01.dds]
 
+  5 | BASS Crash: [LoadScreenTranslucent.nif]
+
   5 | LOD Crash: [BGSLocation, BGSQueuedTerrainInitialLoad]
 
   3 | MCM Crash: [FaderData, FaderMenu, UIMessage]
