@@ -1004,7 +1004,7 @@ if __name__ == "__main__":
     from tap import Tap
 
     class Args(Tap):
-        """Command-line arguments for CLASSIC_ScanLogs.py"""
+        """Command-line arguments for CLASSIC's Command Line Interface"""
 
         fcx_mode: bool = False
         """Enable FCX mode"""
