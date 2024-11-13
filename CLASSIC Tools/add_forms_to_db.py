@@ -8,10 +8,17 @@ from tap import Tap
 class Arguments(Tap):
     """Adds a FormID list to the specified game and database."""
 
-    file: Path = Path("FormID_List.txt")  # The file to add to the database
-    table: Literal["Fallout4", "Skyrim", "Starfield"] = "Fallout4"  # The table to add the file to
-    db: Path = Path("../CLASSIC Data/databases/Fallout4 FormIDs Local.db")  # "The database to add the file to"
-    verbose: bool = False  # Prints out the lines as they are added
+    file: Path = Path("FormID_List.txt")
+    """Path to the FormID list file"""
+
+    table: Literal["Fallout4", "Skyrim", "Starfield"] = "Fallout4"
+    """Game for which the database is being updated"""
+
+    db: Path = Path("../CLASSIC Data/databases/Fallout4 FormIDs Local.db")
+    """Path to the database file"""
+
+    verbose: bool = False
+    """Enable verbose output"""
 
 
 args = Arguments().parse_args()
