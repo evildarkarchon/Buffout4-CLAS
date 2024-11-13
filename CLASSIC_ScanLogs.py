@@ -1033,8 +1033,6 @@ if __name__ == "__main__":
     args = Args().parse_args()
 
 
-    # Default output value for an argparse.BooleanOptionalAction is None, and so fails the isinstance check.
-    # So it will respect current INI values if not specified on the command line.
     if isinstance(args.fcx_mode, bool) and args.fcx_mode != CMain.classic_settings(bool, "FCX Mode"):
         CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.FCX Mode", args.fcx_mode)
 
