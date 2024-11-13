@@ -999,34 +999,39 @@ def crashlogs_scan() -> None:
 
 if __name__ == "__main__":
     CMain.initialize()
-    import argparse
+    from pathlib import Path
 
-    parser = argparse.ArgumentParser(
-        prog="Crash Log Auto Scanner & Setup Integrity Checker (CLASSIC)",
-        description="All terminal options are saved to the YAML file.",
-    )
-    # Argument values will simply change INI values since that requires the least refactoring
-    # I will figure out a better way in a future iteration, this iteration simply mimics the GUI. - evildarkarchon
-    parser.add_argument("--fcx-mode", action=argparse.BooleanOptionalAction, help="Enable (or disable) FCX mode")
-    parser.add_argument("--show-fid-values", action=argparse.BooleanOptionalAction, help="Enable (or disable) IMI mode")
-    parser.add_argument("--stat-logging", action=argparse.BooleanOptionalAction, help="Enable (or disable) Stat Logging")
-    parser.add_argument(
-        "--move-unsolved",
-        action=argparse.BooleanOptionalAction,
-        help="Enable (or disable) moving unsolved logs to a separate directory",
-    )
-    parser.add_argument("--ini-path", type=Path, help="Set the directory that stores the game's INI files.")
-    parser.add_argument("--scan-path", type=Path, help="Set which custom directory to scan crash logs from.")
-    parser.add_argument("--mods-folder-path", type=Path, help="Set the directory where your mod manager stores your mods (Optional).")
-    parser.add_argument("--simplify-logs", action=argparse.BooleanOptionalAction, help="Enable (or disable) Simplify Logs")
-    args = parser.parse_args()
+    from tap import Tap
 
-    # VSCode gives type errors because args.* is set at runtime (doesn't know what types it's dealing with).
-    # Using intermediate variables with type annotations to satisfy it.
-    # TODO: Implement Typed Argument Parser or similar
-    scan_path: Path = args.scan_path
-    ini_path: Path = args.ini_path
-    mods_folder_path: Path = args.mods_folder_path
+    class Args(Tap):
+        """Command-line arguments for CLASSIC_ScanLogs.py"""
+
+        fcx_mode: bool = False
+        """Enable FCX mode"""
+
+        show_fid_values: bool = False
+        """Show FormID values"""
+
+        stat_logging: bool = False
+        """Enable statistical logging"""
+
+        move_unsolved: bool = False
+        """Move unsolved logs"""
+
+        ini_path: Path | None = None
+        """Path to the INI file"""
+
+        scan_path: Path | None = None
+        """Path to the scan directory"""
+
+        mods_folder_path: Path | None = None
+        """Path to the mods folder"""
+
+        simplify_logs: bool = False
+        """Simplify the logs"""
+
+    args = Args().parse_args()
+
 
     # Default output value for an argparse.BooleanOptionalAction is None, and so fails the isinstance check.
     # So it will respect current INI values if not specified on the command line.
@@ -1034,23 +1039,23 @@ if __name__ == "__main__":
         CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.FCX Mode", args.fcx_mode)
 
     if isinstance(args.show_fid_values, bool) and args.show_fid_values != CMain.classic_settings(bool, "Show FormID Values"):
-        CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.IMI Mode", args.imi_mode)
+        CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.IMI Mode", args.fcx_mode)
 
     if isinstance(args.move_unsolved, bool) and args.move_unsolved != CMain.classic_settings(bool, "Move Unsolved Logs"):
-        CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.Move Unsolved", args.args.move_unsolved)
+        CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.Move Unsolved", args.move_unsolved)
 
-    if isinstance(ini_path, Path) and ini_path.resolve().is_dir() and str(ini_path) != CMain.classic_settings(str, "INI Folder Path"):
-        CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.INI Folder Path", str(ini_path.resolve()))
+    if isinstance(args.ini_path, Path) and args.ini_path.resolve().is_dir() and str(args.ini_path) != CMain.classic_settings(str, "INI Folder Path"):
+        CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.INI Folder Path", str(args.ini_path.resolve()))
 
-    if isinstance(scan_path, Path) and scan_path.resolve().is_dir() and str(scan_path) != CMain.classic_settings(str, "SCAN Custom Path"):
-        CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.SCAN Custom Path", str(scan_path.resolve()))
+    if isinstance(args.scan_path, Path) and args.scan_path.resolve().is_dir() and str(args.scan_path) != CMain.classic_settings(str, "SCAN Custom Path"):
+        CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.SCAN Custom Path", str(args.scan_path.resolve()))
 
     if (
-        isinstance(mods_folder_path, Path)
-        and mods_folder_path.resolve().is_dir()
-        and str(mods_folder_path) != CMain.classic_settings(str, "MODS Folder Path")
+        isinstance(args.mods_folder_path, Path)
+        and args.mods_folder_path.resolve().is_dir()
+        and str(args.mods_folder_path) != CMain.classic_settings(str, "MODS Folder Path")
     ):
-        CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.MODS Folder Path", str(mods_folder_path.resolve()))
+        CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.MODS Folder Path", str(args.mods_folder_path.resolve()))
 
     if isinstance(args.simplify_logs, bool) and args.simplify_logs != CMain.classic_settings(bool, "Simplify Logs"):
         CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.Simplify Logs", args.simplify_logs)

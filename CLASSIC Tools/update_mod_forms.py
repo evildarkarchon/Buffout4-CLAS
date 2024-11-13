@@ -10,9 +10,16 @@ class Args(Tap):
     This will delete all FormIDs from existing plugins referenced in the file and replace them with the new ones."""
 
     file: Path = Path("FormID_List.txt")
+    """Path to the FormID list file"""
+
     table: Literal["Fallout4", "Skyrim", "Starfield"] = "Fallout4"
+    """Game for which the database is being updated"""
+
     db: Path = Path("../CLASSIC Data/databases/Fallout4 FormIDs Local.db")
+    """Path to the database file"""
+
     verbose: bool = False
+    """Enable verbose output"""
 
 args = Args().parse_args()
 
