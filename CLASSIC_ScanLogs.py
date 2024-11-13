@@ -493,7 +493,6 @@ def crashlogs_scan() -> None:
             trigger_plugins_loaded = True
 
         else:  # OTHERWISE, USE PLUGINS FROM CRASH LOG
-            # TODO: This only applies to OG logs. Add a version check and a message that load order indexes are incorrect for NG.
             limit_warning_message_shown = False
             for elem in segment_plugins:
                 if "[FF]" in elem:
