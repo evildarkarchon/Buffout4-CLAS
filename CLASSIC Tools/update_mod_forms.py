@@ -1,20 +1,27 @@
-import argparse
 import sqlite3
 from pathlib import Path
+from typing import Literal
 
-argparser = argparse.ArgumentParser()
-argparser.add_argument("file", help="The file to add to the database", default="FormID_List.txt")
-argparser.add_argument("-t", "--table", help="The table to add the file to", default="Fallout4", type=str, nargs=1)
-argparser.add_argument("-d", "--db", help="The database to add the file to", default="../CLASSIC Data/databases/Fallout4 FormIDs Local.db", type=str, nargs=1)
-argparser.add_argument("-v", "--verbose", help="Prints out the lines as they are added", action="store_true")
-args = argparser.parse_args()
+from tap import Tap
+
+
+class Args(Tap):
+    """Updates the database with entries from a FormID list for the specified game and database.
+    This will delete all FormIDs from existing plugins referenced in the file and replace them with the new ones."""
+
+    file: Path = Path("FormID_List.txt")
+    table: Literal["Fallout4", "Skyrim", "Starfield"] = "Fallout4"
+    db: Path = Path("../CLASSIC Data/databases/Fallout4 FormIDs Local.db")
+    verbose: bool = False
+
+args = Args().parse_args()
 
 if not Path(args.db).is_file():
     raise FileNotFoundError(f"Database {args.db} not found")
 
 
 
-with sqlite3.connect(args.db) as conn, Path(args.file).open(encoding="utf-8", errors="ignore") as f:
+with sqlite3.connect(args.db) as conn, args.file.open(encoding="utf-8", errors="ignore") as f:
     c = conn.cursor()
     if not args.verbose:
         print(f"Updating database with FormIDs from {args.file} to {args.table}")
