@@ -46,7 +46,7 @@ class CustomAboutDialog(QDialog):
     def __init__(self, parent: QMainWindow | QDialog | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("About")
-        self.setFixedSize(600, 125)  # Adjust size for icon and text
+        self.setFixedSize(600, 200)  # Adjust size for icon and text
 
         # Create a layout with margins similar to QMessageBox.about
         layout: QVBoxLayout = QVBoxLayout(self)
