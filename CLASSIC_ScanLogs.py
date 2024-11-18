@@ -226,7 +226,7 @@ def find_segments(crash_data: list[str], xse_acronym: str, crashgen_name: str) -
     while current_index < total:
         line = crash_data[current_index]
         if crashlog_gameversion is None and game_root_name and line.startswith(game_root_name):
-                crashlog_gameversion = line.strip()
+            crashlog_gameversion = line.strip()
         if crashlog_crashgen is None:
             if line.startswith(crashgen_name):
                 crashlog_crashgen = line.strip()
