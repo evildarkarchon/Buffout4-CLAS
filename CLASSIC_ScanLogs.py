@@ -390,7 +390,7 @@ def crashlogs_scan() -> None:
 
     for crashlog_file in crashlog_list:
         autoscan_report: list[str] = []
-        trigger_plugin_limit = trigger_plugins_loaded = trigger_scan_failed = False
+        trigger_plugin_limit = trigger_limit_check_disabled = trigger_plugins_loaded = trigger_scan_failed = False
         crash_data = crashlogs.read_log(crashlog_file.name)
 
         autoscan_report.extend((
@@ -493,15 +493,12 @@ def crashlogs_scan() -> None:
             trigger_plugins_loaded = True
 
         else:  # OTHERWISE, USE PLUGINS FROM CRASH LOG
-            limit_warning_message_shown = False
             for elem in segment_plugins:
                 if "[FF]" in elem:
                     if game_version in (yamldata.game_version, yamldata.game_version_vr):
                         trigger_plugin_limit = True
-                    elif game_version >= yamldata.game_version_new and not limit_warning_message_shown:
-                        autoscan_report.extend(("❌ WARNING : Crash logs for the current game version do not report plugin indexes correctly! \n",
-                                                "The plugin limit check will be disabled for this scan. \n\n"))
-                        limit_warning_message_shown = True
+                    elif game_version >= yamldata.game_version_new:
+                        trigger_limit_check_disabled = True
                 pluginmatch = pluginsearch.match(elem, concurrent=True)
                 if pluginmatch is not None:
                     plugin_fid = pluginmatch.group(1)
@@ -842,9 +839,13 @@ def crashlogs_scan() -> None:
             "====================================================\n",
         ))
 
-        if trigger_plugin_limit:
+        if trigger_plugin_limit and not trigger_limit_check_disabled:
             warn_plugin_limit = CMain.yaml_settings(str, CMain.YAML.Main, "Mods_Warn.Mods_Plugin_Limit") or ""
             autoscan_report.append(warn_plugin_limit)
+
+        if trigger_limit_check_disabled:
+            autoscan_report.extend(("❌ WARNING : Crash logs for the current game version do not report plugin indexes correctly! \n",
+                                                "The plugin limit check will be disabled for this scan. \n\n"))
 
         # ================================================
 
