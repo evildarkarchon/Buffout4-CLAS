@@ -373,6 +373,10 @@ def crashlogs_scan() -> None:
     show_formid_values = CMain.classic_settings(bool, "Show FormID Values")
     formid_db_exists = any(db.is_file() for db in DB_PATHS)
     move_unsolved_logs = CMain.classic_settings(bool, "Move Unsolved Logs")
+    lower_records = [record.lower() for record in yamldata.classic_records_list]
+    lower_ignore = [record.lower() for record in yamldata.game_ignore_records]
+    lower_plugins_ignore = {ignore.lower() for ignore in yamldata.game_ignore_plugins}
+    ignore_plugins_list = {item.lower() for item in yamldata.ignore_list} if yamldata.ignore_list else set()
     # ================================================
     if fcx_mode:
         main_files_check = CMain.main_combined_result()
@@ -457,7 +461,6 @@ def crashlogs_scan() -> None:
         ))
 
         # ======= REQUIRED LISTS, DICTS AND CHECKS =======
-        ignore_plugins_list = {item.lower() for item in yamldata.ignore_list} if yamldata.ignore_list else set()
 
         crashlog_plugins: dict[str, str] = {}
 
@@ -851,14 +854,13 @@ def crashlogs_scan() -> None:
 
         autoscan_report.append("# LIST OF (POSSIBLE) PLUGIN SUSPECTS #\n")
         plugins_matches: list[str] = []
-        game_ignore_plugins_lower = {ignore.lower() for ignore in yamldata.game_ignore_plugins}
         segment_callstack_lower = [line.lower() for line in segment_callstack]
 
         plugins_matches = [
             plugin
             for line in segment_callstack_lower
             for plugin in crashlog_plugins_lower
-            if plugin in line and "modified by:" not in line and all(ignore not in plugin for ignore in game_ignore_plugins_lower)
+            if plugin in line and "modified by:" not in line and all(ignore not in plugin for ignore in lower_plugins_ignore)
         ]
 
         if plugins_matches:
@@ -907,10 +909,12 @@ def crashlogs_scan() -> None:
 
         autoscan_report.append("# LIST OF DETECTED (NAMED) RECORDS #\n")
         records_matches: list[str] = []
+
         for line in segment_callstack:
             lower_line = line.lower()
-            if any(item.lower() in lower_line for item in yamldata.classic_records_list) and all(
-                record.lower() not in lower_line for record in yamldata.game_ignore_records
+
+            if any(item in lower_line for item in lower_records) and all(
+                record not in lower_line for record in lower_ignore
             ):
                 if "[RSP+" in line:
                     records_matches.append(line[30:].strip())
