@@ -8,7 +8,7 @@ import traceback
 from collections.abc import Callable
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Literal
+from typing import Literal
 
 import regex as re
 import requests
@@ -88,7 +88,7 @@ class ErrorDialog(QDialog):
     def __init__(self, error_text: str) -> None:
         super().__init__()
         self.setWindowTitle("Error")
-        self.setMinimumSize(600, 400)
+        self.setMinimumSize(600, 300)
         layout = QVBoxLayout(self)
 
         self.text_edit = QPlainTextEdit(self)
@@ -110,7 +110,7 @@ def show_exception_box(error_text: str) -> None:
     dialog.exec()
 
 
-def custom_excepthook(exc_type: type[BaseException], exc_value: BaseException, exc_traceback: TracebackType | None) -> Any:
+def custom_excepthook(exc_type: type[BaseException], exc_value: BaseException, exc_traceback: TracebackType | None) -> None:
     error_text = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
     print(error_text)  # Still print to console
     show_exception_box(error_text)
@@ -122,13 +122,6 @@ import CLASSIC_Main as CMain  # noqa: E402
 import CLASSIC_ScanGame as CGame  # noqa: E402
 import CLASSIC_ScanLogs as CLogs  # noqa: E402
 
-# nuitka-project: --enable-plugin=pyside6
-# nuitka-project: --unstripped
-# nuitka-project: --standalone
-# nuitka-project: --onefile
-# nuitka-project: --windows-console-mode=disable
-# nuitka-project: --output-filename=CLASSIC.exe
-# nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/CLASSIC Data/graphics/CLASSIC.ico
 
 class AudioPlayer(QObject):
     # Define signals for different sounds
