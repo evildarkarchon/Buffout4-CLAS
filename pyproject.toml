@@ -73,7 +73,6 @@ skip-magic-trailing-comma = false
 
 [tool.ruff.lint]
 ignore = [
-	"ANN101",  # Deprecated
 	"ANN401",  # Allow use of typing.Any
 	"E501",    # Duplicate of B950 line-too-long
 	"E722",    # Duplicate of B001 bare-except
@@ -85,7 +84,6 @@ ignore = [
 	"PLR1702", # too-many-nested-blocks
 	"TRY003",  # Allow custom exception messages
 	"TRY400",  # Use `logging.exception` instead of `logging.error`
-	"UP027",   # Deprecated
 	"PLR2004", # Allow magic values in comparisons
 	"PLW2901", # Allow overwriting loop variables
 ]
