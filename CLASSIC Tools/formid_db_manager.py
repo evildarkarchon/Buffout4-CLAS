@@ -85,9 +85,11 @@ class FormIDManager(QMainWindow):
 
         self.mode_checkbox = QCheckBox("Update Mode (replaces existing entries)")
         self.verbose_checkbox = QCheckBox("Verbose Output")
+        self.dry_run_checkbox = QCheckBox("Dry Run (preview changes)")
 
         layout.addWidget(self.mode_checkbox)
         layout.addWidget(self.verbose_checkbox)
+        layout.addWidget(self.dry_run_checkbox)
         layout.addStretch()
 
         self.main_layout.addLayout(layout)
@@ -123,6 +125,10 @@ class FormIDManager(QMainWindow):
         game = self.game_combo.currentText()
         update_mode = self.mode_checkbox.isChecked()
         verbose = self.verbose_checkbox.isChecked()
+        dry_run = self.dry_run_checkbox.isChecked()
+
+        if dry_run:
+            self.log("DRY RUN MODE - No changes will be made to the database")
 
         # Validate inputs
         if not file_path.exists() or self.file_path.text() == "No file selected":
@@ -134,7 +140,8 @@ class FormIDManager(QMainWindow):
             return
 
         try:
-            with sqlite3.connect(db_path) as conn:
+            # For dry run, we'll check the database structure without creating anything
+            with sqlite3.connect(db_path if db_path.exists() else ":memory:") as conn:
                 cursor = conn.cursor()
 
                 # Check if table exists
@@ -151,26 +158,59 @@ class FormIDManager(QMainWindow):
                 """)
                 index_exists = cursor.fetchone() is not None
 
-                # Create table if it doesn't exist
+                # Report what would be created
                 if not table_exists:
-                    self.log(f"Creating table {game}...")
-                    conn.execute(
-                        f"""CREATE TABLE IF NOT EXISTS {game}
-                        (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        plugin TEXT, formid TEXT, entry TEXT)"""
-                    )
+                    msg = "Would create" if dry_run else "Creating"
+                    self.log(f"{msg} table {game}...")
+                    if not dry_run:
+                        conn.execute(
+                            f"""CREATE TABLE IF NOT EXISTS {game}
+                            (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            plugin TEXT, formid TEXT, entry TEXT)"""
+                        )
 
-                # Create index if it doesn't exist
                 if not index_exists:
-                    self.log(f"Creating index {game}_index...")
-                    conn.execute(
-                        f"CREATE INDEX IF NOT EXISTS {game}_index ON {game} (formid, plugin COLLATE nocase);"
-                    )
+                    msg = "Would create" if dry_run else "Creating"
+                    self.log(f"{msg} index {game}_index...")
+                    if not dry_run:
+                        conn.execute(
+                            f"CREATE INDEX IF NOT EXISTS {game}_index ON {game} (formid, plugin COLLATE nocase);"
+                        )
 
-                if conn.in_transaction:
+                if not dry_run and conn.in_transaction:
                     conn.commit()
 
-            # Now continue with the existing FormID processing
+            # Process the FormID list to show what would happen
+            plugins_to_process = set()
+            entry_count = 0
+
+            with file_path.open(encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    line = line.strip()
+                    if " | " not in line:
+                        continue
+
+                    parts = line.split(" | ", maxsplit=2)
+                    if len(parts) != 3:
+                        continue
+
+                    plugin, formid, entry = parts
+                    plugins_to_process.add(plugin)
+                    entry_count += 1
+
+            # Report summary of what would happen
+            if dry_run:
+                self.log("\nDry run summary:")
+                self.log(f"Found {entry_count} valid entries to process")
+                self.log(f"Found {len(plugins_to_process)} unique plugins:")
+                for plugin in sorted(plugins_to_process):
+                    if update_mode:
+                        self.log(f"- Would delete existing entries for {plugin}")
+                    self.log(f"- Would add entries from {plugin}")
+                self.log("\nNo changes were made to the database (dry run mode)")
+                return
+
+            # If not dry run, proceed with actual processing
             with sqlite3.connect(db_path) as conn, file_path.open(encoding="utf-8", errors="ignore") as f:
                 c = conn.cursor()
                 self.log(f"Processing FormIDs from {file_path} for {game}")
