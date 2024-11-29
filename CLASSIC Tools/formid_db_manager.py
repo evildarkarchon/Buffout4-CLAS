@@ -126,9 +126,9 @@ class FormIDManager(QMainWindow):
 
     def process_formids(self) -> None:
         # Get all necessary values
-        file_path = Path(self.file_path.text())
-        db_path = Path(self.db_path.text())
         game = self.game_combo.currentText()
+        file_path = Path(self.file_path.text())
+        db_path = Path(self.db_path.text()) if self.db_path.text() != "No database selected" else Path.cwd() / f"{game}.db"
         update_mode = self.mode_checkbox.isChecked()
         verbose = self.verbose_checkbox.isChecked()
         dry_run = self.dry_run_checkbox.isChecked()
@@ -141,9 +141,9 @@ class FormIDManager(QMainWindow):
             self.log("Error: FormID list file not found")
             return
 
-        if not db_path.parent.exists() or self.db_path.text() == "No database selected":
-            self.log("Error: Database directory not found")
-            return
+        if not db_path.parent.exists():
+            self.log("Error: Database file not found, creating in current directory.")
+            db_path.touch()
 
         try:
             # For dry run, we'll check the database structure without creating anything
