@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QPushButton,
     QTextEdit,
@@ -43,7 +44,8 @@ class FormIDManager(QMainWindow):
         layout = QHBoxLayout()
 
         self.file_label = QLabel("FormID List File:")
-        self.file_path = QLabel("No file selected")
+        self.file_path = QLineEdit()
+        self.file_path.setPlaceholderText("No file selected")
         select_file_btn = QPushButton("Select File")
         select_file_btn.clicked.connect(self.select_file)
 
@@ -57,7 +59,8 @@ class FormIDManager(QMainWindow):
         layout = QHBoxLayout()
 
         self.db_label = QLabel("Database File:")
-        self.db_path = QLabel("No database selected")
+        self.db_path = QLineEdit()
+        self.db_path.setPlaceholderText("No database selected")
         select_db_btn = QPushButton("Select Database")
         select_db_btn.clicked.connect(self.select_database)
 
