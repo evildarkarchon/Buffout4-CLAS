@@ -121,7 +121,7 @@ class FormIDManager(QMainWindow):
 
     def switch_verbose_checkbox_enabled(self) -> None:
         self.verbose_checkbox.setEnabled(not self.dry_run_checkbox.isChecked())
-        if self.dry_run_checkbox.isChecked():
+        if self.dry_run_checkbox.isChecked():  # Doing it this way because I don't want to automatically check it when disabling dry run.
             self.verbose_checkbox.setChecked(False)
 
     def process_formids(self) -> None:
