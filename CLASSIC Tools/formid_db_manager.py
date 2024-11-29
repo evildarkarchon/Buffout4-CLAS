@@ -86,6 +86,7 @@ class FormIDManager(QMainWindow):
         self.mode_checkbox = QCheckBox("Update Mode (replaces existing entries)")
         self.verbose_checkbox = QCheckBox("Verbose Output")
         self.dry_run_checkbox = QCheckBox("Dry Run (preview changes)")
+        self.dry_run_checkbox.stateChanged.connect(self.switch_verbose_checkbox_enabled)
 
         layout.addWidget(self.mode_checkbox)
         layout.addWidget(self.verbose_checkbox)
@@ -118,13 +119,16 @@ class FormIDManager(QMainWindow):
         self.log_area.append(message)
         QApplication.processEvents()  # Ensures UI updates during processing
 
+    def switch_verbose_checkbox_enabled(self) -> None:
+        self.verbose_checkbox.setEnabled(not self.dry_run_checkbox.isChecked())
+
     def process_formids(self) -> None:
         # Get all necessary values
         file_path = Path(self.file_path.text())
         db_path = Path(self.db_path.text())
         game = self.game_combo.currentText()
         update_mode = self.mode_checkbox.isChecked()
-        verbose = self.verbose_checkbox.isChecked()
+        verbose = self.verbose_checkbox.isChecked() and not self.dry_run_checkbox.isChecked()
         dry_run = self.dry_run_checkbox.isChecked()
 
         if dry_run:
