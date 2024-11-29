@@ -131,7 +131,7 @@ class FormIDManager(QMainWindow):
         # Get all necessary values
         game = self.game_combo.currentText()
         file_path = Path(self.file_path.text())
-        db_path = Path(self.db_path.text()) if self.db_path.text() != "No database selected" else Path.cwd() / f"{game}.db"
+        db_path = Path(self.db_path.text()) if self.db_path.text() != self.db_path.placeholderText() else Path.cwd() / f"{game}.db"
         update_mode = self.mode_checkbox.isChecked()
         verbose = self.verbose_checkbox.isChecked()
         dry_run = self.dry_run_checkbox.isChecked()
@@ -140,7 +140,7 @@ class FormIDManager(QMainWindow):
             self.log("DRY RUN MODE - No changes will be made to the database")
 
         # Validate inputs
-        if not file_path.exists() or self.file_path.text() == "No file selected":
+        if not file_path.exists() or self.file_path.text() == self.file_path.placeholderText():
             self.log("Error: FormID list file not found")
             return
 
