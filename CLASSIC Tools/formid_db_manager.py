@@ -121,6 +121,8 @@ class FormIDManager(QMainWindow):
 
     def switch_verbose_checkbox_enabled(self) -> None:
         self.verbose_checkbox.setEnabled(not self.dry_run_checkbox.isChecked())
+        if self.dry_run_checkbox.isChecked():
+            self.verbose_checkbox.setChecked(False)
 
     def process_formids(self) -> None:
         # Get all necessary values
@@ -128,7 +130,7 @@ class FormIDManager(QMainWindow):
         db_path = Path(self.db_path.text())
         game = self.game_combo.currentText()
         update_mode = self.mode_checkbox.isChecked()
-        verbose = self.verbose_checkbox.isChecked() and not self.dry_run_checkbox.isChecked()
+        verbose = self.verbose_checkbox.isChecked()
         dry_run = self.dry_run_checkbox.isChecked()
 
         if dry_run:
