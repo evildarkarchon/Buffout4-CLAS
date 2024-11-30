@@ -183,9 +183,7 @@ class FormIDManager(QMainWindow):
                         msg = "Would create" if dry_run else "Creating"
                         self.log(f"{msg} index {game}_index...")
                         if not dry_run:
-                            conn.execute(
-                                f"CREATE INDEX IF NOT EXISTS {game}_index ON {game} (formid, plugin COLLATE nocase);"
-                            )
+                            conn.execute(f"CREATE INDEX IF NOT EXISTS {game}_index ON {game} (formid, plugin COLLATE nocase);")
 
                     if not dry_run and conn.in_transaction:
                         conn.commit()
@@ -193,7 +191,7 @@ class FormIDManager(QMainWindow):
                     self.log(f"Error during database setup: {e!s}")
                     return
 
-            # Process the FormID list to show what would happen
+            # Process the FormID list to show what would happen, only used in dry run mode.
             plugins_to_process = set()
             entry_count = 0
 
@@ -208,8 +206,9 @@ class FormIDManager(QMainWindow):
                         continue
 
                     plugin, formid, entry = parts
-                    plugins_to_process.add(plugin)
-                    entry_count += 1
+                    if dry_run:
+                        plugins_to_process.add(plugin)
+                        entry_count += 1
 
             # Report summary of what would happen
             if dry_run:
