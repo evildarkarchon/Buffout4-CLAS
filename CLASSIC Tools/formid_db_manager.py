@@ -150,44 +150,48 @@ class FormIDManager(QMainWindow):
 
         try:
             # For dry run, we'll check the database structure without creating anything
-            with sqlite3.connect(db_path if db_path.exists() else ":memory:") as conn:
+            with sqlite3.connect(db_path) as conn:
                 cursor = conn.cursor()
 
                 # Check if table exists
-                cursor.execute(f"""
-                    SELECT name FROM sqlite_master
-                    WHERE type='table' AND name='{game}'
-                """)
-                table_exists = cursor.fetchone() is not None
+                try:
+                    cursor.execute(f"""
+                        SELECT name FROM sqlite_master
+                        WHERE type='table' AND name='{game}'
+                    """)
+                    table_exists = cursor.fetchone() is not None
 
-                # Check if index exists
-                cursor.execute(f"""
-                    SELECT name FROM sqlite_master
-                    WHERE type='index' AND name='{game}_index'
-                """)
-                index_exists = cursor.fetchone() is not None
+                    # Check if index exists
+                    cursor.execute(f"""
+                        SELECT name FROM sqlite_master
+                        WHERE type='index' AND name='{game}_index'
+                    """)
+                    index_exists = cursor.fetchone() is not None
 
-                # Report what would be created
-                if not table_exists:
-                    msg = "Would create" if dry_run else "Creating"
-                    self.log(f"{msg} table {game}...")
-                    if not dry_run:
-                        conn.execute(
-                            f"""CREATE TABLE IF NOT EXISTS {game}
-                            (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            plugin TEXT, formid TEXT, entry TEXT)"""
-                        )
+                    # Report what would be created
+                    if not table_exists:
+                        msg = "Would create" if dry_run else "Creating"
+                        self.log(f"{msg} table {game}...")
+                        if not dry_run:
+                            conn.execute(
+                                f"""CREATE TABLE IF NOT EXISTS {game}
+                                (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                plugin TEXT, formid TEXT, entry TEXT)"""
+                            )
 
-                if not index_exists:
-                    msg = "Would create" if dry_run else "Creating"
-                    self.log(f"{msg} index {game}_index...")
-                    if not dry_run:
-                        conn.execute(
-                            f"CREATE INDEX IF NOT EXISTS {game}_index ON {game} (formid, plugin COLLATE nocase);"
-                        )
+                    if not index_exists:
+                        msg = "Would create" if dry_run else "Creating"
+                        self.log(f"{msg} index {game}_index...")
+                        if not dry_run:
+                            conn.execute(
+                                f"CREATE INDEX IF NOT EXISTS {game}_index ON {game} (formid, plugin COLLATE nocase);"
+                            )
 
-                if not dry_run and conn.in_transaction:
-                    conn.commit()
+                    if not dry_run and conn.in_transaction:
+                        conn.commit()
+                except sqlite3.DatabaseError as e:
+                    self.log(f"Error during database setup: {e!s}")
+                    return
 
             # Process the FormID list to show what would happen
             plugins_to_process = set()
