@@ -22,8 +22,8 @@ type PluginDict = dict[str, str]
 query_cache: dict[tuple[str, str], str] = {}
 # Define paths for both Main and Local databases
 DB_PATHS = (
-    Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs Main.db"),
-    Path(f"CLASSIC Data/databases/{CMain.gamevars["game"]} FormIDs Local.db"),
+    Path(f"CLASSIC Data/databases/{CMain.gamevars['game']} FormIDs Main.db"),
+    Path(f"CLASSIC Data/databases/{CMain.gamevars['game']} FormIDs Local.db"),
 )
 
 
@@ -39,7 +39,7 @@ def pastebin_fetch(url: str) -> None:
     pastebin_path = Path("Crash Logs/Pastebin")
     if not pastebin_path.is_dir():
         pastebin_path.mkdir(parents=True, exist_ok=True)
-    outfile = pastebin_path / f"crash-{urlparse(url).path.split("/")[-1]}.log"
+    outfile = pastebin_path / f"crash-{urlparse(url).path.split('/')[-1]}.log"
     outfile.write_text(response.text, encoding="utf-8", errors="ignore")
 
 
@@ -52,7 +52,7 @@ def get_entry(formid: str, plugin: str) -> str | None:
             with sqlite3.connect(db_path) as conn:
                 c = conn.cursor()
                 c.execute(
-                    f"SELECT entry FROM {CMain.gamevars["game"]} WHERE formid=? AND plugin=? COLLATE nocase",
+                    f"SELECT entry FROM {CMain.gamevars['game']} WHERE formid=? AND plugin=? COLLATE nocase",
                     (formid, plugin),
                 )
                 entry = c.fetchone()
@@ -61,6 +61,7 @@ def get_entry(formid: str, plugin: str) -> str | None:
                     return entry[0]
 
     return None
+
 
 # ================================================
 # INITIAL REFORMAT FOR CRASH LOG FILES
@@ -128,7 +129,7 @@ def crashlogs_reformat(crashlog_list: list[Path], remove_list: list[str]) -> Non
                 # [FE:  0] RedRocketsGlareII.esl
                 indent, rest = line.split("[", 1)
                 fid, name = rest.split("]", 1)
-                crash_data[reversed_index] = f"{indent}[{fid.replace(" ", "0")}]{name}"
+                crash_data[reversed_index] = f"{indent}[{fid.replace(' ', '0')}]{name}"
 
         with file.open("w", encoding="utf-8", errors="ignore") as crash_log:
             crash_log.writelines(crash_data)
@@ -175,6 +176,7 @@ def detect_mods_double(yaml_dict: dict[str, str], crashlog_plugins: dict[str, st
                 raise ValueError(f"ERROR: {mod_name_lower} has no warning in the database!")
             trigger_mod_found = True
     return trigger_mod_found
+
 
 def detect_mods_important(
     yaml_dict: dict[str, str],
@@ -225,7 +227,7 @@ def find_segments(crash_data: list[str], xse_acronym: str, crashgen_name: str) -
     crashlog_gameversion = None
     crashlog_crashgen = None
     crashlog_mainerror = None
-    game_root_name = CMain.yaml_settings(str, CMain.YAML.Game, f"Game_{CMain.gamevars["vr"]}Info.Main_Root_Name")
+    game_root_name = CMain.yaml_settings(str, CMain.YAML.Game, f"Game_{CMain.gamevars['vr']}Info.Main_Root_Name")
     while current_index < total:
         line = crash_data[current_index]
         if crashlog_gameversion is None and game_root_name and line.startswith(game_root_name):
@@ -278,6 +280,7 @@ def crashgen_version_gen(input_string: str) -> Version:
         return Version(version_str)
     return Version("0.0.0")
 
+
 class SQLiteReader:
     def __init__(self, logfiles: list[Path]) -> None:
         self.db = sqlite3.connect(":memory:")
@@ -293,6 +296,7 @@ class SQLiteReader:
 
     def close(self) -> None:
         self.db.close()
+
 
 @dataclass
 class ClassicScanLogsInfo:
@@ -323,37 +327,38 @@ class ClassicScanLogsInfo:
     game_version_new: Version = field(default=Version("0.0.0"), init=False)
     game_version_vr: Version = field(default=Version("0.0.0"), init=False)
 
-
-
     def __post_init__(self) -> None:
         if CMain.yaml_cache is None:
             raise TypeError("CMain is not initialized.")
         self.classic_game_hints = CMain.yaml_settings(list[str], CMain.YAML.Game, "Game_Hints") or []
         self.classic_records_list = CMain.yaml_settings(list[str], CMain.YAML.Main, "catch_log_records") or []
-        self.classic_version=CMain.yaml_settings(str, CMain.YAML.Main, "CLASSIC_Info.version") or ""
-        self.classic_version_date=CMain.yaml_settings(str, CMain.YAML.Main, "CLASSIC_Info.version_date") or ""
-        self.crashgen_name=CMain.yaml_settings(str, CMain.YAML.Game, "Game_Info.CRASHGEN_LogName") or ""
-        self.crashgen_latest_og=CMain.yaml_settings(str, CMain.YAML.Game, "Game_Info.CRASHGEN_LatestVer") or ""
-        self.crashgen_latest_vr=CMain.yaml_settings(str, CMain.YAML.Game, "GameVR_Info.CRASHGEN_LatestVer") or ""
-        self.crashgen_ignore=set(CMain.yaml_settings(list[str], CMain.YAML.Game, f"Game{CMain.gamevars['vr']}_Info.CRASHGEN_Ignore") or [])
-        self.warn_noplugins=CMain.yaml_settings(str, CMain.YAML.Game, "Warnings_CRASHGEN.Warn_NOPlugins") or ""
-        self.warn_outdated=CMain.yaml_settings(str, CMain.YAML.Game, "Warnings_CRASHGEN.Warn_Outdated") or ""
-        self.xse_acronym=CMain.yaml_settings(str, CMain.YAML.Game, "Game_Info.XSE_Acronym") or ""
-        self.game_ignore_plugins=CMain.yaml_settings(list[str], CMain.YAML.Game, "Crashlog_Plugins_Exclude") or []
-        self.game_ignore_records=CMain.yaml_settings(list[str], CMain.YAML.Game, "Crashlog_Records_Exclude") or []
-        self.suspects_error_list=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Crashlog_Error_Check") or {}
-        self.suspects_stack_list=CMain.yaml_settings(dict[str, list[str]], CMain.YAML.Game, "Crashlog_Stack_Check") or {}
-        self.autoscan_text=CMain.yaml_settings(str, CMain.YAML.Main, f"CLASSIC_Interface.autoscan_text_{CMain.gamevars['game']}") or ""
-        self.ignore_list=CMain.yaml_settings(list[str], CMain.YAML.Ignore, f"CLASSIC_Ignore_{CMain.gamevars['game']}") or []
-        self.game_mods_conf=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_CONF") or {}
-        self.game_mods_core=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_CORE") or {}
-        self.game_mods_core_folon=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_CORE_FOLON") or {}
-        self.game_mods_freq=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_FREQ") or {}
-        self.game_mods_opc2=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_OPC2") or {}
-        self.game_mods_solu=CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_SOLU") or {}
+        self.classic_version = CMain.yaml_settings(str, CMain.YAML.Main, "CLASSIC_Info.version") or ""
+        self.classic_version_date = CMain.yaml_settings(str, CMain.YAML.Main, "CLASSIC_Info.version_date") or ""
+        self.crashgen_name = CMain.yaml_settings(str, CMain.YAML.Game, "Game_Info.CRASHGEN_LogName") or ""
+        self.crashgen_latest_og = CMain.yaml_settings(str, CMain.YAML.Game, "Game_Info.CRASHGEN_LatestVer") or ""
+        self.crashgen_latest_vr = CMain.yaml_settings(str, CMain.YAML.Game, "GameVR_Info.CRASHGEN_LatestVer") or ""
+        self.crashgen_ignore = set(
+            CMain.yaml_settings(list[str], CMain.YAML.Game, f"Game{CMain.gamevars['vr']}_Info.CRASHGEN_Ignore") or []
+        )
+        self.warn_noplugins = CMain.yaml_settings(str, CMain.YAML.Game, "Warnings_CRASHGEN.Warn_NOPlugins") or ""
+        self.warn_outdated = CMain.yaml_settings(str, CMain.YAML.Game, "Warnings_CRASHGEN.Warn_Outdated") or ""
+        self.xse_acronym = CMain.yaml_settings(str, CMain.YAML.Game, "Game_Info.XSE_Acronym") or ""
+        self.game_ignore_plugins = CMain.yaml_settings(list[str], CMain.YAML.Game, "Crashlog_Plugins_Exclude") or []
+        self.game_ignore_records = CMain.yaml_settings(list[str], CMain.YAML.Game, "Crashlog_Records_Exclude") or []
+        self.suspects_error_list = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Crashlog_Error_Check") or {}
+        self.suspects_stack_list = CMain.yaml_settings(dict[str, list[str]], CMain.YAML.Game, "Crashlog_Stack_Check") or {}
+        self.autoscan_text = CMain.yaml_settings(str, CMain.YAML.Main, f"CLASSIC_Interface.autoscan_text_{CMain.gamevars['game']}") or ""
+        self.ignore_list = CMain.yaml_settings(list[str], CMain.YAML.Ignore, f"CLASSIC_Ignore_{CMain.gamevars['game']}") or []
+        self.game_mods_conf = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_CONF") or {}
+        self.game_mods_core = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_CORE") or {}
+        self.game_mods_core_folon = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_CORE_FOLON") or {}
+        self.game_mods_freq = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_FREQ") or {}
+        self.game_mods_opc2 = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_OPC2") or {}
+        self.game_mods_solu = CMain.yaml_settings(dict[str, str], CMain.YAML.Game, "Mods_SOLU") or {}
         self.game_version = Version(CMain.yaml_settings(str, CMain.YAML.Game, "Game_Info.GameVersion") or "0.0.0")
         self.game_version_new = Version(CMain.yaml_settings(str, CMain.YAML.Game, "Game_Info.GameVersionNEW") or "0.0.0")
         self.game_version_vr = Version(CMain.yaml_settings(str, CMain.YAML.Game, "GameVR_Info.GameVersion") or "0.0.0")
+
 
 # ================================================
 # CRASH LOG SCAN START
@@ -361,6 +366,7 @@ class ClassicScanLogsInfo:
 @dataclass
 class CrashLogSegments:
     """Container for the different segments of a crash log."""
+
     crashgen: list[str]
     system: list[str]
     callstack: list[str]
@@ -375,16 +381,16 @@ class CrashLogSegments:
     @property
     def xsemodules_lower(self) -> set[str]:
         """Get lowercase XSE module names with version numbers removed."""
-        return {
-            x.split(" v", 1)[0].strip() if "dll v" in x else x.strip()
-            for x in (module.lower() for module in self.xsemodules)
-        }
+        return {x.split(" v", 1)[0].strip() if "dll v" in x else x.strip() for x in (module.lower() for module in self.xsemodules)}
+
+
 def read_crash_log(crash_file: Path) -> list[str]:
     """Read and return lines from crash log file."""
     crashlogs = SQLiteReader([crash_file])
     crash_data = crashlogs.read_log(crash_file.name)
     crashlogs.close()
     return crash_data
+
 
 def parse_crash_log_segments(crash_data: list[str], xse_acronym: str, crashgen_name: str) -> CrashLogSegments:
     """Parse crash log into segments."""
@@ -404,14 +410,12 @@ def parse_crash_log_segments(crash_data: list[str], xse_acronym: str, crashgen_n
         callstack_intact="".join(segments[2]),
         gameversion=gameversion,
         crashgen_version=crashgen,
-        mainerror=mainerror
+        mainerror=mainerror,
     )
 
+
 def process_crashgen_settings(
-    crashgen: dict[str, Any],
-    yamldata: ClassicScanLogsInfo,
-    xsemodules: set[str],
-    autoscan_report: list[str]
+    crashgen: dict[str, Any], yamldata: ClassicScanLogsInfo, xsemodules: set[str], autoscan_report: list[str]
 ) -> None:
     Has_XCell = "x-cell-fo4.dll" in xsemodules
     Has_BakaScrapHeap = "bakascrapheap.dll" in xsemodules
@@ -426,9 +430,7 @@ def process_crashgen_settings(
                 f" FIX: Open {yamldata.crashgen_name}'s TOML file and change Achievements to FALSE, this prevents conflicts with {yamldata.crashgen_name}.\n-----\n",
             ))
         else:
-            autoscan_report.append(
-                f"✔️ Achievements parameter is correctly configured in your {yamldata.crashgen_name} settings! \n-----\n"
-            )
+            autoscan_report.append(f"✔️ Achievements parameter is correctly configured in your {yamldata.crashgen_name} settings! \n-----\n")
 
     # Check MemoryManager setting
     crashgen_memorymanager = crashgen.get("MemoryManager")
@@ -536,6 +538,7 @@ def process_crashgen_settings(
                 f"✔️ F4EE (Looks Menu) parameter is correctly configured in your {yamldata.crashgen_name} settings! \n-----\n"
             )
 
+
 def write_autoscan_report(crashlog_file: Path, autoscan_report: list[str]) -> None:
     """Write the autoscan report to a file."""
     # Replace personal username in paths if present
@@ -556,6 +559,7 @@ def write_autoscan_report(crashlog_file: Path, autoscan_report: list[str]) -> No
         CMain.logger.debug(f"- - -> RUNNING CRASH LOG FILE SCAN >>> SCANNED {crashlog_file.name}")
         autoscan_file.write("".join(sanitized_report))
 
+
 def move_unsolved_logs(crashlog_file: Path) -> None:
     """Move unsolved logs to backup folder."""
     backup_path = Path("CLASSIC Backup/Unsolved Logs")
@@ -570,6 +574,7 @@ def move_unsolved_logs(crashlog_file: Path) -> None:
         shutil.copy2(crashlog_file, crash_move)
     if autoscan_filepath.exists():
         shutil.copy2(autoscan_filepath, scan_move)
+
 
 def print_final_stats(stats: dict[str, int], scan_start_time: float, scan_failed_list: list[str], yamldata: ClassicScanLogsInfo) -> None:
     """Print final statistics and information."""
@@ -607,6 +612,8 @@ def print_final_stats(stats: dict[str, int], scan_start_time: float, scan_failed
         print("===============================================================================")
         print("Most common reason for this are logs being incomplete or in the wrong format.")
         print("Make sure that your crash log files have the .log file format, NOT .txt! \n")
+
+
 def process_version_info(segments: CrashLogSegments, yamldata: ClassicScanLogsInfo, autoscan_report: list[str]) -> None:
     """Process version information from the crash log."""
     version_current = crashgen_version_gen(segments.crashgen_version)
@@ -623,6 +630,7 @@ def process_version_info(segments: CrashLogSegments, yamldata: ClassicScanLogsIn
     else:
         autoscan_report.append(f"{yamldata.warn_outdated} \n")
 
+
 def get_gpu_info(system_segment: list[str]) -> tuple[bool, bool, bool]:
     """Extract GPU information from system segment."""
     gpu_amd = any("GPU #1" in elem and "AMD" in elem for elem in system_segment)
@@ -631,12 +639,13 @@ def get_gpu_info(system_segment: list[str]) -> tuple[bool, bool, bool]:
 
     return gpu_amd, gpu_nvidia, gpu_integrated
 
+
 def get_crash_log_plugins(segments: CrashLogSegments, ignore_plugins_list: set[str]) -> PluginDict:
     """Extract and process plugins from crash log."""
     crashlog_plugins: PluginDict = {}
 
     # Check if main game ESM exists in plugins
-    esm_name = f"{CMain.gamevars["game"]}.esm"
+    esm_name = f"{CMain.gamevars['game']}.esm"
     if not any(esm_name in elem for elem in segments.plugins):
         return crashlog_plugins
 
@@ -686,6 +695,7 @@ def get_crash_log_plugins(segments: CrashLogSegments, ignore_plugins_list: set[s
             del crashlog_plugins[signal]
 
     return crashlog_plugins
+
 
 def process_crash_suspects(segments: CrashLogSegments, yamldata: ClassicScanLogsInfo, autoscan_report: list[str]) -> None:
     """Process and report crash suspects."""
@@ -757,7 +767,10 @@ def process_crash_suspects(segments: CrashLogSegments, yamldata: ClassicScanLogs
             "Check below for mods that can cause frequent crashes and other problems.\n\n",
         ))
 
-def process_plugins(segments: CrashLogSegments, crashlog_plugins: PluginDict, yamldata: ClassicScanLogsInfo, autoscan_report: list[str]) -> None:
+
+def process_plugins(
+    segments: CrashLogSegments, crashlog_plugins: PluginDict, yamldata: ClassicScanLogsInfo, autoscan_report: list[str]
+) -> None:
     """Process and report plugin information."""
     autoscan_report.append("# LIST OF (POSSIBLE) PLUGIN SUSPECTS #\n")
 
@@ -773,9 +786,7 @@ def process_plugins(segments: CrashLogSegments, crashlog_plugins: PluginDict, ya
 
     if plugins_matches:
         plugins_found = dict(Counter(plugins_matches))
-        autoscan_report.extend(
-            f"- {key} | {value}\n" for key, value in plugins_found.items()
-        )
+        autoscan_report.extend(f"- {key} | {value}\n" for key, value in plugins_found.items())
         autoscan_report.extend((
             "\n[Last number counts how many times each Plugin Suspect shows up in the crash log.]\n",
             f"These Plugins were caught by {yamldata.crashgen_name} and some of them might be responsible for this crash.\n",
@@ -783,6 +794,7 @@ def process_plugins(segments: CrashLogSegments, crashlog_plugins: PluginDict, ya
         ))
     else:
         autoscan_report.append("* COULDN'T FIND ANY PLUGIN SUSPECTS *\n\n")
+
 
 def process_mod_conflicts(crashlog_plugins: PluginDict, yamldata: ClassicScanLogsInfo, autoscan_report: list[str]) -> None:
     """Check and report mod conflicts."""
@@ -803,6 +815,7 @@ def process_mod_conflicts(crashlog_plugins: PluginDict, yamldata: ClassicScanLog
     else:
         autoscan_report.append(yamldata.warn_noplugins)
 
+
 def process_mod_solutions(crashlog_plugins: PluginDict, yamldata: ClassicScanLogsInfo, autoscan_report: list[str]) -> None:
     """Check and report available mod solutions."""
     autoscan_report.extend((
@@ -822,6 +835,7 @@ def process_mod_solutions(crashlog_plugins: PluginDict, yamldata: ClassicScanLog
             autoscan_report.append("# FOUND NO PROBLEMATIC MODS WITH AVAILABLE SOLUTIONS AND COMMUNITY PATCHES # \n\n")
     else:
         autoscan_report.append(yamldata.warn_noplugins)
+
 
 def process_mod_patches(crashlog_plugins: PluginDict, yamldata: ClassicScanLogsInfo, autoscan_report: list[str]) -> None:
     """Check and report OPC patched mods."""
@@ -845,7 +859,10 @@ def process_mod_patches(crashlog_plugins: PluginDict, yamldata: ClassicScanLogsI
     else:
         autoscan_report.append(yamldata.warn_noplugins)
 
-def process_important_mods(crashlog_plugins: PluginDict, yamldata: ClassicScanLogsInfo, gpu_rival: Literal["nvidia", "amd"] | None, autoscan_report: list[str]) -> None:
+
+def process_important_mods(
+    crashlog_plugins: PluginDict, yamldata: ClassicScanLogsInfo, gpu_rival: Literal["nvidia", "amd"] | None, autoscan_report: list[str]
+) -> None:
     """Check and report important mod presence and compatibility."""
     autoscan_report.extend((
         "====================================================\n",
@@ -861,6 +878,7 @@ def process_important_mods(crashlog_plugins: PluginDict, yamldata: ClassicScanLo
     else:
         autoscan_report.append(yamldata.warn_noplugins)
 
+
 def process_records(segments: CrashLogSegments, yamldata: ClassicScanLogsInfo, autoscan_report: list[str]) -> None:
     """Process and report record information."""
     autoscan_report.append("# LIST OF DETECTED (NAMED) RECORDS #\n")
@@ -871,8 +889,7 @@ def process_records(segments: CrashLogSegments, yamldata: ClassicScanLogsInfo, a
     records_matches = [
         line[30:].strip() if "[RSP+" in line else line.strip()
         for line in segments.callstack
-        if any(item in line.lower() for item in lower_records)
-        and all(record not in line.lower() for record in lower_ignore)
+        if any(item in line.lower() for item in lower_records) and all(record not in line.lower() for record in lower_ignore)
     ]
 
     if records_matches:
@@ -888,7 +905,10 @@ def process_records(segments: CrashLogSegments, yamldata: ClassicScanLogsInfo, a
     else:
         autoscan_report.append("* COULDN'T FIND ANY NAMED RECORDS *\n\n")
 
-def process_mod_compatibility(crashlog_plugins: PluginDict, yamldata: ClassicScanLogsInfo, gpu_info: tuple[bool, bool, bool], autoscan_report: list[str]) -> None:
+
+def process_mod_compatibility(
+    crashlog_plugins: PluginDict, yamldata: ClassicScanLogsInfo, gpu_info: tuple[bool, bool, bool], autoscan_report: list[str]
+) -> None:
     """Process and report mod compatibility information."""
     gpu_amd, gpu_nvidia, _ = gpu_info
     gpu_rival = "nvidia" if (gpu_amd) else "amd" if gpu_nvidia else None
@@ -918,18 +938,23 @@ def process_mod_compatibility(crashlog_plugins: PluginDict, yamldata: ClassicSca
     process_mod_solutions(crashlog_plugins, yamldata, autoscan_report)
     process_mod_patches(crashlog_plugins, yamldata, autoscan_report)
     from typing import cast
-    process_important_mods(crashlog_plugins, yamldata, cast(Literal["nvidia", "amd"] | None, gpu_rival if gpu_rival in ["nvidia", "amd"] else None), autoscan_report)
 
-def process_formids(segments: CrashLogSegments, crashlog_plugins: PluginDict, show_formid_values: bool, formid_db_exists: bool, autoscan_report: list[str]) -> None:
+    process_important_mods(
+        crashlog_plugins,
+        yamldata,
+        cast(Literal["nvidia", "amd"] | None, gpu_rival if gpu_rival in ["nvidia", "amd"] else None),
+        autoscan_report,
+    )
+
+
+def process_formids(
+    segments: CrashLogSegments, crashlog_plugins: PluginDict, show_formid_values: bool, formid_db_exists: bool, autoscan_report: list[str]
+) -> None:
     """Process and report FormID information from the crash log."""
     autoscan_report.append("# LIST OF (POSSIBLE) FORM ID SUSPECTS #\n")
 
     # Extract FormIDs from callstack
-    formids_matches = [
-        line.replace("0x", "").strip()
-        for line in segments.callstack
-        if "0xFF" not in line and "id:" in line.lower()
-    ]
+    formids_matches = [line.replace("0x", "").strip() for line in segments.callstack if "0xFF" not in line and "id:" in line.lower()]
 
     if formids_matches:
         formids_found = dict(Counter(sorted(formids_matches)))
@@ -960,6 +985,7 @@ def process_formids(segments: CrashLogSegments, crashlog_plugins: PluginDict, sh
     else:
         autoscan_report.append("* COULDN'T FIND ANY FORM ID SUSPECTS *\n\n")
 
+
 def get_fcx_check_results() -> tuple[str, str]:
     """Get FCX mode check results."""
     fcx_mode = CMain.classic_settings(bool, "FCX Mode")
@@ -971,7 +997,10 @@ def get_fcx_check_results() -> tuple[str, str]:
         game_files_check = ""
     return main_files_check, game_files_check
 
-def process_crash_details(segments: CrashLogSegments, crashlog_plugins: PluginDict, yamldata: ClassicScanLogsInfo, autoscan_report: list[str]) -> None:
+
+def process_crash_details(
+    segments: CrashLogSegments, crashlog_plugins: PluginDict, yamldata: ClassicScanLogsInfo, autoscan_report: list[str]
+) -> None:
     """Process and report detailed crash information."""
     show_formid_values = CMain.classic_settings(bool, "Show FormID Values") or False
     formid_db_exists = any(db.is_file() for db in DB_PATHS)
@@ -985,7 +1014,10 @@ def process_crash_details(segments: CrashLogSegments, crashlog_plugins: PluginDi
     # Process records
     process_records(segments, yamldata, autoscan_report)
 
-def process_crash_log(crash_file: Path, yamldata: ClassicScanLogsInfo, ignore_plugins_list: set[str], main_files_check: str, game_files_check: str) -> tuple[list[str], bool, bool]:
+
+def process_crash_log(
+    crash_file: Path, yamldata: ClassicScanLogsInfo, ignore_plugins_list: set[str], main_files_check: str, game_files_check: str
+) -> tuple[list[str], bool, bool]:
     """Process a single crash log file and return the report, success flags."""
     autoscan_report: list[str] = []
     trigger_scan_failed = False
@@ -1049,6 +1081,7 @@ def process_crash_log(crash_file: Path, yamldata: ClassicScanLogsInfo, ignore_pl
 
     return autoscan_report, trigger_scan_failed, trigger_plugins_loaded
 
+
 def process_special_mods(xsemodules: set[str], yamldata: ClassicScanLogsInfo, crashgen: dict[str, Any], autoscan_report: list[str]) -> None:
     """Process special mods like XCell and BakaScrapHeap."""
     Has_XCell = "x-cell-fo4.dll" in xsemodules
@@ -1071,6 +1104,7 @@ def process_special_mods(xsemodules: set[str], yamldata: ClassicScanLogsInfo, cr
             # Process specific crashgen settings
             process_crashgen_settings(crashgen, yamldata, xsemodules, autoscan_report)
 
+
 def crashlogs_scan() -> None:
     """Main function to scan crash logs."""
     # Setup
@@ -1091,11 +1125,7 @@ def crashlogs_scan() -> None:
     main_files_check, game_files_check = get_fcx_check_results()
 
     # Initialize statistics
-    stats = {
-        "scanned": 0,
-        "incomplete": 0,
-        "failed": 0
-    }
+    stats = {"scanned": 0, "incomplete": 0, "failed": 0}
 
     scan_failed_list: list[str] = []
 
@@ -1162,7 +1192,6 @@ if __name__ == "__main__":
 
     args = Args().parse_args()
 
-
     if isinstance(args.fcx_mode, bool) and args.fcx_mode != CMain.classic_settings(bool, "FCX Mode"):
         CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.FCX Mode", args.fcx_mode)
 
@@ -1172,10 +1201,18 @@ if __name__ == "__main__":
     if isinstance(args.move_unsolved, bool) and args.move_unsolved != CMain.classic_settings(bool, "Move Unsolved Logs"):
         CMain.yaml_settings(bool, CMain.YAML.Settings, "CLASSIC_Settings.Move Unsolved", args.move_unsolved)
 
-    if isinstance(args.ini_path, Path) and args.ini_path.resolve().is_dir() and str(args.ini_path) != CMain.classic_settings(str, "INI Folder Path"):
+    if (
+        isinstance(args.ini_path, Path)
+        and args.ini_path.resolve().is_dir()
+        and str(args.ini_path) != CMain.classic_settings(str, "INI Folder Path")
+    ):
         CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.INI Folder Path", str(args.ini_path.resolve()))
 
-    if isinstance(args.scan_path, Path) and args.scan_path.resolve().is_dir() and str(args.scan_path) != CMain.classic_settings(str, "SCAN Custom Path"):
+    if (
+        isinstance(args.scan_path, Path)
+        and args.scan_path.resolve().is_dir()
+        and str(args.scan_path) != CMain.classic_settings(str, "SCAN Custom Path")
+    ):
         CMain.yaml_settings(str, CMain.YAML.Settings, "CLASSIC_Settings.SCAN Custom Path", str(args.scan_path.resolve()))
 
     if (
