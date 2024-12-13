@@ -11,7 +11,6 @@ from types import TracebackType
 from typing import Literal
 
 import regex as re
-import requests
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QFontMetrics, QIcon, QPixmap
 from PySide6.QtMultimedia import QSoundEffect
@@ -41,6 +40,26 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+
+# Example fix for pastebin fetch
+class PastebinFetchWorker(QObject):
+    finished = Signal()
+    error = Signal(str)
+    success = Signal(str)
+
+    def __init__(self, url: str) -> None:
+        super().__init__()
+        self.url = url
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            CLogs.pastebin_fetch(self.url)
+            self.success.emit(self.url)
+        except (OSError, ValueError) as e:
+            self.error.emit(str(e))
+        finally:
+            self.finished.emit()
 
 class CustomAboutDialog(QDialog):
     def __init__(self, parent: QMainWindow | QDialog | None = None) -> None:
@@ -607,20 +626,22 @@ QLabel {
         layout.addLayout(pastebin_layout)
 
     def fetch_pastebin_log(self) -> None:
-        """Fetch the log from Pastebin"""
         input_text = self.pastebin_id_input.text().strip()
+        url = input_text if self.pastebin_url_regex.match(input_text) else f"https://pastebin.com/{input_text}"
 
-        # Regular expression to check if the input is a full URL
-        pastebin_url = input_text if self.pastebin_url_regex.match(input_text) else f"https://pastebin.com/{input_text}"
+        # Create thread and worker
+        pastebin_thread = QThread()
+        pastebin_worker = PastebinFetchWorker(url)
+        pastebin_worker.moveToThread(pastebin_thread)
 
-        try:
-            CLogs.pastebin_fetch(pastebin_url)  # Fetch the log file from Pastebin
-            QMessageBox.information(self, "Success", f"Log fetched from: {pastebin_url}")
-        except (OSError, requests.HTTPError) as e:
-            QMessageBox.warning(self, "Error", f"Failed to fetch log: {e!s}", QMessageBox.StandardButton.NoButton, QMessageBox.StandardButton.NoButton)
-        else:
-            print(f"✔️ Log successfully fetched from: {pastebin_url}")
-            QMessageBox.information(self, "Success", f"Log successfully fetched from: {pastebin_url}")
+        # Connect signals
+        pastebin_thread.started.connect(pastebin_worker.run)
+        pastebin_worker.finished.connect(pastebin_thread.quit)
+        pastebin_worker.success.connect(lambda url: QMessageBox.information(self, "Success", f"Log fetched from: {url}"))
+        pastebin_worker.error.connect(lambda err: QMessageBox.warning(self, "Error", f"Failed to fetch log: {err}", QMessageBox.StandardButton.NoButton, QMessageBox.StandardButton.NoButton))
+
+        # Start thread
+        pastebin_thread.start()
 
     def show_manual_docs_path_dialog(self) -> None:
         dialog = ManualPathDialog(self)
