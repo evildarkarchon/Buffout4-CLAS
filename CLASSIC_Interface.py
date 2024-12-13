@@ -488,6 +488,8 @@ class MainWindow(QMainWindow):
 
         self.pastebin_fetch_button = QPushButton("Fetch Log", self)
         self.pastebin_fetch_button.clicked.connect(self.fetch_pastebin_log)
+        self.pastebin_fetch_button.clicked.connect(self.pastebin_id_input.clear)
+        self.pastebin_fetch_button.setToolTip("Fetch the log file from Pastebin. Can be used more than once.")
         pastebin_layout.addWidget(self.pastebin_fetch_button)
 
         # Add the layout to the main layout (add it to an appropriate tab or section)
@@ -613,7 +615,7 @@ class MainWindow(QMainWindow):
 
 
 
-        # self.setup_pastebin_elements(layout)
+        self.setup_pastebin_elements(layout)
 
         # Add first separator
         layout.addWidget(self.create_separator())
