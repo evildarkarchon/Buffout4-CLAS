@@ -506,7 +506,7 @@ class MainWindow(QMainWindow):
             CLogs.pastebin_fetch(pastebin_url)  # Fetch the log file from Pastebin
             QMessageBox.information(self, "Success", f"Log fetched from: {pastebin_url}")
         except (OSError, requests.HTTPError) as e:
-            QMessageBox.warning(self, "Error", f"Failed to fetch log: {e!s}")
+            QMessageBox.warning(self, "Error", f"Failed to fetch log: {e!s}", QMessageBox.StandardButton.NoButton, QMessageBox.StandardButton.NoButton)
         else:
             print(f"✔️ Log successfully fetched from: {pastebin_url}")
             QMessageBox.information(self, "Success", f"Log successfully fetched from: {pastebin_url}")
@@ -582,6 +582,7 @@ class MainWindow(QMainWindow):
                 "CLASSIC UPDATE",
                 update_popup_text,
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.NoButton
             )
             if result == QMessageBox.StandardButton.Yes:
                 QDesktopServices.openUrl(
@@ -592,7 +593,7 @@ class MainWindow(QMainWindow):
 
     def show_update_error(self, error_message: str) -> None:
         QMessageBox.warning(
-            self, "Update Check Failed", f"Failed to check for updates: {error_message}"
+            self, "Update Check Failed", f"Failed to check for updates: {error_message}", QMessageBox.StandardButton.NoButton, QMessageBox.StandardButton.NoButton
         )
 
     def setup_main_tab(self) -> None:
@@ -797,6 +798,8 @@ class MainWindow(QMainWindow):
                 self,
                 "Error",
                 "Unable to access files from your game folder. Please run CLASSIC in admin mode to resolve this problem.",
+                QMessageBox.StandardButton.NoButton,
+                QMessageBox.StandardButton.NoButton,
             )
 
     def help_popup_backup(self) -> None:
