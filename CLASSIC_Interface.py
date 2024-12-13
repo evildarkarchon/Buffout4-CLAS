@@ -41,7 +41,6 @@ from PySide6.QtWidgets import (
 )
 
 
-# Example fix for pastebin fetch
 class PastebinFetchWorker(QObject):
     finished = Signal()
     error = Signal(str)
