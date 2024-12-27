@@ -302,20 +302,20 @@ class SQLiteReader:
 class ClassicScanLogsInfo:
     classic_game_hints: list[str] = field(default_factory=list)
     classic_records_list: list[str] = field(default_factory=list)
-    classic_version: str = ""
-    classic_version_date: str = ""
-    crashgen_name: str = ""
-    crashgen_latest_og: str = ""
-    crashgen_latest_vr: str = ""
+    classic_version: str = field(default_factory=str)
+    classic_version_date: str = field(default_factory=str)
+    crashgen_name: str = field(default_factory=str)
+    crashgen_latest_og: str = field(default_factory=str)
+    crashgen_latest_vr: str = field(default_factory=str)
     crashgen_ignore: set = field(default_factory=set)
-    warn_noplugins: str = ""
-    warn_outdated: str = ""
-    xse_acronym: str = ""
+    warn_noplugins: str = field(default_factory=str)
+    warn_outdated: str = field(default_factory=str)
+    xse_acronym: str = field(default_factory=str)
     game_ignore_plugins: list[str] = field(default_factory=list)
     game_ignore_records: list[str] = field(default_factory=list)
     suspects_error_list: dict[str, str] = field(default_factory=dict)
     suspects_stack_list: dict[str, list[str]] = field(default_factory=dict)
-    autoscan_text: str = ""
+    autoscan_text: str = field(default_factory=str)
     ignore_list: list[str] = field(default_factory=list)
     game_mods_conf: dict[str, str] = field(default_factory=dict)
     game_mods_core: dict[str, str] = field(default_factory=dict)
