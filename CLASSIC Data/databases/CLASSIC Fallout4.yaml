@@ -370,9 +370,11 @@ Crashlog_Error_Check:
 # Add NOT to ignore crash suspect warning completely if the Call Stack also contains this item.
 # If no condition is specified, it checks if the item appears at least once in the Call Stack.
 Crashlog_Stack_Check:
+  5 | Scaleform Gfx Crash: [ME-OPT|Scaleform::Gfx::Value::ObjectInterface, InstalledContentPanelBackground_mc, BackgroundAndBracketsInstalledContentTopic_mc]
+
   5 | DLL Crash: [DLCBannerDLC01.dds]
 
-  5 | BASS Crash: [LoadScreenTranslucent.nif]
+  5 | Downgrade Crash: [LoadScreenTranslucent.nif]
 
   5 | LOD Crash: [BGSLocation, BGSQueuedTerrainInitialLoad]
 
