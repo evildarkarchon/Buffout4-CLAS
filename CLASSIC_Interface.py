@@ -1343,7 +1343,8 @@ QLabel {
         """
         )
         self.papyrus_button.setToolTip(
-            "Start monitoring the Papyrus logs for new errors."
+            """Start monitoring the Papyrus logs for new errors.
+This feature is not fully implemented."""
         )
         self.papyrus_button.setCheckable(True)
         self.papyrus_button.setEnabled(False) # Temporarily disabled until the feature is fully implemented.
