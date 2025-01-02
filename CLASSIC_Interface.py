@@ -1,18 +1,16 @@
 import asyncio
-import multiprocessing
-import multiprocessing.synchronize
-import queue
 import sys
-import time
 import traceback
 from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from types import TracebackType
 from typing import Literal
 
 import regex as re
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, QTimer, QUrl, Signal, Slot
-from PySide6.QtGui import QDesktopServices, QFontMetrics, QIcon, QPixmap
+from PySide6.QtGui import QCloseEvent, QDesktopServices, QFontMetrics, QIcon, QPixmap
 from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import (
     QApplication,
@@ -40,6 +38,97 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+
+@dataclass
+class PapyrusStats:
+    """Data class to hold Papyrus log statistics"""
+    timestamp: datetime
+    dumps: int
+    stacks: int
+    warnings: int
+    errors: int
+    ratio: float
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, PapyrusStats):
+            return NotImplemented
+        return (self.dumps == other.dumps and
+                self.stacks == other.stacks and
+                self.warnings == other.warnings and
+                self.errors == other.errors)
+
+class PapyrusMonitorWorker(QObject):
+    """Worker class to monitor Papyrus logs in a separate thread"""
+
+    # Signal when new stats are available
+    statsUpdated = Signal(PapyrusStats)
+
+    # Signal for errors
+    error = Signal(str)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._should_run = True
+        self._last_stats: PapyrusStats | None = None
+        self._error_sound_played = False  # Track if error sound has played this session
+
+    def stop(self) -> None:
+        """Stop the monitoring loop"""
+        self._should_run = False
+
+    @Slot()
+    def run(self) -> None:
+        """Main monitoring loop"""
+        while self._should_run:
+            try:
+                message, count = CGame.papyrus_logging()
+
+                # Parse the message to extract stats
+                current_stats = self._parse_stats(message, count)
+
+                # Only emit if stats have changed
+                if self._last_stats != current_stats:
+                    self.statsUpdated.emit(current_stats)
+                    self._last_stats = current_stats
+
+                # Sleep for a short interval to prevent excessive CPU usage
+                QThread.msleep(1000)  # Check every second
+
+            except (OSError, ValueError) as e:
+                self.error.emit(str(e))
+                break
+
+    @staticmethod
+    def _parse_stats(message: str, dump_count: int) -> PapyrusStats:
+        """Parse the papyrus log message into statistics"""
+        stats = {
+            'dumps': dump_count,
+            'stacks': 0,
+            'warnings': 0,
+            'errors': 0
+        }
+
+        for line in message.splitlines():
+            if ': ' in line:
+                key, value = line.split(': ')
+                key = key.strip().lower()
+                if key == 'number of stacks':
+                    stats['stacks'] = int(value)
+                elif key == 'number of warnings':
+                    stats['warnings'] = int(value)
+                elif key == 'number of errors':
+                    stats['errors'] = int(value)
+
+        ratio = 0.0 if stats['dumps'] == 0 else stats['dumps'] / stats['stacks']
+
+        return PapyrusStats(
+            timestamp=datetime.now(),
+            dumps=stats['dumps'],
+            stacks=stats['stacks'],
+            warnings=stats['warnings'],
+            errors=stats['errors'],
+            ratio=ratio
+        )
 
 # Example fix for pastebin fetch
 class PastebinFetchWorker(QObject):
@@ -273,45 +362,6 @@ class GamePathDialog(QDialog):
     def get_path(self) -> str:
         return self.input_field.text()
 
-class PapyrusLogProcessor(QThread):
-    # Signal to update the UI with new log messages
-    new_log_messages = Signal(str)
-
-    def __init__(self, result_queue: multiprocessing.Queue, parent: QObject | None = None) -> None:
-        super().__init__(parent)
-        self.result_queue = result_queue
-        self.is_running = True  # Control flag to stop the thread
-
-    def run(self) -> None:
-        while self.is_running:
-            messages = []
-            try:
-                while not self.result_queue.empty():
-                    message = self.result_queue.get_nowait()
-                    messages.append(message)
-            except queue.Empty:
-                pass
-
-            if messages:
-                # Join the messages and emit them to the main thread (for UI update)
-                self.new_log_messages.emit("\n".join(messages))
-
-            # Sleep for a bit to avoid hammering the CPU (you can adjust the interval)
-            self.msleep(500)  # 500 ms, adjust as needed
-
-    def stop(self) -> None:
-        self.is_running = False
-
-
-def papyrus_worker(q: multiprocessing.Queue, stop_event: multiprocessing.synchronize.Event) -> None:
-    while not stop_event.is_set():
-        papyrus_result, _ = CGame.papyrus_logging()
-        # Ensure the message starts and ends with newlines
-        papyrus_result = f"\n{papyrus_result.strip()}\n"
-        q.put(papyrus_result)
-        time.sleep(5)  # Delay between checks
-
-
 class OutputRedirector(QObject):
     outputWritten = Signal(str)
 
@@ -366,6 +416,9 @@ class GameFilesScanWorker(QObject):
 
 
 class MainWindow(QMainWindow):
+    papyrus_monitor_thread: QThread | None
+    papyrus_monitor_worker: PapyrusMonitorWorker | None
+    _last_stats: PapyrusStats | None
     def __init__(self) -> None:
         super().__init__()
 
@@ -575,19 +628,10 @@ QLabel {
         self.update_check_timer.timeout.connect(self.perform_update_check)
         self.is_update_check_running = False
 
-        # Set up Papyrus monitoring
-        self.result_queue: multiprocessing.Queue = multiprocessing.Queue()
-        self.worker_stop_event = multiprocessing.Event()
-        self.worker_process: multiprocessing.Process | None = None
-        self.is_worker_running = False
-
         # Initialize thread attributes
         self.crash_logs_thread: QThread | None = None
         self.game_files_thread: QThread | None = None
 
-        # Set up the QTimer for periodic updates
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update_output_text_box_papyrus_watcher)
         if CMain.manual_docs_gui is None or CMain.game_path_gui is None:
             raise TypeError("CMain not initialized")
         CMain.manual_docs_gui.manual_docs_path_signal.connect(self.show_manual_docs_path_dialog)
@@ -600,6 +644,11 @@ QLabel {
                     # Simulate an exception when F12 is pressed (for testing)
                     raise Exception("This is a test exception")"""
         return super().eventFilter(watched, event)
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        """Stop the Papyrus monitor thread when the window is closed"""
+        self.stop_papyrus_monitoring()
+        super().closeEvent(event)
 
     def setup_pastebin_elements(self, layout: QVBoxLayout) -> None:
         """Set up the Pastebin fetch UI elements."""
@@ -1326,6 +1375,7 @@ QLabel {
         self.papyrus_button.setFixedHeight(30)
         self.papyrus_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.papyrus_button.clicked.connect(self.toggle_papyrus_worker)
+        self.papyrus_button.setEnabled(True)  # Enable the button since monitoring is now implemented
         self.papyrus_button.setStyleSheet(
             """
             QPushButton {
@@ -1347,7 +1397,6 @@ QLabel {
 This feature is not fully implemented."""
         )
         self.papyrus_button.setCheckable(True)
-        self.papyrus_button.setEnabled(False) # Temporarily disabled until the feature is fully implemented.
         bottom_layout.addWidget(self.papyrus_button)
 
         # EXIT button
@@ -1514,152 +1563,76 @@ This feature is not fully implemented."""
         self.enable_scan_buttons()
 
     def toggle_papyrus_worker(self) -> None:
-        if not self.is_worker_running:
-            # Start the Papyrus log processor thread
-            self.log_processor = PapyrusLogProcessor(self.result_queue)
-            self.log_processor.new_log_messages.connect(self.update_output_text_box)
-            self.log_processor.start()
-
-            # Start the worker process for papyrus logs
-            self.worker_stop_event = multiprocessing.Event()
-            self.worker_process = multiprocessing.Process(
-                target=papyrus_worker, args=(self.result_queue, self.worker_stop_event)
-            )
-            self.worker_process.daemon = True
-            self.worker_process.start()
-
-            # Start the timer for periodic updates
-            self.timer.start(5000)  # Update every 5 seconds
-
-            # Update button state and style
-            self.papyrus_button.setText("STOP PAPYRUS MONITORING")
-            self.papyrus_button.setStyleSheet(
-                """
-                QPushButton {
-                    color: black;
-                    background: rgb(240, 63, 40);  /* Red when monitoring is active */
-                    border-radius: 10px;
-                    border: 1px solid black;
-                    font-weight: bold;
-                    font-size: 14px;
-                }
-            """
-            )
-            self.is_worker_running = True
+        """Start or stop the Papyrus monitoring"""
+        if self.papyrus_button.isChecked():
+            self.start_papyrus_monitoring()
         else:
-            # Stop the worker process and the thread
-            self.worker_stop_event.set()  # Stop the multiprocessing worker
-            if self.worker_process:
-                self.worker_process.join()  # Ensure the worker process ends
+            self.stop_papyrus_monitoring()
 
-            # Stop the log processor thread
-            if self.log_processor:
-                self.log_processor.stop()
-                self.log_processor.wait()  # Wait for the thread to stop
+    def start_papyrus_monitoring(self) -> None:
+        """Start monitoring Papyrus logs"""
+        if self.papyrus_monitor_thread is None:
+            # Create new thread and worker
+            self.papyrus_monitor_thread = QThread()
+            self.papyrus_monitor_worker = PapyrusMonitorWorker()
+            self.papyrus_monitor_worker.moveToThread(self.papyrus_monitor_thread)
 
-            # Stop the timer
-            self.timer.stop()
+            # Connect signals
+            self.papyrus_monitor_thread.started.connect(self.papyrus_monitor_worker.run)
+            self.papyrus_monitor_worker.statsUpdated.connect(self.update_papyrus_stats)
+            self.papyrus_monitor_worker.error.connect(self.handle_papyrus_error)
 
-            # Update button state and style
+            # Start monitoring
+            self.papyrus_button.setText("STOP PAPYRUS MONITORING")
+            self.papyrus_monitor_thread.start()
+
+    def stop_papyrus_monitoring(self) -> None:
+        """Stop monitoring Papyrus logs"""
+        if self.papyrus_monitor_worker:
+            self.papyrus_monitor_worker.stop()
+
+        if self.papyrus_monitor_thread:
+            self.papyrus_monitor_thread.quit()
+            self.papyrus_monitor_thread.wait()
+
+            # Reset thread and worker
+            self.papyrus_monitor_thread = None
+            self.papyrus_monitor_worker = None
+
+            # Update UI
             self.papyrus_button.setText("START PAPYRUS MONITORING")
-            self.papyrus_button.setStyleSheet(
-                """
-                QPushButton {
-                    color: black;
-                    background: rgb(45, 237, 138);  /* Green when monitoring is off */
-                    border-radius: 10px;
-                    border: 1px solid black;
-                    font-weight: bold;
-                    font-size: 14px;
-                }
-            """
-            )
-            self.is_worker_running = False
+            self.papyrus_button.setChecked(False)
+            self.output_text_box.append("\n=== Papyrus monitoring stopped ===\n")
 
-    def update_output_text_box_papyrus_watcher(self) -> None:
-        if not hasattr(self, "message_buffer"):
-            self.message_buffer = ""
+    def update_papyrus_stats(self, stats: PapyrusStats) -> None:
+        """Update the UI with new Papyrus statistics"""
+        message = (
+            f"\n=== Papyrus Log Stats [{stats.timestamp.strftime('%H:%M:%S')}] ===\n"
+            f"Number of Dumps: {stats.dumps}\n"
+            f"Number of Stacks: {stats.stacks}\n"
+            f"Dumps/Stacks Ratio: {stats.ratio:.3f}\n"
+            f"Number of Warnings: {stats.warnings}\n"
+            f"Number of Errors: {stats.errors}\n"
+        )
+        self.output_text_box.append(message)
 
-        try:
-            while not self.result_queue.empty():
-                message = self.result_queue.get_nowait()
-                self.message_buffer += message
+        # Only play error sound once per session if new errors are detected
+        if (stats.errors > 0 and
+            (self._last_stats is None or stats.errors > self._last_stats.errors) and
+            not self.papyrus_monitor_worker._error_sound_played):  # type: ignore  # noqa: SLF001
+            self.audio_player.play_error_signal.emit()
+            self.papyrus_monitor_worker._error_sound_played = True  # type: ignore  # noqa: SLF001
 
-            # Process the buffer if it contains complete Papyrus data
-            if (
-                "NUMBER OF DUMPS" in self.message_buffer
-                and "NUMBER OF ERRORS" in self.message_buffer
-            ):
-                # Split the buffer into lines
-                lines = self.message_buffer.split("\n")
-                papyrus_data: list[str] = []
-                non_papyrus_data: list[str] = []
+        self._last_stats = stats
 
-                # Separate Papyrus monitoring data from other data
-                for line in lines:
-                    if any(
-                        key in line
-                        for key in [
-                            "NUMBER OF DUMPS",
-                            "NUMBER OF STACKS",
-                            "DUMPS/STACKS RATIO",
-                            "NUMBER OF WARNINGS",
-                            "NUMBER OF ERRORS",
-                        ]
-                    ):
-                        papyrus_data.append(line.strip())
-                    elif line.strip():
-                        non_papyrus_data.append(line)
-
-                # Update the text box with Papyrus data
-                if papyrus_data:
-                    current_text = self.output_text_box.toPlainText()
-                    current_lines = current_text.split("\n")
-
-                    # Find the Papyrus monitoring section
-                    papyrus_start = -1
-                    papyrus_end = -1
-                    for i, line in enumerate(current_lines):
-                        if "NUMBER OF DUMPS" in line:
-                            papyrus_start = i
-                        if papyrus_start != -1 and "NUMBER OF ERRORS" in line:
-                            papyrus_end = i + 1
-                            break
-
-                    # Update or add the Papyrus monitoring section
-                    if papyrus_start != -1 and papyrus_end != -1:
-                        updated_lines = [
-                            *current_lines[:papyrus_start],
-                            *papyrus_data,
-                            *current_lines[papyrus_end:],
-                        ]
-                    else:
-                        updated_lines = [
-                            *current_lines,
-                            "\n--- Papyrus Monitoring ---",
-                            *papyrus_data,
-                        ]
-
-                    new_text = "\n".join(updated_lines)
-                    self.output_text_box.setPlainText(new_text)
-
-                # Append any non-Papyrus data
-                if non_papyrus_data:
-                    self.output_text_box.append("\n".join(non_papyrus_data))
-
-                # Clear the processed data from the buffer
-                self.message_buffer = self.message_buffer.split("NUMBER OF ERRORS")[-1]
-
-                # Scroll to the bottom of the text box
-                scrollbar = self.output_text_box.verticalScrollBar()
-                scrollbar.setValue(scrollbar.maximum())
-
-        except queue.Empty:
-            pass  # No messages to process, continue
-
+    def handle_papyrus_error(self, error_msg: str) -> None:
+        """Handle errors from the Papyrus monitor"""
+        self.output_text_box.append(f"\n❌ ERROR IN PAPYRUS MONITORING: {error_msg}\n")
+        self.papyrus_button.setChecked(False)
+        self.stop_papyrus_monitoring()
+        self.audio_player.play_error_signal.emit()
 
 if __name__ == "__main__":
-    multiprocessing.freeze_support()
     app = QApplication(sys.argv)
 
     try:
