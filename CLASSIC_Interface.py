@@ -1346,7 +1346,7 @@ QLabel {
             "Start monitoring the Papyrus logs for new errors."
         )
         self.papyrus_button.setCheckable(True)
-        # self.papyrus_button.setEnabled(False) # Temporarily disabled until the feature is fully implemented.
+        self.papyrus_button.setEnabled(False) # Temporarily disabled until the feature is fully implemented.
         bottom_layout.addWidget(self.papyrus_button)
 
         # EXIT button
