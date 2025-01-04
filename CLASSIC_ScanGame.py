@@ -193,8 +193,6 @@ class ConfigFileCache:
 
 def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | bool | int | None = None) -> Any | None:
     """Read the TOML file"""
-    with CMain.open_file_with_encoding(toml_path) as toml_file:
-        data = tomlkit.parse(toml_file.read())
 
     file_bytes = toml_path.read_bytes()
     file_encoding = chardet.detect(file_bytes)["encoding"] or "utf-8"
