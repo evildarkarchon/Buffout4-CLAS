@@ -189,6 +189,7 @@ def detect_mods_important(
                 mod_found = True
                 continue
         if mod_found:
+            # noinspection PyTypeChecker
             if gpu_rival and gpu_rival in mod_warn.lower():
                 autoscan_report.extend((
                     f"❓ {mod_split[1]} is installed, BUT IT SEEMS YOU DON'T HAVE AN {gpu_rival.upper()} GPU?\n",
@@ -853,6 +854,7 @@ def crashlogs_scan() -> None:
         # ================================================
 
         autoscan_report.append("# LIST OF (POSSIBLE) PLUGIN SUSPECTS #\n")
+        # noinspection PyUnusedLocal
         plugins_matches: list[str] = []
         segment_callstack_lower = [line.lower() for line in segment_callstack]
 
