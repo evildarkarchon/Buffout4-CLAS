@@ -494,7 +494,6 @@ def docs_path_find() -> None:
             documents_path = Path.home() / "Documents"
 
         # Construct the full path to the game's documents folder
-        # noinspection PyTypeChecker
         win_docs = str(documents_path / "My Games" / docs_name)
 
         # Update the YAML settings with the documents path
@@ -519,7 +518,6 @@ def docs_path_find() -> None:
                     library_path = Path(library_line.split('"')[3])
                 if str(game_sid) in library_line:
                     library_path = library_path / "steamapps"
-                    # noinspection PyTypeChecker
                     linux_docs = library_path / "compatdata" / str(game_sid) / "pfx/drive_c/users/steamuser/My Documents/My Games" / docs_name
                     yaml_settings(str, YAML.Game_Local, f"Game{gamevars["vr"]}_Info.Root_Folder_Docs", str(linux_docs))
 
@@ -595,7 +593,6 @@ def docs_generate_paths() -> None:
 
 
 # =========== CHECK DOCUMENTS XSE FILE -> GET GAME ROOT FOLDER PATH ===========
-# noinspection PyTypeChecker
 def game_path_find() -> None:
     logger.debug("- - - INITIATED GAME PATH CHECK")
 
@@ -759,10 +756,8 @@ def xse_check_integrity() -> str:  # RESERVED | NEED VR HASH/FILE CHECK
 
     match xse_log_file:
         case str() | Path():
-            # noinspection PyTypeChecker
             if Path(xse_log_file).exists():
                 message_list.append(f"✔️ REQUIRED: *{xse_full_name}* is installed! \n-----\n")
-                # noinspection PyTypeChecker
                 with open_file_with_encoding(xse_log_file) as xse_log:
                     xse_data = xse_log.readlines()
                 if str(xse_ver_latest) in xse_data[0]:
@@ -893,7 +888,6 @@ def docs_check_ini(ini_name: str) -> str:
                 INI_config.set("Archive", "sResourceDataDirsFinal", "")
 
                 with ini_path.open("w+", encoding="utf-8", errors="ignore") as ini_file:
-                    # noinspection PyTypeChecker
                     INI_config.write(ini_file, space_around_delimiters=False)
 
         except PermissionError:
@@ -1009,7 +1003,6 @@ game_path_gui: GamePathEntry | None = None
 gui_mode: bool = False
 
 
-# noinspection PyTypedDict
 def initialize(is_gui: bool = False) -> None:
     global gui_mode, yaml_cache, manual_docs_gui, game_path_gui  # noqa: PLW0603
 

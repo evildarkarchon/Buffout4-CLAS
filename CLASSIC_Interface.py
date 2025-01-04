@@ -70,7 +70,7 @@ class PapyrusMonitorWorker(QObject):
         super().__init__()
         self._should_run = True
         self._last_stats: PapyrusStats | None = None
-        self.error_sound_played = False  # Track if error sound has played this session
+        self._error_sound_played = False  # Track if error sound has played this session
 
     def stop(self) -> None:
         """Stop the monitoring loop"""
@@ -193,7 +193,7 @@ class CustomAboutDialog(QDialog):
         layout.setAlignment(close_button, Qt.AlignmentFlag.AlignRight)
 
 class ErrorDialog(QDialog):
-    def __init__(self, e_txt: str) -> None:
+    def __init__(self, error_text: str) -> None:
         super().__init__()
         self.setWindowTitle("Error")
         self.setMinimumSize(600, 300)
@@ -201,7 +201,7 @@ class ErrorDialog(QDialog):
 
         self.text_edit = QPlainTextEdit(self)
         self.text_edit.setReadOnly(True)
-        self.text_edit.setPlainText(e_txt)
+        self.text_edit.setPlainText(error_text)
         layout.addWidget(self.text_edit)
 
         copy_button = QPushButton("Copy to Clipboard", self)
@@ -212,16 +212,16 @@ class ErrorDialog(QDialog):
         QApplication.clipboard().setText(self.text_edit.toPlainText())
 
 
-def show_exception_box(e_txt: str) -> None:
-    dialog = ErrorDialog(e_txt)
+def show_exception_box(error_text: str) -> None:
+    dialog = ErrorDialog(error_text)
     dialog.show()
     dialog.exec()
 
 
 def custom_excepthook(exc_type: type[BaseException], exc_value: BaseException, exc_traceback: TracebackType | None) -> None:
-    e_txt = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-    print(e_txt)  # Still print to console
-    show_exception_box(e_txt)
+    error_text = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+    print(error_text)  # Still print to console
+    show_exception_box(error_text)
 
 
 sys.excepthook = custom_excepthook
@@ -267,8 +267,7 @@ class AudioPlayer(QObject):
         if self.audio_enabled and self.notify_sound.isLoaded():
             self.notify_sound.play()
 
-    @staticmethod
-    def play_custom_sound(sound_path: str) -> None:
+    def play_custom_sound(self, sound_path: str) -> None:
         custom_sound = QSoundEffect()
         custom_sound.setSource(QUrl.fromLocalFile(sound_path))
         custom_sound.setVolume(1.0)
@@ -423,18 +422,6 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
 
-        self.pastebin_label = None
-        self.pastebin_id_input = None
-        self.pastebin_fetch_button = None
-        self.mods_folder_edit = None
-        self.scan_folder_edit = None
-        self.output_text_box = None
-        self.output_redirector = None
-        self.crash_logs_button = None
-        self.game_files_button = None
-        self.papyrus_button = None
-        self.crash_logs_worker = None
-        self.game_files_worker = None
         self.pastebin_url_regex: re.Pattern = re.compile(r"^https?://pastebin\.com/(\w+)$")
 
         CMain.initialize(is_gui=True)
@@ -699,7 +686,7 @@ QLabel {
         # Connect signals
         pastebin_thread.started.connect(pastebin_worker.run)
         pastebin_worker.finished.connect(pastebin_thread.quit)
-        pastebin_worker.success.connect(lambda uri: QMessageBox.information(self, "Success", f"Log fetched from: {uri}"))
+        pastebin_worker.success.connect(lambda url: QMessageBox.information(self, "Success", f"Log fetched from: {url}"))
         pastebin_worker.error.connect(lambda err: QMessageBox.warning(self, "Error", f"Failed to fetch log: {err}", QMessageBox.StandardButton.NoButton, QMessageBox.StandardButton.NoButton))
 
         # Start thread
@@ -1632,9 +1619,9 @@ This feature is not fully implemented."""
         # Only play error sound once per session if new errors are detected
         if (stats.errors > 0 and
             (self._last_stats is None or stats.errors > self._last_stats.errors) and
-            not self.papyrus_monitor_worker.error_sound_played):  # type: ignore  # noqa: SLF001
+            not self.papyrus_monitor_worker._error_sound_played):  # type: ignore  # noqa: SLF001
             self.audio_player.play_error_signal.emit()
-            self.papyrus_monitor_worker.error_sound_played = True  # type: ignore  # noqa: SLF001
+            self.papyrus_monitor_worker._error_sound_played = True  # type: ignore  # noqa: SLF001
 
         self._last_stats = stats
 
@@ -1648,7 +1635,6 @@ This feature is not fully implemented."""
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    # noinspection PyBroadException
     try:
         window = MainWindow()
         window.show()
