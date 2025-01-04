@@ -189,6 +189,7 @@ def detect_mods_important(
                 mod_found = True
                 continue
         if mod_found:
+            # noinspection PyTypeChecker
             if gpu_rival and gpu_rival in mod_warn.lower():
                 autoscan_report.extend((
                     f"❓ {mod_split[1]} is installed, BUT IT SEEMS YOU DON'T HAVE AN {gpu_rival.upper()} GPU?\n",
@@ -853,10 +854,9 @@ def crashlogs_scan() -> None:
         # ================================================
 
         autoscan_report.append("# LIST OF (POSSIBLE) PLUGIN SUSPECTS #\n")
-        plugins_matches: list[str] = []
         segment_callstack_lower = [line.lower() for line in segment_callstack]
 
-        plugins_matches = [
+        plugins_matches: list[str] = [
             plugin
             for line in segment_callstack_lower
             for plugin in crashlog_plugins_lower
@@ -1005,6 +1005,7 @@ if __name__ == "__main__":
     CMain.initialize()
     from pathlib import Path
 
+    # noinspection PyUnresolvedReferences
     from tap import Tap
 
     class Args(Tap):
