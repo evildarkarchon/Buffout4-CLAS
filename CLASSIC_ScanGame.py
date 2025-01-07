@@ -85,8 +85,7 @@ class ConfigFileCache:
             del self._config_file_cache[file_name_lower]
 
         file_path = self._config_files[file_name_lower]
-        with file_path.open("rb") as f:
-            file_bytes = f.read()
+        file_bytes = file_path.read_bytes()
         file_encoding = chardet.detect(file_bytes)["encoding"] or "utf-8"
         file_text = file_bytes.decode(file_encoding)
         config = iniparse.ConfigParser()
@@ -128,11 +127,11 @@ class ConfigFileCache:
             if value_type is str:
                 return config.get(section, setting)
             if value_type is bool:
-                return config.getboolean(section, setting)
+                return config.getboolean(section, setting) # type: ignore[no-any-return]
             if value_type is int:
-                return config.getint(section, setting)
+                return config.getint(section, setting) # type: ignore[no-any-return]
             if value_type is float:
-                return config.getfloat(section, setting)
+                return config.getfloat(section, setting) # type: ignore[no-any-return]
             raise NotImplementedError
         except ValueError as e:
             CMain.logger.error(f"ERROR: Unexpected value type - {e}")
@@ -194,11 +193,8 @@ class ConfigFileCache:
 
 def mod_toml_config(toml_path: Path, section: str, key: str, new_value: str | bool | int | None = None) -> Any | None:
     """Read the TOML file"""
-    with CMain.open_file_with_encoding(toml_path) as toml_file:
-        data = tomlkit.parse(toml_file.read())
 
-    with toml_path.open("rb") as f:
-        file_bytes = f.read()
+    file_bytes = toml_path.read_bytes()
     file_encoding = chardet.detect(file_bytes)["encoding"] or "utf-8"
     file_text = file_bytes.decode(file_encoding)
     data = tomlkit.parse(file_text)
@@ -348,7 +344,6 @@ def check_log_errors(folder_path: Path | str) -> str:
     ignore_logs_errors = ignore_logs_errors_setting if isinstance(ignore_logs_errors_setting, list) else []
     ignore_logs_errors_lower = [item.lower() for item in ignore_logs_errors] if ignore_logs_errors else []
     message_list: list[str] = []
-    errors_list: list[str] = []
 
     valid_log_files = [file for file in folder_path.glob("*.log") if "crash-" not in file.name]
     for file in valid_log_files:
@@ -427,8 +422,7 @@ def papyrus_logging() -> tuple[str, int]:
 
     count_dumps = count_stacks = count_warnings = count_errors = 0
     if papyrus_path and papyrus_path.exists():
-        with papyrus_path.open("rb") as encode_test:
-            papyrus_encoding = chardet.detect(encode_test.read())["encoding"]
+        papyrus_encoding = chardet.detect(papyrus_path.read_bytes())["encoding"]
         with papyrus_path.open(encoding=papyrus_encoding, errors="ignore") as papyrus_log:
             papyrus_data = papyrus_log.readlines()
         for line in papyrus_data:
