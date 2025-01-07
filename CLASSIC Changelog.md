@@ -1,6 +1,13 @@
 =====================================================================================================
 # CLASSIC CHANGELOG #
 
+7.30.4
+*CHANGES*
+- Added two new crashes to the list
+- Rewrote the Papyrus Log Monitor
+- Add the ability to fetch logs from pastebin
+- Minor optimizations and cleanups
+
 7.30.3
 *CHANGES*
 - Now queries the registry for the game's install directory first before falling back to parsing the F4SE log
