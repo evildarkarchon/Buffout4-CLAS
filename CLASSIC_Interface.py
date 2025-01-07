@@ -70,7 +70,7 @@ class PapyrusMonitorWorker(QObject):
         super().__init__()
         self._should_run = True
         self._last_stats: PapyrusStats | None = None
-        self._error_sound_played = False  # Track if error sound has played this session
+        self.error_sound_played = False  # Track if error sound has played this session
 
     def stop(self) -> None:
         """Stop the monitoring loop"""
@@ -416,12 +416,11 @@ class GameFilesScanWorker(QObject):
 
 
 class MainWindow(QMainWindow):
-    papyrus_monitor_thread: QThread | None
-    papyrus_monitor_worker: PapyrusMonitorWorker | None
-    _last_stats: PapyrusStats | None
     def __init__(self) -> None:
         super().__init__()
-
+        self.papyrus_monitor_thread: QThread | None = None
+        self.papyrus_monitor_worker: PapyrusMonitorWorker | None = None
+        self._last_stats: PapyrusStats | None = None
         self.pastebin_url_regex: re.Pattern = re.compile(r"^https?://pastebin\.com/(\w+)$")
 
         CMain.initialize(is_gui=True)
@@ -1584,6 +1583,18 @@ This feature is not fully implemented."""
 
             # Start monitoring
             self.papyrus_button.setText("STOP PAPYRUS MONITORING")
+            self.papyrus_button.setStyleSheet(
+                """
+                QPushButton {
+                    color: black;
+                    background: rgb(237, 45, 45);  /* Red background */
+                    border-radius: 10px;
+                    border: 1px solid black;
+                    font-weight: bold;
+                    font-size: 14px;
+                }
+                """
+            )
             self.papyrus_monitor_thread.start()
 
     def stop_papyrus_monitoring(self) -> None:
@@ -1601,6 +1612,18 @@ This feature is not fully implemented."""
 
             # Update UI
             self.papyrus_button.setText("START PAPYRUS MONITORING")
+            self.papyrus_button.setStyleSheet(
+                """
+                QPushButton {
+                    color: black;
+                    background: rgb(45, 237, 138);  /* Green background */
+                    border-radius: 10px;
+                    border: 1px solid black;
+                    font-weight: bold;
+                    font-size: 14px;
+                }
+                """
+            )
             self.papyrus_button.setChecked(False)
             self.output_text_box.append("\n=== Papyrus monitoring stopped ===\n")
 
@@ -1616,12 +1639,10 @@ This feature is not fully implemented."""
         )
         self.output_text_box.append(message)
 
-        # Only play error sound once per session if new errors are detected
-        if (stats.errors > 0 and
-            (self._last_stats is None or stats.errors > self._last_stats.errors) and
-            not self.papyrus_monitor_worker._error_sound_played):  # type: ignore  # noqa: SLF001
-            self.audio_player.play_error_signal.emit()
-            self.papyrus_monitor_worker._error_sound_played = True  # type: ignore  # noqa: SLF001
+        # Scroll to the bottom after adding the new message
+        self.output_text_box.verticalScrollBar().setValue(
+            self.output_text_box.verticalScrollBar().maximum()
+        )
 
         self._last_stats = stats
 
@@ -1630,7 +1651,9 @@ This feature is not fully implemented."""
         self.output_text_box.append(f"\n❌ ERROR IN PAPYRUS MONITORING: {error_msg}\n")
         self.papyrus_button.setChecked(False)
         self.stop_papyrus_monitoring()
-        self.audio_player.play_error_signal.emit()
+        if not self.papyrus_monitor_worker.error_sound_played:
+            self.audio_player.play_error_signal.emit()
+            self.papyrus_monitor_worker.error_sound_played = True
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
