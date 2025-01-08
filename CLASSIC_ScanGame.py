@@ -606,7 +606,7 @@ def scan_mod_inis() -> str:
         all_duplicates.extend([fp for f, fp in config_files.items() if f in config_files.duplicate_files])
         message_list.extend((
             "* NOTICE : DUPLICATES FOUND OF THE FOLLOWING FILES *\n",
-            *[str(p) for p in sorted(all_duplicates, key=lambda p: p.name)],
+            *[f"{str(p)}\n" for p in sorted(all_duplicates, key=lambda p: p.name)],
         ))
     return "".join(message_list)
 
