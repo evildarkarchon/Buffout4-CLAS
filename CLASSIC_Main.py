@@ -935,33 +935,39 @@ def main_files_backup() -> None:
     if not isinstance(xse_log_file, str):
         raise TypeError
 
-    with open_file_with_encoding(xse_log_file) as xse_log:
-        xse_data = xse_log.readlines()
-        xse_data_lower = [line.lower() for line in xse_data]
+    try:
+        with open_file_with_encoding(xse_log_file) as xse_log:
+            xse_data = xse_log.readlines()
+            xse_data_lower = [line.lower() for line in xse_data]
+    except FileNotFoundError:
+        xse_data_lower = []
+        
 
     # Grab current xse version to create a folder with that name.
-    line_xse = next(line for _, line in enumerate(xse_data_lower) if "version = " in line)
-    split_xse = line_xse.split(" ")
-    version_xse = xse_ver_latest
+    if len(xse_data_lower) > 0:
+        line_xse = next(line for _, line in enumerate(xse_data_lower) if "version = " in line)
+        split_xse = line_xse.split(" ")
+        version_xse = xse_ver_latest
 
-    for index, item in enumerate(split_xse):
-        if "version" in item:
-            index_xse = int(index + 2)
-            version_xse = split_xse[index_xse]
-            break
+        for index, item in enumerate(split_xse):
+            if "version" in item:
+                index_xse = int(index + 2)
+                version_xse = split_xse[index_xse]
+                break
 
-    # If there is no folder for current xse version, create it.
-    backup_path = Path(f"CLASSIC Backup/Game Files/{version_xse}")
-    backup_path.mkdir(parents=True, exist_ok=True)
+        # If there is no folder for current xse version, create it.
+        backup_path = Path(f"CLASSIC Backup/Game Files/{version_xse}") if version_xse else None
+        if backup_path:
+            backup_path.mkdir(parents=True, exist_ok=True)
 
-    # Backup the file if backup of file does not already exist.
-    game_files = list(Path(game_path).glob("*.*")) if game_path else []
-    backup_files = [file.name for file in backup_path.glob("*.*")]
-
-    for file in game_files:
-        if file.name not in backup_files and any(file.name in item for item in backup_list):
-            destination_file = backup_path / file.name
-            shutil.copy2(file, destination_file)
+            # Backup the file if backup of file does not already exist.
+            game_files = list(Path(game_path).glob("*.*")) if game_path else []
+            backup_files = [file.name for file in backup_path.glob("*.*")]
+    
+            for file in game_files:
+                if file.name not in backup_files and any(file.name in item for item in backup_list):
+                    destination_file = backup_path / file.name
+                    shutil.copy2(file, destination_file)
 
 # =========== GENERATE MAIN RESULTS ===========
 def main_combined_result() -> str:
