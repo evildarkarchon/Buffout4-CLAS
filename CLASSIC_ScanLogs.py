@@ -633,8 +633,8 @@ def crashlogs_scan() -> None:
                         autoscan_report.append(
                             f"* NOTICE : {setting_name} is disabled in your {yamldata.crashgen_name} settings, is this intentional? * \n-----\n"
                         )
-
-                if crashgen_achievements := crashgen.get("Achievements") is not None:
+                crashgen_achievements = crashgen.get("Achievements")
+                if crashgen_achievements is not None:
                     if crashgen_achievements and ("achievements.dll" in xsemodules or "unlimitedsurvivalmode.dll" in xsemodules):
                         autoscan_report.extend((
                             "# ❌ CAUTION : The Achievements Mod and/or Unlimited Survival Mode is installed, but Achievements is set to TRUE # \n",
@@ -644,8 +644,8 @@ def crashlogs_scan() -> None:
                         autoscan_report.append(
                             f"✔️ Achievements parameter is correctly configured in your {yamldata.crashgen_name} settings! \n-----\n"
                         )
-
-                if crashgen_memorymanager := crashgen.get("MemoryManager") is not None:
+                crashgen_memorymanager = crashgen.get("MemoryManager")
+                if crashgen_memorymanager is not None:
                     if crashgen_memorymanager:
                         if Has_XCell:
                             autoscan_report.extend((
@@ -683,7 +683,8 @@ def crashlogs_scan() -> None:
                         ))
 
                 if Has_XCell:
-                    if crashgen_havokmemorysystem := crashgen.get("HavokMemorySystem") is not None:
+                    crashgen_havokmemorysystem = crashgen.get("HavokMemorySystem")
+                    if crashgen_havokmemorysystem is not None:
                         if crashgen_havokmemorysystem:
                             autoscan_report.extend((
                                 "# ❌ CAUTION : X-Cell is installed, but HavokMemorySystem parameter is set to TRUE # \n",
@@ -693,8 +694,8 @@ def crashlogs_scan() -> None:
                             autoscan_report.append(
                                 f"✔️ HavokMemorySystem parameter is correctly configured for use with X-Cell in your {yamldata.crashgen_name} settings! \n-----\n"
                             )
-
-                    if crashgen_bstexturestreamerlocalheap := crashgen.get("BSTextureStreamerLocalHeap") is not None:
+                    crashgen_bstexturestreamerlocalheap = crashgen.get("BSTextureStreamerLocalHeap")
+                    if crashgen_bstexturestreamerlocalheap is not None:
                         if crashgen_bstexturestreamerlocalheap:
                             autoscan_report.extend((
                                 "# ❌ CAUTION : X-Cell is installed, but BSTextureStreamerLocalHeap parameter is set to TRUE # \n",
@@ -704,8 +705,8 @@ def crashlogs_scan() -> None:
                             autoscan_report.append(
                                 f"✔️ BSTextureStreamerLocalHeap parameter is correctly configured for use with X-Cell in your {yamldata.crashgen_name} settings! \n-----\n"
                             )
-
-                    if crashgen_scaleformallocator := crashgen.get("ScaleformAllocator") is not None:
+                    crashgen_scaleformallocator = crashgen.get("ScaleformAllocator")
+                    if crashgen_scaleformallocator is not None:
                         if crashgen_scaleformallocator:
                             autoscan_report.extend((
                                 "# ❌ CAUTION : X-Cell is installed, but ScaleformAllocator parameter is set to TRUE # \n",
@@ -715,8 +716,8 @@ def crashlogs_scan() -> None:
                             autoscan_report.append(
                                 f"✔️ ScaleformAllocator parameter is correctly configured for use with X-Cell in your {yamldata.crashgen_name} settings! \n-----\n"
                             )
-
-                    if crashgen_smallblockallocator := crashgen.get("SmallBlockAllocator") is not None:
+                    crashgen_smallblockallocator = crashgen.get("SmallBlockAllocator")
+                    if crashgen_smallblockallocator is not None:
                         if crashgen_smallblockallocator:
                             autoscan_report.extend((
                                 "# ❌ CAUTION : X-Cell is installed, but SmallBlockAllocator parameter is set to TRUE # \n",
@@ -726,8 +727,8 @@ def crashlogs_scan() -> None:
                             autoscan_report.append(
                                 f"✔️ SmallBlockAllocator parameter is correctly configured for use with X-Cell in your {yamldata.crashgen_name} settings! \n-----\n"
                             )
-
-                if crashgen_f4ee := crashgen.get("F4EE") is not None:
+                crashgen_f4ee = crashgen.get("F4EE")
+                if crashgen_f4ee is not None:
                     if not crashgen_f4ee and "f4ee.dll" in xsemodules:
                         autoscan_report.extend((
                             "# ❌ CAUTION : Looks Menu is installed, but F4EE parameter under [Compatibility] is set to FALSE # \n",
