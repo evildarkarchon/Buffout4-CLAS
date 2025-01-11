@@ -607,7 +607,7 @@ def crashlogs_scan() -> None:
             "====================================================\n",
         ))
 
-        Has_XCell = ("x-cell-fo4.dll" in xsemodules or "x-cell-og.dll" in xsemodules or "x-cell-ng.dll" in xsemodules)
+        Has_XCell = ("x-cell-fo4.dll" in xsemodules or "x-cell-og.dll" in xsemodules or "x-cell-ng2.dll" in xsemodules)
         Has_BakaScrapHeap = "bakascrapheap.dll" in xsemodules
 
         if fcx_mode:

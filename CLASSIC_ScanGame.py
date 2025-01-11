@@ -239,7 +239,7 @@ def check_crashgen_settings() -> str:
         ))
 
     xse_files: set[str] = {file.name.lower() for file in plugins_path.iterdir()} if plugins_path else set()
-    Has_XCell = ("x-cell-fo4.dll" in xse_files or "x-cell-og.dll" in xse_files or "x-cell-ng.dll" in xse_files)
+    Has_XCell = ("x-cell-fo4.dll" in xse_files or "x-cell-og.dll" in xse_files or "x-cell-ng2.dll" in xse_files)
     Has_BakaScrapHeap = "bakascrapheap.dll" in xse_files
 
     if not crashgen_toml_main:
