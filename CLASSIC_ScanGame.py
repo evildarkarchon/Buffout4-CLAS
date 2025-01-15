@@ -1,10 +1,12 @@
+import configparser
+import hashlib
 import io
 import os
 import shutil
 import struct
 import subprocess
 from collections.abc import ItemsView
-from configparser import NoOptionError, NoSectionError
+from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Literal, TypedDict
 
@@ -20,6 +22,31 @@ import CLASSIC_Main as CMain
 TEST_MODE = False
 
 
+def calculate_file_hash(file_path: Path) -> str:
+    """Calculates the hash of a file using SHA256."""
+    hash_sha256 = hashlib.sha256()
+    with file_path.open("rb") as file:
+        for block in iter(lambda: file.read(4096), b""):
+            hash_sha256.update(block)
+    return hash_sha256.hexdigest()
+
+
+def calculate_similarity(file1: Path, file2: Path) -> float:
+    """Calculate content similarity using difflib."""
+    with file1.open("r") as f1, file2.open("r") as f2:
+        return SequenceMatcher(None, f1.read(), f2.read()).ratio()
+
+
+def compare_ini_files(file1: Path, file2: Path) -> bool:
+    """Logic to compare .ini configuration files."""
+    if file1.suffix == ".ini" and file2.suffix == ".ini":
+        config1, config2 = configparser.ConfigParser(), configparser.ConfigParser()
+        config1.read(file1)
+        config2.read(file2)
+        return config1.sections() == config2.sections() and all(
+            config1[section] == config2[section] for section in config1.sections()
+        )
+    return False
 # ================================================
 # DEFINE MAIN FILE / YAML FUNCTIONS
 # ================================================
@@ -35,11 +62,13 @@ class ConfigFileCache:
     _config_file_cache: dict[str, ConfigFile]
     duplicate_files: dict[str, list[Path]]
     _game_root_path: Path | None
+    _duplicate_whitelist: list[str]
 
     def __init__(self) -> None:
         self._config_files = {}
         self._config_file_cache = {}
         self.duplicate_files = {}
+        self._duplicate_whitelist = ["F4EE"]
 
         self._game_root_path = CMain.yaml_settings(Path, CMain.YAML.Game_Local, f"Game{CMain.gamevars['vr']}_Info.Root_Folder_Game")
         if self._game_root_path is None:
@@ -48,20 +77,38 @@ class ConfigFileCache:
 
         for path, _dirs, files in self._game_root_path.walk():
             for file in files:
+                # Skip if _dirs do not intersect with the whitelist or no match in file name
+                if not (set(self._duplicate_whitelist) & set(_dirs)) and not any(
+                        whitelist in file for whitelist in self._duplicate_whitelist):
+                    continue
+
                 file_lower = file.lower()
-                # if not file_lower.endswith((".ini", ".conf")):
-                if not file_lower.endswith(".ini") and file_lower != "dxvk.conf":
+                # Skip non-config files and files not matching specific criteria
+                if not file_lower.endswith((".ini", ".conf")) and file_lower != "dxvk.conf":
                     continue
 
                 file_path = path / file
-                if file_lower in self._config_files:
-                    if file_lower in self.duplicate_files:
-                        self.duplicate_files[file_lower].append(file_path)
-                    else:
-                        self.duplicate_files[file_lower] = [file_path]
-                    continue
+                file_hash = calculate_file_hash(file_path)
 
-                self._config_files[file_lower] = file_path
+                # Check for duplicates already stored
+                if file_lower in self._config_files:
+                    existing_file = self._config_files[file_lower]
+                    existing_hash = calculate_file_hash(existing_file)
+
+                    if file_hash == existing_hash:  # Exact duplicate
+                        self.duplicate_files.setdefault(file_lower, [existing_file]).append(file_path)
+                    else:  # Compare for similarity
+                        is_similar = (
+                                calculate_similarity(existing_file, file_path) >= 0.90
+                                or (
+                                        file_path.stat().st_size == existing_file.stat().st_size and file_path.stat().st_mtime == existing_file.stat().st_mtime)
+                                or compare_ini_files(existing_file, file_path)
+                        )
+                        if is_similar:
+                            self.duplicate_files.setdefault(file_lower, [existing_file]).append(file_path)
+                else:
+                    # Register new config file
+                    self._config_files[file_lower] = file_path
 
     def __contains__(self, file_name_lower: str) -> bool:
         return file_name_lower in self._config_files
@@ -136,7 +183,7 @@ class ConfigFileCache:
         except ValueError as e:
             CMain.logger.error(f"ERROR: Unexpected value type - {e}")
             return None
-        except (NoSectionError, NoOptionError):
+        except (configparser.NoSectionError, configparser.NoOptionError):
             return None
 
     def get_strict[T](self, value_type: type[T], file: str, section: str, setting: str) -> T:
@@ -184,7 +231,7 @@ class ConfigFileCache:
                 self._load_config(file_name_lower)
             config = self._config_file_cache[file_name_lower]["settings"]
             return config.has_option(section, setting)
-        except (FileNotFoundError, NoSectionError):
+        except (FileNotFoundError, configparser.NoSectionError):
             return False
 
     def items(self) -> ItemsView[str, Path]:
