@@ -1650,10 +1650,11 @@ This feature is not fully implemented."""
         """Handle errors from the Papyrus monitor"""
         self.output_text_box.append(f"\n❌ ERROR IN PAPYRUS MONITORING: {error_msg}\n")
         self.papyrus_button.setChecked(False)
-        self.stop_papyrus_monitoring()
-        if not self.papyrus_monitor_worker.error_sound_played:
+        if self.papyrus_monitor_worker and not self.papyrus_monitor_worker.error_sound_played:
             self.audio_player.play_error_signal.emit()
             self.papyrus_monitor_worker.error_sound_played = True
+        self.stop_papyrus_monitoring()
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
