@@ -193,7 +193,7 @@ class CustomAboutDialog(QDialog):
         layout.setAlignment(close_button, Qt.AlignmentFlag.AlignRight)
 
 class ErrorDialog(QDialog):
-    def __init__(self, error_text: str) -> None:
+    def __init__(self, error_dialog_text: str) -> None:
         super().__init__()
         self.setWindowTitle("Error")
         self.setMinimumSize(600, 300)
@@ -201,7 +201,7 @@ class ErrorDialog(QDialog):
 
         self.text_edit = QPlainTextEdit(self)
         self.text_edit.setReadOnly(True)
-        self.text_edit.setPlainText(error_text)
+        self.text_edit.setPlainText(error_dialog_text)
         layout.addWidget(self.text_edit)
 
         copy_button = QPushButton("Copy to Clipboard", self)
@@ -212,16 +212,16 @@ class ErrorDialog(QDialog):
         QApplication.clipboard().setText(self.text_edit.toPlainText())
 
 
-def show_exception_box(error_text: str) -> None:
-    dialog = ErrorDialog(error_text)
+def show_exception_box(exception_text: str) -> None:
+    dialog = ErrorDialog(exception_text)
     dialog.show()
     dialog.exec()
 
 
 def custom_excepthook(exc_type: type[BaseException], exc_value: BaseException, exc_traceback: TracebackType | None) -> None:
-    error_text = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-    print(error_text)  # Still print to console
-    show_exception_box(error_text)
+    custom_except_text = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+    print(custom_except_text)  # Still print to console
+    show_exception_box(custom_except_text)
 
 
 sys.excepthook = custom_excepthook
@@ -267,7 +267,8 @@ class AudioPlayer(QObject):
         if self.audio_enabled and self.notify_sound.isLoaded():
             self.notify_sound.play()
 
-    def play_custom_sound(self, sound_path: str) -> None:
+    @staticmethod
+    def play_custom_sound(sound_path: str) -> None:
         custom_sound = QSoundEffect()
         custom_sound.setSource(QUrl.fromLocalFile(sound_path))
         custom_sound.setVolume(1.0)
@@ -418,6 +419,18 @@ class GameFilesScanWorker(QObject):
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
+        self.game_files_worker = None
+        self.crash_logs_worker = None
+        self.papyrus_button = None
+        self.game_files_button = None
+        self.crash_logs_button = None
+        self.output_redirector = None
+        self.output_text_box = None
+        self.scan_folder_edit = None
+        self.mods_folder_edit = None
+        self.pastebin_fetch_button = None
+        self.pastebin_id_input = None
+        self.pastebin_label = None
         self.papyrus_monitor_thread: QThread | None = None
         self.papyrus_monitor_worker: PapyrusMonitorWorker | None = None
         self._last_stats: PapyrusStats | None = None
@@ -468,7 +481,7 @@ QComboBox::drop-down {
 }
 
 QComboBox::down-arrow {
-    image: url(CLASSIC Data/graphics/arrow-down.svg);
+    image: pb_source(CLASSIC Data/graphics/arrow-down.svg);
     width: 12px;
     height: 12px;
 }
@@ -685,7 +698,7 @@ QLabel {
         # Connect signals
         pastebin_thread.started.connect(pastebin_worker.run)
         pastebin_worker.finished.connect(pastebin_thread.quit)
-        pastebin_worker.success.connect(lambda url: QMessageBox.information(self, "Success", f"Log fetched from: {url}"))
+        pastebin_worker.success.connect(lambda pb_source: QMessageBox.information(self, "Success", f"Log fetched from: {pb_source}"))
         pastebin_worker.error.connect(lambda err: QMessageBox.warning(self, "Error", f"Failed to fetch log: {err}", QMessageBox.StandardButton.NoButton, QMessageBox.StandardButton.NoButton))
 
         # Start thread
@@ -1185,10 +1198,10 @@ QLabel {
                 height: 25px;
             }
             QCheckBox::indicator:unchecked {
-                image: url(CLASSIC Data/graphics/unchecked.png);
+                image: pb_source(CLASSIC Data/graphics/unchecked.png);
             }
             QCheckBox::indicator:checked {
-                image: url(CLASSIC Data/graphics/checked.png);
+                image: pb_source(CLASSIC Data/graphics/checked.png);
             }
         """
         )
@@ -1263,36 +1276,36 @@ QLabel {
         button_data = [
             {
                 "text": "BUFFOUT 4 INSTALLATION",
-                "url": "https://www.nexusmods.com/fallout4/articles/3115",
+                "pb_source": "https://www.nexusmods.com/fallout4/articles/3115",
             },
             {
                 "text": "FALLOUT 4 SETUP TIPS",
-                "url": "https://www.nexusmods.com/fallout4/articles/4141",
+                "pb_source": "https://www.nexusmods.com/fallout4/articles/4141",
             },
             {
                 "text": "IMPORTANT PATCHES LIST",
-                "url": "https://www.nexusmods.com/fallout4/articles/3769",
+                "pb_source": "https://www.nexusmods.com/fallout4/articles/3769",
             },
             {
                 "text": "BUFFOUT 4 NEXUS PAGE",
-                "url": "https://www.nexusmods.com/fallout4/mods/47359",
+                "pb_source": "https://www.nexusmods.com/fallout4/mods/47359",
             },
             {
                 "text": "CLASSIC NEXUS PAGE",
-                "url": "https://www.nexusmods.com/fallout4/mods/56255",
+                "pb_source": "https://www.nexusmods.com/fallout4/mods/56255",
             },
             {
                 "text": "CLASSIC GITHUB",
-                "url": "https://github.com/GuidanceOfGrace/CLASSIC-Fallout4",
+                "pb_source": "https://github.com/GuidanceOfGrace/CLASSIC-Fallout4",
             },
             {
                 "text": "DDS TEXTURE SCANNER",
-                "url": "https://www.nexusmods.com/fallout4/mods/71588",
+                "pb_source": "https://www.nexusmods.com/fallout4/mods/71588",
             },
-            {"text": "BETHINI PIE", "url": "https://www.nexusmods.com/site/mods/631"},
+            {"text": "BETHINI PIE", "pb_source": "https://www.nexusmods.com/site/mods/631"},
             {
                 "text": "WRYE BASH TOOL",
-                "url": "https://www.nexusmods.com/fallout4/mods/20032",
+                "pb_source": "https://www.nexusmods.com/fallout4/mods/20032",
             },
         ]
 
@@ -1320,7 +1333,7 @@ QLabel {
             """
             )
             button.clicked.connect(
-                lambda _, url=data["url"]: QDesktopServices.openUrl(QUrl(url))
+                lambda _, url=data["pb_source"]: QDesktopServices.openUrl(QUrl(url))
             )
             row = i // 3
             col = i % 3
@@ -1659,6 +1672,7 @@ This feature is not fully implemented."""
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
+    # noinspection PyBroadException
     try:
         window = MainWindow()
         window.show()
