@@ -247,11 +247,11 @@ class AudioPlayer(QObject):
         # Setup QSoundEffect objects for the preset sounds
         self.error_sound = QSoundEffect()
         self.error_sound.setSource(QUrl.fromLocalFile("CLASSIC Data/sounds/classic_error.wav"))
-        self.error_sound.setVolume(1.0)  # Set max volume
+        self.error_sound.setVolume(0.5)  # Set max volume
 
         self.notify_sound = QSoundEffect()
         self.notify_sound.setSource(QUrl.fromLocalFile("CLASSIC Data/sounds/classic_notify.wav"))
-        self.notify_sound.setVolume(1.0)  # Set max volume
+        self.notify_sound.setVolume(0.5)  # Set max volume
 
         # Connect signals to respective slots
         if self.audio_enabled:
@@ -268,10 +268,10 @@ class AudioPlayer(QObject):
             self.notify_sound.play()
 
     @staticmethod
-    def play_custom_sound(sound_path: str) -> None:
+    def play_custom_sound(sound_path: str, volume: float = 1.0) -> None:
         custom_sound = QSoundEffect()
         custom_sound.setSource(QUrl.fromLocalFile(sound_path))
-        custom_sound.setVolume(1.0)
+        custom_sound.setVolume(volume)
         custom_sound.play()
 
     def toggle_audio(self, state: bool) -> None:
